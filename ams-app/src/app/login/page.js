@@ -18,6 +18,39 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
+    // Hardcoded bypass for demo/testing
+    const loginEmail = email.toLowerCase().trim();
+    if (loginEmail === "admin" || loginEmail === "admin@ams.com") {
+      if (password === "admin123") {
+        router.push("/admin/profile");
+        return;
+      } else {
+        setError("Invalid password for admin account.");
+        setLoading(false);
+        return;
+      }
+    }
+    if (loginEmail === "teacher" || loginEmail === "teacher@ams.com") {
+      if (password === "teacher123") {
+        router.push("/teacher/profile");
+        return;
+      } else {
+        setError("Invalid password for teacher account.");
+        setLoading(false);
+        return;
+      }
+    }
+    if (loginEmail === "student" || loginEmail === "student@ams.com") {
+      if (password === "student123") {
+        router.push("/student/profile");
+        return;
+      } else {
+        setError("Invalid password for student account.");
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const userDoc = await getDoc(doc(db, "users", cred.user.uid));
