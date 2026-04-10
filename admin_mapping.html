@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Section Mapping - AMS</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="dashboard-body">
 
     <div class="sidebar">
         <h3>AMS Admin</h3>
-        <a href="admin_profile.html">Profile</a> 
+        <a href="admin_profile.html">Profile</a>
         <a href="admin_overview.html">System Overview</a>
         <a href="admin_users.html">User Management</a>
         <a href="admin_mapping.html" class="active">Section Mapping</a>
@@ -90,10 +92,11 @@
     </div>
 
     <script>
-        document.getElementById('mappingForm').onsubmit = function(e) {
+        document.getElementById('mappingForm').onsubmit = function (e) {
             e.preventDefault();
             alert("Mapping Successful: Teacher has been assigned to the section!");
         };
     </script>
 </body>
+
 </html>
