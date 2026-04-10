@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Profile - AMS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar">
+        <h3>AMS Admin</h3>
+        <a href="admin_profile.html">Profile</a> 
+        <a href="admin_overview.html">System Overview</a>
+        <a href="admin_users.html">User Management</a>
+        <a href="admin_mapping.html">Section Mapping</a>
+        <a href="index.html">Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h1>Admin Profile</h1>
+
+        <div class="card" style="display: flex; align-items: center; gap: 30px;">
+            <div style="width: 100px; height: 100px; background: #2c3e50; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: white; font-weight: bold;">
+                G
+            </div>
+            <div>
+                <h2 style="margin: 0;">Gjhelian Atasha C. Constantino</h2>
+                <p style="color: var(--primary-color); font-weight: bold; margin: 5px 0;">System Administrator</p>
+                <p style="color: var(--secondary-color); margin: 0;">ID: 2026-ADMIN-001</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Account Settings</h3>
+            <form id="profileForm">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Email Address</label>
+                    <input type="email" value="gjhelian.constantino@dlsu.edu.ph" readonly style="background-color: #f9f9f9; cursor: not-allowed;">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Update Password</label>
+                    <input type="password" placeholder="Enter new password">
+                </div>
+                
+                <button type="submit" class="btn-success">Save Profile Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('profileForm').onsubmit = function(e) {
+            e.preventDefault();
+            alert("Profile settings updated!");
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Profile - AMS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar">
+        <h3>AMS System</h3>
+        <a href="student_profile.html" class="active">Profile</a>
+        <a href="student_attendance.html">My Attendance</a>
+        <a href="student_schedule.html">Schedule</a>
+        <a href="index.html">Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h1>Student Profile</h1>
+        
+        <div class="card" style="display: flex; align-items: center; gap: 20px;">
+            <div style="width: 80px; height: 80px; background: #3498db; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold;">
+                S
+            </div>
+            <div>
+                <h2 style="margin: 0;">Student Name</h2>
+                <p style="margin: 5px 0; color: var(--primary-color); font-weight: bold;">Grade 12 - ICT</p>
+                <p style="margin: 0; font-size: 0.9rem; color: #666;">Student ID: 2026-STU-450</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Personal Information</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <label style="font-weight: bold; color: #555;">School Email</label>
+                    <p style="margin-top: 5px;">student.email@dlsu.edu.ph</p>
+                </div>
+                <div>
+                    <label style="font-weight: bold; color: #555;">Enrollment Status</label>
+                    <p style="margin-top: 5px;">Regular / Active</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Security Settings</h3>
+            <form>
+                <label style="display: block; margin-bottom: 5px;">Change Password</label>
+                <input type="password" placeholder="Enter new password" style="width: 100%; max-width: 400px;">
+                <br><br>
+                <button type="submit" class="btn-success">Update Password</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

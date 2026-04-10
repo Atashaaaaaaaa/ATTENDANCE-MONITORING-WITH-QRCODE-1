@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Class Schedule - AMS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar">
+        <h3>AMS System</h3>
+        <a href="teacher_profile.html">Profile</a> 
+        <a href="teacher_dashboard.html">Class Attendance</a>
+        <a href="teacher_schedule.html" class="active">Class Schedule</a>
+        <a href="teacher_reports.html">Reports</a>
+        <a href="index.html">Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h1>Class Schedule</h1>
+        <p>Your assigned sections and teaching hours for the current semester.</p>
+
+        <div class="card">
+            <h3>Weekly Timetable</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Monday</th>
+                        <th>Tuesday</th>
+                        <th>Wednesday</th>
+                        <th>Thursday</th>
+                        <th>Friday</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>08:00 - 10:00 AM</td>
+                        <td style="background: #e8f4fd;"><strong>G12-ICT</strong><br>Java</td>
+                        <td>-</td>
+                        <td style="background: #e8f4fd;"><strong>G12-ICT</strong><br>Java</td>
+                        <td>-</td>
+                        <td style="background: #e8f4fd;"><strong>G12-ICT</strong><br>Java</td>
+                    </tr>
+                    <tr>
+                        <td>01:00 - 03:00 PM</td>
+                        <td>-</td>
+                        <td style="background: #f0fdf4;"><strong>G12-STEM</strong><br>Physics</td>
+                        <td>-</td>
+                        <td style="background: #f0fdf4;"><strong>G12-STEM</strong><br>Physics</td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Section Details</h3>
+            <p>Click "View List" to see the registered students for each section.</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin: 0; color: var(--primary-color);">G12 - ICT</h4>
+                    <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Subject:</strong> Java Programming</p>
+                    <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Students:</strong> 45</p>
+                    <button class="btn-small" style="margin-top: 10px; width: 100%;">View Student List</button>
+                </div>
+
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin: 0; color: var(--primary-color);">G12 - STEM</h4>
+                    <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Subject:</strong> General Physics</p>
+                    <p style="margin: 5px 0; font-size: 0.9rem;"><strong>Students:</strong> 40</p>
+                    <button class="btn-small" style="margin-top: 10px; width: 100%;">View Student List</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
