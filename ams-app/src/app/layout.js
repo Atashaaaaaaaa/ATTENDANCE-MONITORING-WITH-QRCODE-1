@@ -1,0 +1,14 @@
+import "./globals.css";
+
+export const metadata = {
+  title: "AMS - Attendance Monitoring System",
+  description: "Smart QR-based attendance monitoring system for DLSU-D. Track, manage, and analyze attendance with cutting-edge technology.",
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
