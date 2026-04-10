@@ -1,12 +1,38 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
+import { getDashboardPath } from '@/lib/authUtils'
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 
-export const metadata = {
-  title: "AMS - Smart Attendance Monitoring System",
-  description: "Maximize the power of your attendance system with QR code technology. Smart, fast, and reliable attendance tracking for educational institutions.",
-};
-
 export default function LandingPage() {
+  const router = useRouter()
+  const { user, userRole, loading } = useAuth()
+
+  useEffect(() => {
+    // If user is authenticated, redirect to their dashboard
+    if (!loading && user && userRole) {
+      const dashboardPath = getDashboardPath(userRole)
+      router.push(dashboardPath)
+    }
+  }, [user, userRole, loading, router])
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <p>Loading...</p>
+      </div>
+    )
+  }
+
+  // If user is authenticated, don't show landing page
+  if (user && userRole) {
+    return null
+  }
+
   return (
     <>
       <Navbar />

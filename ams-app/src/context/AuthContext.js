@@ -1,0 +1,131 @@
+'use client'
+
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import { auth, db } from '@/lib/firebase'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+
+const AuthContext = createContext()
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null)
+  const [userRole, setUserRole] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Monitor auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser)
+        // Fetch user role from Firestore
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid)
+          const userDocSnap = await getDoc(userDocRef)
+          
+          if (userDocSnap.exists()) {
+            setUserRole(userDocSnap.data().role)
+          }
+        } catch (err) {
+          console.error('Error fetching user role:', err)
+          setError(err.message)
+        }
+      } else {
+        setUser(null)
+        setUserRole(null)
+      }
+      setLoading(false)
+    })
+
+    return unsubscribe
+  }, [])
+
+  // Sign up function
+  const signUp = async (email, password, role, userData) => {
+    try {
+      setError(null)
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const currentUser = userCredential.user
+
+      // Save user data to Firestore
+      const userRef = doc(db, 'users', currentUser.uid)
+      await setDoc(userRef, {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        role: role,
+        createdAt: new Date(),
+        ...userData, // Additional user data (name, etc.)
+      })
+
+      setUser(currentUser)
+      setUserRole(role)
+      return currentUser
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  // Sign in function
+  const signIn = async (email, password) => {
+    try {
+      setError(null)
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const currentUser = userCredential.user
+
+      // Fetch user role from Firestore
+      const userDocRef = doc(db, 'users', currentUser.uid)
+      const userDocSnap = await getDoc(userDocRef)
+
+      if (userDocSnap.exists()) {
+        setUserRole(userDocSnap.data().role)
+      }
+
+      setUser(currentUser)
+      return currentUser
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  // Sign out function
+  const logout = async () => {
+    try {
+      setError(null)
+      await signOut(auth)
+      setUser(null)
+      setUserRole(null)
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  const value = {
+    user,
+    userRole,
+    loading,
+    error,
+    signUp,
+    signIn,
+    logout,
+    isAuthenticated: !!user,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+// Custom hook to use auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}

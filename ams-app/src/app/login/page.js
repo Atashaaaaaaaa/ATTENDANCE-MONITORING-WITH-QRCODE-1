@@ -1,109 +1,80 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
-import "./login.css";
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
+import './login.css'
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const router = useRouter()
+  const { signIn, userRole, loading: authLoading } = useAuth()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (userRole) {
+      const dashboardPath = {
+        admin: '/admin/overview',
+        teacher: '/teacher/dashboard',
+        student: '/student/attendance',
+      }
+      router.push(dashboardPath[userRole] || '/login')
+    }
+  }, [userRole, router])
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    // Hardcoded bypass for demo/testing
-    const loginEmail = email.toLowerCase().trim();
-    if (loginEmail === "admin" || loginEmail === "admin@ams.com") {
-      if (password === "admin123") {
-        router.push("/admin/profile");
-        return;
-      } else {
-        setError("Invalid password for admin account.");
-        setLoading(false);
-        return;
-      }
-    }
-    if (loginEmail === "teacher" || loginEmail === "teacher@ams.com") {
-      if (password === "teacher123") {
-        router.push("/teacher/profile");
-        return;
-      } else {
-        setError("Invalid password for teacher account.");
-        setLoading(false);
-        return;
-      }
-    }
-    if (loginEmail === "student" || loginEmail === "student@ams.com") {
-      if (password === "student123") {
-        router.push("/student/profile");
-        return;
-      } else {
-        setError("Invalid password for student account.");
-        setLoading(false);
-        return;
-      }
-    }
+    e.preventDefault()
+    setError('')
+    setLoading(true)
 
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      const userDoc = await getDoc(doc(db, "users", cred.user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        router.push(`/${userData.role}/profile`);
-      } else {
-        router.push(`/student/profile`); // Default fallback
+      // Validation
+      if (!email.trim()) {
+        throw new Error('Email is required')
       }
+      if (!password) {
+        throw new Error('Password is required')
+      }
+
+      // Sign in with email and password
+      await signIn(email, password)
     } catch (err) {
-      if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
-        setError("Invalid email or password.");
-      } else if (err.code === "auth/user-not-found") {
-        setError("No account found.");
-      } else {
-        setError("Authentication error. Please try again.");
-      }
+      setError(err.message || 'Authentication failed. Please try again.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="login-wrapper">
       <div className="login-container">
-        
         {/* LEFT SIDE */}
         <div className="login-left">
           <div className="login-header-logo">
             <div className="logo-icon"></div>
-            <span>AMS DESIGN</span>
+            <span>AMS</span>
           </div>
 
           <div className="login-form-wrapper">
-            <div className="avatar-container">
-              <div className="avatar-circle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-              </div>
-            </div>
+            <h1 className="login-title">Sign In</h1>
+            <p className="login-subtitle">Welcome back to Attendance Monitoring System</p>
 
             {error && <div className="login-error">{error}</div>}
 
             <form onSubmit={handleSubmit} className="auth-form">
               <div className="input-group">
                 <div className="input-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
                 </div>
                 <input
                   type="email"
-                  placeholder="USERNAME"
+                  placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -112,66 +83,43 @@ export default function LoginPage() {
 
               <div className="input-group">
                 <div className="input-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
                 </div>
                 <input
                   type="password"
-                  placeholder="PASSWORD"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
 
-              <button type="submit" className="login-btn" disabled={loading}>
-                {loading ? "Wait..." : "LOGIN"}
+              <button type="submit" className="login-btn" disabled={loading || authLoading}>
+                {loading ? 'Signing in...' : 'Sign In'}
               </button>
-
-              <div className="form-actions">
-                <label className="remember-me">
-                  <input type="radio" name="remember" /> <span>Remember me</span>
-                </label>
-                <a href="#" className="forgot-link">Forgot your password?</a>
-              </div>
-              
-              <div className="form-dots">
-                <span></span><span></span><span></span>
-              </div>
             </form>
+
+            <div className="form-links">
+              <a href="#" className="forgot-link">Forgot your password?</a>
+            </div>
+
+            <div className="signup-prompt">
+              <p>Don't have an account? <a href="/role-select">Sign up here</a></p>
+            </div>
           </div>
         </div>
 
         {/* RIGHT SIDE */}
         <div className="login-right">
-          
-          <div className="visual-nav">
-             <a href="#">ABOUT</a>
-             <a href="#">DOWNLOAD</a>
-             <a href="#">PROMO</a>
-             <a href="#">CONTACT</a>
-             <button className="nav-signin">SIGN IN</button>
-             <button className="nav-menu">
-               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-             </button>
-          </div>
-
-          <div className="welcome-text">
-            <h1>Welcome.</h1>
-            <p>Experience seamless attendance tracking with our smart, dynamic QR-based monitoring system optimized for modern campuses.</p>
-            <div className="signup-prompt">
-              Not a member? <a href="#">Sign up now</a>
-            </div>
-          </div>
-
-          {/* Animated Background Blob Motion behind right side */}
-          <div className="animated-blobs">
-            <div className="blob blob-1"></div>
-            <div className="blob blob-2"></div>
-            <div className="blob blob-3"></div>
+          <div className="visual-content">
+            <h2>Attendance Monitoring System</h2>
+            <p>Streamline your attendance management with our modern platform</p>
           </div>
         </div>
-
       </div>
     </div>
-  );
+  )
 }
