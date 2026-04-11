@@ -30,19 +30,31 @@
   flex-direction: column;
   position: relative;
   z-index: 10;
+  animation: loginSlideInLeft 0.7s ease forwards;
+}
+
+@keyframes loginSlideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .login-header-logo {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 50px;
+  margin-bottom: 30px;
 }
 
 .logo-icon {
   width: 20px;
   height: 20px;
-  background: #2C3E2D; /* Dark Olive */
+  background: #4A7C59;
   border-radius: 4px;
   position: relative;
 }
@@ -54,7 +66,7 @@
   left: -4px;
   width: 14px;
   height: 14px;
-  background: #93A675; /* Sage green */
+  background: #6B9E78;
   border-radius: 3px;
 }
 
@@ -63,6 +75,31 @@
   font-size: 0.85rem;
   color: #111;
   letter-spacing: -0.2px;
+}
+
+/* Homepage Button */
+.homepage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: transparent;
+  border: 1.5px solid #4A7C59;
+  border-radius: 30px;
+  color: #4A7C59;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-decoration: none;
+  margin-left: auto;
+}
+
+.homepage-btn:hover {
+  background: #4A7C59;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 124, 89, 0.25);
 }
 
 .login-form-wrapper {
@@ -81,12 +118,18 @@
 .avatar-circle {
   width: 75px;
   height: 75px;
-  background: #2C3E2D; /* Dark Olive equivalent */
+  background: #4A7C59;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  animation: avatarPulse 2s ease-in-out infinite;
+}
+
+@keyframes avatarPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 124, 89, 0.3); }
+  50% { box-shadow: 0 0 0 12px rgba(74, 124, 89, 0); }
 }
 
 .avatar-circle svg {
@@ -104,15 +147,20 @@
   position: relative;
   display: flex;
   align-items: center;
-  border: 2px solid #2C3E2D; /* Dark outline matching template */
-  border-radius: 30px; /* Pill shape */
+  border: 2px solid #4A7C59;
+  border-radius: 30px;
   background: white;
+  transition: box-shadow 0.25s ease;
+}
+
+.input-group:focus-within {
+  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.15);
 }
 
 .input-icon {
   position: absolute;
   left: 18px;
-  color: #2C3E2D;
+  color: #4A7C59;
   display: flex;
   align-items: center;
 }
@@ -129,7 +177,7 @@
   background: transparent;
   font-size: 0.8rem;
   font-weight: 700;
-  color: #2C3E2D;
+  color: #4A7C59;
   outline: none;
 }
 
@@ -140,7 +188,7 @@
 }
 
 .login-btn {
-  background: #2C3E2D; /* Dark Olive */
+  background: #4A7C59;
   color: white;
   border: none;
   border-radius: 30px;
@@ -150,11 +198,20 @@
   letter-spacing: 1px;
   cursor: pointer;
   margin-top: 10px;
-  transition: opacity 0.2s;
+  transition: all 0.3s ease;
 }
 
 .login-btn:hover {
-  opacity: 0.9;
+  background: #3D6A4C;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(74, 124, 89, 0.3);
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .form-actions {
@@ -176,7 +233,7 @@
 }
 
 .remember-me input {
-  accent-color: #2C3E2D;
+  accent-color: #4A7C59;
 }
 
 .forgot-link {
@@ -187,7 +244,7 @@
 }
 
 .forgot-link:hover {
-  color: #2C3E2D;
+  color: #4A7C59;
 }
 
 
@@ -207,11 +264,23 @@
 .login-right {
   flex: 1;
   position: relative;
-  background: #2C3E2D; /* Deep Green Base */
+  background: #4A7C59;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   padding: 40px;
+  animation: loginSlideInRight 0.7s ease 0.2s both;
+}
+
+@keyframes loginSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .animated-blobs {
@@ -230,10 +299,11 @@
   animation: swoosh 20s ease-in-out infinite alternate;
 }
 
+/* BLOB COLORS UNCHANGED */
 .blob-1 {
   width: 800px;
   height: 800px;
-  background: #DDC8A4; /* Tan/Beige */
+  background: #DDC8A4; /* Tan/Beige — kept */
   top: -300px;
   left: -200px;
   animation-duration: 25s;
@@ -242,7 +312,7 @@
 .blob-2 {
   width: 600px;
   height: 600px;
-  background: #93A675; /* Sage green */
+  background: #93A675; /* Sage green — kept */
   bottom: -200px;
   right: -100px;
   animation-duration: 20s;
@@ -252,7 +322,7 @@
 .blob-3 {
   width: 500px;
   height: 500px;
-  background: #FDF5E6; /* Cream */
+  background: #FDF5E6; /* Cream — kept */
   top: 40%;
   left: 20%;
   animation-duration: 15s;
@@ -275,6 +345,18 @@
   margin-left: auto;
   color: white;
   max-width: 400px;
+  animation: welcomeFadeIn 0.9s ease 0.5s both;
+}
+
+@keyframes welcomeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .welcome-text h1 {

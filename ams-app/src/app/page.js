@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "AMS - Smart Attendance Monitoring System",
-  description: "Maximize the power of your attendance system with QR code technology. Smart, fast, and reliable attendance tracking for educational institutions.",
+  description: "Maximize the power of your attendance system with facial recognition technology. Smart, fast, and reliable attendance tracking for educational institutions.",
 };
 
 export default function LandingPage() {
@@ -21,7 +21,7 @@ export default function LandingPage() {
         <h1>Maximize the Power of Your Attendance System</h1>
 
         <p className="hero-subtitle">
-          Leverage cutting-edge QR code technology to automate, track, and manage
+          Leverage cutting-edge facial recognition technology to automate, track, and manage
           attendance — no paperwork required.
         </p>
 
@@ -56,7 +56,7 @@ export default function LandingPage() {
                 <div className="hero-dash-nav-item active">📊 Dashboard</div>
                 <div className="hero-dash-nav-item">💳 Attendance</div>
                 <div className="hero-dash-nav-item">📈 Analytics</div>
-                <div className="hero-dash-nav-item">🃏 QR Cards</div>
+                <div className="hero-dash-nav-item">🤳 Face Scan</div>
                 <div className="hero-dash-nav-item">📜 History</div>
                 <div className="hero-dash-nav-item">📱 Devices</div>
               </div>
@@ -101,7 +101,7 @@ export default function LandingPage() {
                         <div key={i} style={{
                           flex: 1,
                           height: `${h}%`,
-                          background: i === 9 ? "linear-gradient(to top, #6C3CE1, #8B5CF6)" : "#EDE9FE",
+                          background: i === 9 ? "linear-gradient(to top, #4A7C59, #6B9E78)" : "#E8F5E9",
                           borderRadius: "4px",
                           transition: "height 0.5s ease",
                         }}></div>
@@ -113,10 +113,10 @@ export default function LandingPage() {
                     <div style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.5px" }}>450</div>
                     <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginTop: "12px", marginBottom: "4px" }}>Active Today</div>
                     <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "8px" }}>
-                      <div style={{ flex: 1, height: "6px", background: "#EDE9FE", borderRadius: "99px", overflow: "hidden" }}>
-                        <div style={{ width: "85%", height: "100%", background: "linear-gradient(90deg, #6C3CE1, #8B5CF6)", borderRadius: "99px" }}></div>
+                      <div style={{ flex: 1, height: "6px", background: "#E8F5E9", borderRadius: "99px", overflow: "hidden" }}>
+                        <div style={{ width: "85%", height: "100%", background: "linear-gradient(90deg, #4A7C59, #6B9E78)", borderRadius: "99px" }}></div>
                       </div>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#6C3CE1" }}>85%</span>
+                      <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#4A7C59" }}>85%</span>
                     </div>
                   </div>
                 </div>
@@ -142,14 +142,14 @@ export default function LandingPage() {
         <div className="features-grid">
           <div className="features-list">
             <div className="feature-item">
-              <h3>📱 QR Code Attendance</h3>
+              <h3>🤳 Face Scan Attendance</h3>
               <p>
-                Our platform is designed with seamless QR integration for fast,
+                Our platform uses AI-powered facial recognition for fast,
                 contactless attendance marking. No manual paperwork needed.
               </p>
               <ol>
-                <li>Generate unique session QR codes</li>
-                <li>Students scan to mark attendance instantly</li>
+                <li>Start a face scan session in class</li>
+                <li>Students scan their face to mark attendance instantly</li>
               </ol>
             </div>
 
@@ -189,7 +189,7 @@ export default function LandingPage() {
             <div style={{ marginBottom: "24px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                 <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>On-time Rate</span>
-                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#6C3CE1" }}>87%</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#4A7C59" }}>87%</span>
               </div>
               <div className="feature-progress-bar">
                 <div className="feature-progress-fill" style={{ width: "87%" }}></div>
@@ -208,7 +208,7 @@ export default function LandingPage() {
                     <div key={i} style={{
                       flex: 1,
                       height: `${h}%`,
-                      background: i === 5 ? "#6C3CE1" : "#EDE9FE",
+                      background: i === 5 ? "#4A7C59" : "#E8F5E9",
                       borderRadius: "3px",
                     }}></div>
                   ))}
@@ -273,7 +273,7 @@ export default function LandingPage() {
       <footer className="footer" id="footer">
         <div className="footer-logo">⚡ AMS</div>
         <p>
-          Smart QR-based attendance monitoring for DLSU-D. Built with Next.js and
+          Smart facial recognition-based attendance monitoring for DLSU-D. Built with Next.js and
           Firebase for speed, security, and reliability.
         </p>
         <ul className="footer-links">

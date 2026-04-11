@@ -1,169 +1,298 @@
 "use client";
-import { useState, useCallback } from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { addDoc, collection } from "firebase/firestore";
+import { useState, useCallback, useEffect } from "react";
+import { addDoc, collection, query, where, getDocs, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function TeacherDashboard() {
-  const [qrData, setQrData] = useState(null);
+  const [activeSessions, setActiveSessions] = useState({});
   const [studentId, setStudentId] = useState("");
-  const [attendanceList, setAttendanceList] = useState([
-    { name: "Student A", time: "08:05 AM", status: "Present" },
-    { name: "Student B", time: "08:07 AM", status: "Present" },
-    { name: "Student C", time: "08:15 AM", status: "Late" },
-  ]);
+  const [attendanceRecords, setAttendanceRecords] = useState({});
 
-  const generateQR = useCallback(async () => {
-    const sessionCode = "SESSION_" + Math.floor(Math.random() * 1000000) + "_" + Date.now();
-    setQrData(sessionCode);
+  // Teacher's assigned subjects/sections — replace with Firestore data later
+  const subjects = [
+    { id: "cs211", code: "CS 211", name: "Data Structures", sectionId: "secA", section: "Section A", schedule: "MWF 9:00 - 10:00 AM", room: "Room 301" },
+    { id: "cs312", code: "CS 312", name: "Web Development", sectionId: "secB", section: "Section B", schedule: "TTh 1:00 - 2:30 PM", room: "Room 205" },
+    { id: "cs321", code: "CS 321", name: "Database Systems", sectionId: "secA", section: "Section A", schedule: "MWF 11:00 AM - 12:00 PM", room: "Room 402" },
+  ];
 
+  // Listen for active sessions in real-time
+  useEffect(() => {
+    if (subjects.length === 0) return;
+
+    const q = query(collection(db, "sessions"), where("active", "==", true));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const sessions = {};
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const key = data.subjectId + "_" + data.sectionId;
+        sessions[key] = { ...data, docId: docSnap.id };
+      });
+      setActiveSessions(sessions);
+    }, () => {
+      // Firestore not connected — silent fail
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Start session for a subject + section
+  const startSession = useCallback(async (subject) => {
+    const sessionKey = subject.id + "_" + subject.sectionId;
     try {
-      await addDoc(collection(db, "sessions"), {
-        qrCode: sessionCode,
-        teacherId: "demo-teacher",
-        sectionId: "G12-ICT",
-        subject: "Java Programming",
+      const docRef = await addDoc(collection(db, "sessions"), {
+        subjectId: subject.id,
+        subjectCode: subject.code,
+        subjectName: subject.name,
+        sectionId: subject.sectionId,
+        sectionName: subject.section,
+        teacherId: "current-teacher",
         date: new Date().toISOString().split("T")[0],
-        startTime: new Date().toLocaleTimeString(),
+        startTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         active: true,
         createdAt: new Date().toISOString(),
       });
+      // Local fallback
+      setActiveSessions((prev) => ({
+        ...prev,
+        [sessionKey]: {
+          docId: docRef?.id || sessionKey,
+          subjectId: subject.id,
+          sectionId: subject.sectionId,
+          active: true,
+          startTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      }));
     } catch (e) {
-      // Local mode
+      // Local mode fallback
+      setActiveSessions((prev) => ({
+        ...prev,
+        [sessionKey]: {
+          docId: sessionKey,
+          subjectId: subject.id,
+          sectionId: subject.sectionId,
+          active: true,
+          startTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      }));
     }
   }, []);
 
-  const manualMark = async () => {
+  // Stop session
+  const stopSession = useCallback(async (subject) => {
+    const sessionKey = subject.id + "_" + subject.sectionId;
+    const session = activeSessions[sessionKey];
+
+    if (session?.docId) {
+      try {
+        await deleteDoc(doc(db, "sessions", session.docId));
+      } catch (e) {
+        // Local mode
+      }
+    }
+
+    setActiveSessions((prev) => {
+      const next = { ...prev };
+      delete next[sessionKey];
+      return next;
+    });
+  }, [activeSessions]);
+
+  // Manual attendance
+  const manualMark = async (subject) => {
     if (!studentId.trim()) return;
-    const newEntry = {
+    const entry = {
       name: studentId,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       status: "Present",
     };
-    setAttendanceList([...attendanceList, newEntry]);
+
+    setAttendanceRecords((prev) => ({
+      ...prev,
+      [subject.id]: [...(prev[subject.id] || []), entry],
+    }));
 
     try {
       await addDoc(collection(db, "attendance"), {
         studentId: studentId,
-        sessionId: qrData || "manual",
+        subjectId: subject.id,
+        subjectCode: subject.code,
+        sectionId: subject.sectionId,
+        sessionId: "manual",
         timestamp: new Date().toISOString(),
         status: "present",
+        method: "manual",
       });
     } catch (e) {
       // Local mode
     }
 
     setStudentId("");
-    alert(`Student ${newEntry.name} marked as present.`);
+    alert(`Student ${entry.name} marked present for ${subject.name}.`);
   };
 
   return (
     <>
       <div className="page-header">
         <h1>Class Attendance</h1>
-        <p>Generate a QR code for your students to scan.</p>
+        <p>Start a facial recognition session per subject and section.</p>
       </div>
 
-      <div className="card">
-        <div className="qr-section">
-          <div className="card-title" style={{ marginBottom: "8px" }}>Generate Attendance QR</div>
-          <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginBottom: "20px" }}>
-            <strong>Subject:</strong> Java Programming (G12-ICT)
+      {subjects.length === 0 ? (
+        <div className="card" style={{ textAlign: "center", padding: "60px 24px" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>📚</div>
+          <h3 style={{ margin: "0 0 8px", color: "var(--text-primary)" }}>No Subjects Assigned</h3>
+          <p style={{ color: "var(--text-muted)", maxWidth: "400px", margin: "0 auto" }}>
+            Subjects and sections will appear here once the admin assigns them to your account via the database.
           </p>
-
-          {qrData ? (
-            <div className="qr-wrapper">
-              <QRCodeSVG
-                value={qrData}
-                size={200}
-                bgColor="#ffffff"
-                fgColor="#1E1B4B"
-                level="H"
-                includeMargin={false}
-              />
-            </div>
-          ) : (
-            <div style={{
-              width: "240px",
-              height: "240px",
-              margin: "20px auto",
-              border: "2px dashed var(--border-purple)",
-              borderRadius: "var(--radius-lg)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--text-muted)",
-              fontSize: "0.9rem",
-            }}>
-              Click below to generate
-            </div>
-          )}
-
-          <div style={{ marginTop: "16px" }}>
-            <button className="btn btn-green" onClick={generateQR} style={{ padding: "14px 32px", fontSize: "0.95rem" }}>
-              🔄 Generate New Code
-            </button>
-          </div>
-          <p className="qr-info">The code will expire after the session ends.</p>
         </div>
-      </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "20px" }}>
+          {subjects.map((subject) => {
+            const sessionKey = subject.id + "_" + subject.sectionId;
+            const isActive = !!activeSessions[sessionKey];
+            const records = attendanceRecords[subject.id] || [];
 
-      <div className="card">
-        <div className="card-header">
-          <div>
-            <div className="card-title">Manual Attendance Entry</div>
-            <div className="card-subtitle">Use this if a student&apos;s camera is not working.</div>
-          </div>
+            return (
+              <div key={sessionKey} className="card" style={{
+                marginBottom: 0,
+                border: isActive ? "2px solid var(--primary)" : undefined,
+              }}>
+                {/* Subject Header */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                  <div>
+                    <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                      <span style={{
+                        padding: "4px 10px", borderRadius: "6px",
+                        background: "var(--accent-soft)", color: "var(--primary)",
+                        fontSize: "0.7rem", fontWeight: 700,
+                      }}>{subject.code}</span>
+                      <span style={{
+                        padding: "4px 10px", borderRadius: "6px",
+                        background: "#EFF6FF", color: "#2563EB",
+                        fontSize: "0.7rem", fontWeight: 700,
+                      }}>{subject.section}</span>
+                    </div>
+                    <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700 }}>{subject.name}</h3>
+                    <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                      🕐 {subject.schedule} • 📍 {subject.room}
+                    </p>
+                  </div>
+                  {isActive && (
+                    <div style={{
+                      padding: "6px 12px", borderRadius: "20px",
+                      background: "#ECFDF5", color: "#047857",
+                      fontSize: "0.7rem", fontWeight: 700,
+                      display: "flex", alignItems: "center", gap: "6px",
+                      animation: "pulse 2s infinite",
+                    }}>
+                      <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10B981", display: "inline-block" }}></span>
+                      LIVE
+                    </div>
+                  )}
+                </div>
+
+                {/* Session Status Display */}
+                <div style={{
+                  padding: "20px",
+                  borderRadius: "12px",
+                  background: isActive ? "linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%)" : "#F9FAFB",
+                  textAlign: "center",
+                  marginBottom: "16px",
+                  color: isActive ? "white" : "var(--text-muted)",
+                  transition: "all 0.3s ease",
+                }}>
+                  <div style={{ fontSize: "2rem", marginBottom: "8px" }}>
+                    {isActive ? "🟢" : "⏸️"}
+                  </div>
+                  <div style={{ fontSize: "0.9rem", fontWeight: 700 }}>
+                    {isActive ? "Session Active" : "Session Inactive"}
+                  </div>
+                  <div style={{ fontSize: "0.78rem", marginTop: "4px", opacity: 0.8 }}>
+                    {isActive
+                      ? `Started at ${activeSessions[sessionKey]?.startTime} • Students can now scan`
+                      : "Start a session to allow students to take attendance"}
+                  </div>
+                  {isActive && (
+                    <div style={{ fontSize: "0.75rem", marginTop: "8px", opacity: 0.7 }}>
+                      👥 {records.length} student(s) marked present
+                    </div>
+                  )}
+                </div>
+
+                {/* Start/Stop Button */}
+                <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+                  {!isActive ? (
+                    <button
+                      className="btn btn-green"
+                      onClick={() => startSession(subject)}
+                      style={{ flex: 1, padding: "12px", fontSize: "0.9rem" }}
+                    >
+                      🎥 Start Face Scan Session
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-red"
+                      onClick={() => stopSession(subject)}
+                      style={{ flex: 1, padding: "12px", fontSize: "0.9rem" }}
+                    >
+                      ⏹️ End Session
+                    </button>
+                  )}
+                </div>
+
+                {/* Manual Entry */}
+                {isActive && (
+                  <div style={{
+                    padding: "12px", borderRadius: "10px",
+                    background: "#F9FAFB", border: "1px solid var(--border-light)",
+                  }}>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 700, marginBottom: "8px", color: "var(--text-secondary)" }}>
+                      Manual Entry
+                    </div>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter Student ID"
+                        value={studentId}
+                        onChange={(e) => setStudentId(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && manualMark(subject)}
+                        style={{ flex: 1, padding: "8px 12px", fontSize: "0.85rem" }}
+                      />
+                      <button className="btn btn-purple" onClick={() => manualMark(subject)} style={{ padding: "8px 16px", fontSize: "0.8rem" }}>
+                        Mark
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Attendance list for this subject */}
+                {records.length > 0 && (
+                  <div style={{ marginTop: "16px" }}>
+                    <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-secondary)", marginBottom: "8px" }}>
+                      Attendance ({records.length})
+                    </div>
+                    {records.map((r, i) => (
+                      <div key={i} style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        padding: "8px 12px", borderRadius: "8px",
+                        background: i % 2 === 0 ? "#F9FAFB" : "transparent",
+                        fontSize: "0.82rem",
+                      }}>
+                        <span style={{ fontWeight: 600 }}>{r.name}</span>
+                        <span style={{ color: "var(--text-muted)" }}>{r.time}</span>
+                        <span className="status-badge present" style={{ fontSize: "0.7rem" }}>
+                          <span className="status-dot"></span>{r.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-
-        <div className="manual-entry">
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Enter Student ID"
-            value={studentId}
-            onChange={(e) => setStudentId(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && manualMark()}
-          />
-          <button className="btn btn-purple" onClick={manualMark}>
-            Mark Present
-          </button>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card-header">
-          <div className="card-title">Live Attendance List (Today)</div>
-          <span className="status-badge active">
-            <span className="status-dot"></span>
-            {attendanceList.length} Students
-          </span>
-        </div>
-
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Student Name</th>
-              <th>Time Scanned</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {attendanceList.map((entry, idx) => (
-              <tr key={idx}>
-                <td style={{ fontWeight: 600 }}>{entry.name}</td>
-                <td>{entry.time}</td>
-                <td>
-                  <span className={`status-badge ${entry.status.toLowerCase() === "present" ? "present" : "late"}`}>
-                    <span className="status-dot"></span>
-                    {entry.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      )}
     </>
   );
 }

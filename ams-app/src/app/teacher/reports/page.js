@@ -3,20 +3,18 @@ import { useState } from "react";
 
 export default function TeacherReports() {
   const [filter, setFilter] = useState({
-    section: "G12 - ICT",
+    section: "",
     dateFrom: "",
     dateTo: "",
   });
 
-  const students = [
-    { name: "Student A", present: 18, late: 2, absent: 0, rate: 100 },
-    { name: "Student B", present: 15, late: 1, absent: 4, rate: 75 },
-    { name: "Student C", present: 17, late: 1, absent: 2, rate: 85 },
-    { name: "Student D", present: 19, late: 0, absent: 1, rate: 95 },
-    { name: "Student E", present: 14, late: 3, absent: 3, rate: 70 },
-  ];
+  const [students, setStudents] = useState([]);
 
   const handleExport = () => {
+    if (students.length === 0) {
+      alert("No data to export.");
+      return;
+    }
     const csv = [
       "Student Name,Present,Late,Absent,Rate",
       ...students.map((s) => `${s.name},${s.present},${s.late},${s.absent},${s.rate}%`),
@@ -51,8 +49,7 @@ export default function TeacherReports() {
               value={filter.section}
               onChange={(e) => setFilter({ ...filter, section: e.target.value })}
             >
-              <option>G12 - ICT</option>
-              <option>G12 - STEM</option>
+              <option value="" disabled>Select Section...</option>
             </select>
           </div>
           <div className="form-group">
@@ -81,17 +78,17 @@ export default function TeacherReports() {
         <div className="stat-card stat-green">
           <div className="stat-card-icon">📊</div>
           <div className="stat-card-label">Average Attendance</div>
-          <div className="stat-card-value" style={{ color: "var(--success)" }}>92%</div>
+          <div className="stat-card-value" style={{ color: "var(--success)" }}>—</div>
         </div>
         <div className="stat-card stat-red">
           <div className="stat-card-icon">📉</div>
           <div className="stat-card-label">Total Absences</div>
-          <div className="stat-card-value" style={{ color: "var(--danger)" }}>24</div>
+          <div className="stat-card-value" style={{ color: "var(--danger)" }}>—</div>
         </div>
         <div className="stat-card stat-blue">
           <div className="stat-card-icon">⏰</div>
           <div className="stat-card-label">Total Late</div>
-          <div className="stat-card-value" style={{ color: "var(--info)" }}>18</div>
+          <div className="stat-card-value" style={{ color: "var(--info)" }}>—</div>
         </div>
       </div>
 
@@ -114,24 +111,32 @@ export default function TeacherReports() {
             </tr>
           </thead>
           <tbody>
-            {students.map((student, idx) => (
-              <tr key={idx}>
-                <td style={{ fontWeight: 600 }}>{student.name}</td>
-                <td>{student.present}</td>
-                <td>{student.late}</td>
-                <td>{student.absent}</td>
-                <td>
-                  <span style={{
-                    fontWeight: 700,
-                    color: student.rate >= 90 ? "var(--success)"
-                      : student.rate >= 80 ? "var(--primary)"
-                        : "var(--danger)",
-                  }}>
-                    {student.rate}%
-                  </span>
+            {students.length === 0 ? (
+              <tr>
+                <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                  No report data yet. Select a section and generate a report.
                 </td>
               </tr>
-            ))}
+            ) : (
+              students.map((student, idx) => (
+                <tr key={idx}>
+                  <td style={{ fontWeight: 600 }}>{student.name}</td>
+                  <td>{student.present}</td>
+                  <td>{student.late}</td>
+                  <td>{student.absent}</td>
+                  <td>
+                    <span style={{
+                      fontWeight: 700,
+                      color: student.rate >= 90 ? "var(--success)"
+                        : student.rate >= 80 ? "var(--primary)"
+                          : "var(--danger)",
+                    }}>
+                      {student.rate}%
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

@@ -1,29 +1,8 @@
 "use client";
 
 export default function TeacherSchedule() {
-  const schedule = [
-    {
-      time: "08:00 - 10:00 AM",
-      mon: { section: "G12-ICT", subject: "Java" },
-      tue: null,
-      wed: { section: "G12-ICT", subject: "Java" },
-      thu: null,
-      fri: { section: "G12-ICT", subject: "Java" },
-    },
-    {
-      time: "01:00 - 03:00 PM",
-      mon: null,
-      tue: { section: "G12-STEM", subject: "Physics" },
-      wed: null,
-      thu: { section: "G12-STEM", subject: "Physics" },
-      fri: null,
-    },
-  ];
-
-  const sections = [
-    { name: "G12 - ICT", subject: "Java Programming", students: 45 },
-    { name: "G12 - STEM", subject: "General Physics", students: 40 },
-  ];
+  const schedule = [];
+  const sections = [];
 
   const renderCell = (cell, isGreen) => {
     if (!cell) return <td style={{ textAlign: "center", color: "var(--text-muted)" }}>—</td>;
@@ -61,16 +40,24 @@ export default function TeacherSchedule() {
             </tr>
           </thead>
           <tbody>
-            {schedule.map((row, idx) => (
-              <tr key={idx}>
-                <td style={{ fontWeight: 600, fontSize: "0.85rem" }}>{row.time}</td>
-                {renderCell(row.mon, false)}
-                {renderCell(row.tue, true)}
-                {renderCell(row.wed, false)}
-                {renderCell(row.thu, true)}
-                {renderCell(row.fri, false)}
+            {schedule.length === 0 ? (
+              <tr>
+                <td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                  No schedule data yet. Schedule will appear once the database is connected.
+                </td>
               </tr>
-            ))}
+            ) : (
+              schedule.map((row, idx) => (
+                <tr key={idx}>
+                  <td style={{ fontWeight: 600, fontSize: "0.85rem" }}>{row.time}</td>
+                  {renderCell(row.mon, false)}
+                  {renderCell(row.tue, true)}
+                  {renderCell(row.wed, false)}
+                  {renderCell(row.thu, true)}
+                  {renderCell(row.fri, false)}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -84,14 +71,20 @@ export default function TeacherSchedule() {
         </div>
 
         <div className="section-cards">
-          {sections.map((section, idx) => (
-            <div className="section-card" key={idx}>
-              <h4>{section.name}</h4>
-              <p><strong>Subject:</strong> {section.subject}</p>
-              <p><strong>Students:</strong> {section.students}</p>
-              <button className="btn btn-outline btn-sm">View Student List</button>
-            </div>
-          ))}
+          {sections.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "20px" }}>
+              No sections assigned yet.
+            </p>
+          ) : (
+            sections.map((section, idx) => (
+              <div className="section-card" key={idx}>
+                <h4>{section.name}</h4>
+                <p><strong>Subject:</strong> {section.subject}</p>
+                <p><strong>Students:</strong> {section.students}</p>
+                <button className="btn btn-outline btn-sm">View Student List</button>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </>

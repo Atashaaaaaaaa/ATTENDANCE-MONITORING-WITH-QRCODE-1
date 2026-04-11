@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
 import "./login.css";
 
 export default function LoginPage() {
@@ -54,6 +55,9 @@ export default function LoginPage() {
           <div className="login-header-logo">
             <div className="logo-icon"></div>
             <span>AMS DESIGN</span>
+            <Link href="/" className="homepage-btn">
+              ← Homepage
+            </Link>
           </div>
 
           <div className="login-form-wrapper">
@@ -115,7 +119,7 @@ export default function LoginPage() {
 
           <div className="welcome-text">
             <h1>Welcome.</h1>
-            <p>Experience seamless attendance tracking with our smart, dynamic QR-based monitoring system optimized for modern campuses.</p>
+            <p>Experience seamless attendance tracking with our smart, AI-powered facial recognition system optimized for modern campuses.</p>
           </div>
 
           {/* Animated Background Blob Motion behind right side */}

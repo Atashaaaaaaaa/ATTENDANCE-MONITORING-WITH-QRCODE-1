@@ -1,15 +1,15 @@
+"use client";
 import Sidebar from "@/components/Sidebar";
-
-export const metadata = {
-  title: "Student Portal - AMS",
-  description: "View your attendance, schedule, and profile as a student.",
-};
+import DashboardHeader from "@/components/DashboardHeader";
 
 export default function StudentLayout({ children }) {
   return (
     <div className="dashboard-layout">
       <Sidebar role="student" />
-      <main className="dashboard-main">{children}</main>
+      <div className="dashboard-content">
+        <DashboardHeader />
+        <main className="dashboard-main">{children}</main>
+      </div>
     </div>
   );
 }

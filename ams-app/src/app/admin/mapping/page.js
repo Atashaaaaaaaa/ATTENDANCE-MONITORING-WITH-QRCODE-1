@@ -4,10 +4,7 @@ import { collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase";
 
 export default function AdminMapping() {
-  const [mappings, setMappings] = useState([
-    { id: "m1", teacher: "John Doe", section: "G12 - ICT", subject: "Java Programming", schedule: "MWF 8:00 AM" },
-    { id: "m2", teacher: "Jane Smith", section: "G12 - STEM", subject: "General Physics", schedule: "TTH 1:00 PM" },
-  ]);
+  const [mappings, setMappings] = useState([]);
 
   const [formData, setFormData] = useState({
     teacher: "",
@@ -24,7 +21,7 @@ export default function AdminMapping() {
           setMappings(fetched);
         }
       } catch (e) {
-        // Use defaults
+        // Will populate when database is connected
       }
     };
     fetchMappings();
@@ -63,7 +60,7 @@ export default function AdminMapping() {
     <>
       <div className="page-header">
         <h1>Section Mapping</h1>
-        <p>Link teachers to specific sections and subjects for QR generation.</p>
+        <p>Link teachers to specific sections and subjects for face scan sessions.</p>
       </div>
 
       <div className="card">
@@ -82,8 +79,6 @@ export default function AdminMapping() {
                 required
               >
                 <option value="" disabled>Choose Teacher...</option>
-                <option>John Doe</option>
-                <option>Jane Smith</option>
               </select>
             </div>
 
@@ -96,9 +91,6 @@ export default function AdminMapping() {
                 required
               >
                 <option value="" disabled>Choose Section...</option>
-                <option>G12 - ICT</option>
-                <option>G12 - STEM</option>
-                <option>G11 - HUMSS</option>
               </select>
             </div>
 
@@ -137,19 +129,27 @@ export default function AdminMapping() {
             </tr>
           </thead>
           <tbody>
-            {mappings.map((map) => (
-              <tr key={map.id}>
-                <td style={{ fontWeight: 600 }}>{map.teacher}</td>
-                <td>{map.section}</td>
-                <td>{map.subject}</td>
-                <td>{map.schedule}</td>
-                <td>
-                  <button className="btn btn-red btn-sm" onClick={() => handleUnassign(map.id)}>
-                    Unassign
-                  </button>
+            {mappings.length === 0 ? (
+              <tr>
+                <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                  No section assignments yet. Use the form above to link teachers to sections.
                 </td>
               </tr>
-            ))}
+            ) : (
+              mappings.map((map) => (
+                <tr key={map.id}>
+                  <td style={{ fontWeight: 600 }}>{map.teacher}</td>
+                  <td>{map.section}</td>
+                  <td>{map.subject}</td>
+                  <td>{map.schedule}</td>
+                  <td>
+                    <button className="btn btn-red btn-sm" onClick={() => handleUnassign(map.id)}>
+                      Unassign
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

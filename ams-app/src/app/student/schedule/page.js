@@ -1,37 +1,8 @@
 "use client";
 
 export default function StudentSchedule() {
-  const todayClasses = [
-    { time: "08:00 AM - 10:00 AM", name: "Java Programming", room: "Room: Lab 402", type: "morning" },
-    { time: "01:00 PM - 03:00 PM", name: "Web Development", room: "Room: CL 105", type: "afternoon" },
-  ];
-
-  const schedule = [
-    {
-      time: "08:00 - 10:00",
-      mon: "Java (Lab 402)",
-      tue: null,
-      wed: "Java (Lab 402)",
-      thu: null,
-      fri: "Java (Lab 402)",
-    },
-    {
-      time: "10:00 - 12:00",
-      mon: null,
-      tue: "3D Animation",
-      wed: null,
-      thu: "3D Animation",
-      fri: null,
-    },
-    {
-      time: "01:00 - 03:00",
-      mon: "Web Dev",
-      tue: null,
-      wed: "Web Dev",
-      thu: null,
-      fri: "Web Dev",
-    },
-  ];
+  const todayClasses = [];
+  const schedule = [];
 
   return (
     <>
@@ -46,13 +17,19 @@ export default function StudentSchedule() {
         </div>
 
         <div className="today-classes">
-          {todayClasses.map((cls, idx) => (
-            <div className={`today-class-card ${cls.type}`} key={idx}>
-              <div className="today-class-time">{cls.time}</div>
-              <div className="today-class-name">{cls.name}</div>
-              <div className="today-class-room">{cls.room}</div>
-            </div>
-          ))}
+          {todayClasses.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", padding: "10px" }}>
+              No classes scheduled for today.
+            </p>
+          ) : (
+            todayClasses.map((cls, idx) => (
+              <div className={`today-class-card ${cls.type}`} key={idx}>
+                <div className="today-class-time">{cls.time}</div>
+                <div className="today-class-name">{cls.name}</div>
+                <div className="today-class-room">{cls.room}</div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -73,27 +50,35 @@ export default function StudentSchedule() {
             </tr>
           </thead>
           <tbody>
-            {schedule.map((row, idx) => (
-              <tr key={idx}>
-                <td style={{ fontWeight: 600 }}>{row.time}</td>
-                {["mon", "tue", "wed", "thu", "fri"].map((day) => (
-                  <td key={day}>
-                    {row[day] ? (
-                      <div className="schedule-cell">{row[day]}</div>
-                    ) : (
-                      <span style={{ color: "var(--text-muted)" }}>—</span>
-                    )}
-                  </td>
-                ))}
+            {schedule.length === 0 ? (
+              <tr>
+                <td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                  No schedule data yet. Schedule will appear once the database is connected.
+                </td>
               </tr>
-            ))}
+            ) : (
+              schedule.map((row, idx) => (
+                <tr key={idx}>
+                  <td style={{ fontWeight: 600 }}>{row.time}</td>
+                  {["mon", "tue", "wed", "thu", "fri"].map((day) => (
+                    <td key={day}>
+                      {row[day] ? (
+                        <div className="schedule-cell">{row[day]}</div>
+                      ) : (
+                        <span style={{ color: "var(--text-muted)" }}>—</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
       <div className="info-card">
         <p>
-          <strong>📌 Note:</strong> Please arrive 5 minutes before the class starts to ensure successful QR scanning.
+          <strong>📌 Note:</strong> Please arrive 5 minutes before the class starts to ensure successful face scanning.
         </p>
       </div>
     </>

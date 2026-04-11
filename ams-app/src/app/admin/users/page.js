@@ -4,12 +4,7 @@ import { collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase";
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState([
-    { id: "2026-T-001", name: "John Doe", email: "john@dlsu.edu.ph", role: "Teacher", section: "G12-ICT", status: "active" },
-    { id: "2026-S-088", name: "Student A", email: "studenta@dlsu.edu.ph", role: "Student", section: "G12-ICT", status: "active" },
-    { id: "2026-S-089", name: "Student B", email: "studentb@dlsu.edu.ph", role: "Student", section: "G12-STEM", status: "active" },
-    { id: "2026-T-002", name: "Jane Smith", email: "jane@dlsu.edu.ph", role: "Teacher", section: "G12-STEM", status: "active" },
-  ]);
+  const [users, setUsers] = useState([]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -32,7 +27,7 @@ export default function AdminUsers() {
           setUsers(fetched);
         }
       } catch (e) {
-        // Use defaults
+        // Will populate when database is connected
       }
     };
     fetchUsers();
@@ -50,7 +45,6 @@ export default function AdminUsers() {
       const docRef = await addDoc(collection(db, "users"), newUser);
       setUsers([...users, { id: docRef.id, ...newUser }]);
     } catch (e) {
-      // Fallback to local state
       setUsers([...users, { id: `local-${Date.now()}`, ...newUser }]);
     }
 
@@ -167,26 +161,34 @@ export default function AdminUsers() {
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((user) => (
-              <tr key={user.id}>
-                <td style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>{user.id}</td>
-                <td style={{ fontWeight: 600 }}>{user.name}</td>
-                <td>{user.role}</td>
-                <td>{user.section || "—"}</td>
-                <td>
-                  <span className={`status-badge ${user.status || "active"}`}>
-                    <span className="status-dot"></span>
-                    {(user.status || "active").charAt(0).toUpperCase() + (user.status || "active").slice(1)}
-                  </span>
-                </td>
-                <td>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button className="btn btn-green btn-sm">Edit</button>
-                    <button className="btn btn-red btn-sm" onClick={() => handleDelete(user.id)}>Delete</button>
-                  </div>
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                  No users registered yet. Add users using the form above.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredUsers.map((user) => (
+                <tr key={user.id}>
+                  <td style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>{user.id}</td>
+                  <td style={{ fontWeight: 600 }}>{user.name}</td>
+                  <td>{user.role}</td>
+                  <td>{user.section || "—"}</td>
+                  <td>
+                    <span className={`status-badge ${user.status || "active"}`}>
+                      <span className="status-dot"></span>
+                      {(user.status || "active").charAt(0).toUpperCase() + (user.status || "active").slice(1)}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button className="btn btn-green btn-sm">Edit</button>
+                      <button className="btn btn-red btn-sm" onClick={() => handleDelete(user.id)}>Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

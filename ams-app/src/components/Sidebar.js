@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useState } from "react";
 
 const navConfigs = {
   admin: {
@@ -73,6 +74,7 @@ export default function Sidebar({ role }) {
   const pathname = usePathname();
   const router = useRouter();
   const config = navConfigs[role];
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -86,39 +88,56 @@ export default function Sidebar({ role }) {
   if (!config) return null;
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
+      {/* Logo Area */}
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">{config.icon}</div>
-          <div>
-            <span className="sidebar-logo-text">{config.title}</span>
-            <span className="sidebar-logo-role">{config.role}</span>
-          </div>
+          {!collapsed && (
+            <div>
+              <span className="sidebar-logo-text">{config.title}</span>
+              <span className="sidebar-logo-role">{config.role}</span>
+            </div>
+          )}
         </div>
+        <button
+          className="sidebar-collapse-btn"
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label="Toggle sidebar"
+        >
+          {collapsed ? "›" : "‹"}
+        </button>
       </div>
 
+      {/* Navigation */}
       <nav className="sidebar-nav">
         {config.sections.map((section, idx) => (
           <div key={idx}>
-            <div className="sidebar-nav-label">{section.label}</div>
-            {section.links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`sidebar-link ${pathname === link.href ? "active" : ""}`}
-              >
-                <span className="sidebar-link-icon">{link.icon}</span>
-                {link.label}
-              </Link>
-            ))}
+            {!collapsed && <div className="sidebar-nav-label">{section.label}</div>}
+            {section.links.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`sidebar-link ${isActive ? "active" : ""}`}
+                  title={collapsed ? link.label : undefined}
+                >
+                  <span className="sidebar-link-icon">{link.icon}</span>
+                  {!collapsed && <span className="sidebar-link-text">{link.label}</span>}
+                  {isActive && <span className="sidebar-active-indicator"></span>}
+                </Link>
+              );
+            })}
           </div>
         ))}
       </nav>
 
+      {/* Footer */}
       <div className="sidebar-footer">
-        <button className="sidebar-logout" onClick={handleLogout}>
+        <button className="sidebar-logout" onClick={handleLogout} title={collapsed ? "Logout" : undefined}>
           <span className="sidebar-link-icon">🚪</span>
-          Logout
+          {!collapsed && "Logout"}
         </button>
       </div>
     </aside>

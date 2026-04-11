@@ -1,15 +1,15 @@
+"use client";
 import Sidebar from "@/components/Sidebar";
-
-export const metadata = {
-  title: "Teacher Dashboard - AMS",
-  description: "Manage class attendance, schedules, and reports as a teacher.",
-};
+import DashboardHeader from "@/components/DashboardHeader";
 
 export default function TeacherLayout({ children }) {
   return (
     <div className="dashboard-layout">
       <Sidebar role="teacher" />
-      <main className="dashboard-main">{children}</main>
+      <div className="dashboard-content">
+        <DashboardHeader />
+        <main className="dashboard-main">{children}</main>
+      </div>
     </div>
   );
 }
