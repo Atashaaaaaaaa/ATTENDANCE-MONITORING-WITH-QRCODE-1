@@ -1,73 +1,45 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 import "./login.css";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { signIn, userRole, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (userRole) {
+      const dashboardPath = {
+        admin: '/admin/overview',
+        teacher: '/teacher/dashboard',
+        student: '/student/attendance',
+      };
+      router.push(dashboardPath[userRole] || '/login');
+    }
+  }, [userRole, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // Hardcoded bypass for demo/testing
-    const loginEmail = email.toLowerCase().trim();
-    if (loginEmail === "admin" || loginEmail === "admin@ams.com") {
-      if (password === "admin123") {
-        router.push("/admin/profile");
-        return;
-      } else {
-        setError("Invalid password for admin account.");
-        setLoading(false);
-        return;
-      }
-    }
-    if (loginEmail === "teacher" || loginEmail === "teacher@ams.com") {
-      if (password === "teacher123") {
-        router.push("/teacher/profile");
-        return;
-      } else {
-        setError("Invalid password for teacher account.");
-        setLoading(false);
-        return;
-      }
-    }
-    if (loginEmail === "student" || loginEmail === "student@ams.com") {
-      if (password === "student123") {
-        router.push("/student/profile");
-        return;
-      } else {
-        setError("Invalid password for student account.");
-        setLoading(false);
-        return;
-      }
-    }
-
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      const userDoc = await getDoc(doc(db, "users", cred.user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        router.push(`/${userData.role}/profile`);
-      } else {
-        router.push(`/student/profile`); // Default fallback
+      if (!email.trim()) {
+        throw new Error("Email is required");
       }
+      if (!password) {
+        throw new Error("Password is required");
+      }
+
+      await signIn(email, password);
     } catch (err) {
-      if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
-        setError("Invalid email or password.");
-      } else if (err.code === "auth/user-not-found") {
-        setError("No account found.");
-      } else {
-        setError("Authentication error. Please try again.");
-      }
+      setError(err.message || "Authentication failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -123,7 +95,7 @@ export default function LoginPage() {
                 />
               </div>
 
-              <button type="submit" className="login-btn" disabled={loading}>
+              <button type="submit" className="login-btn" disabled={loading || authLoading}>
                 {loading ? "Wait..." : "LOGIN"}
               </button>
 
@@ -140,7 +112,6 @@ export default function LoginPage() {
 
         {/* RIGHT SIDE */}
         <div className="login-right">
-
 
           <div className="welcome-text">
             <h1>Welcome.</h1>
