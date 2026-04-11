@@ -6,20 +6,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #2F3B2C; /* Dark green outer space */
+  background-color: white;
   font-family: 'Inter', sans-serif;
-  padding: 30px;
+  padding: 0;
 }
 
 .login-container {
   display: flex;
   width: 100%;
-  max-width: 1050px;
-  height: 650px; /* Fixed height for the unified box */
+  height: 100vh;
   background: white;
-  border-radius: 28px;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
 }
 
 /* LEFT SIDE */
@@ -191,19 +190,7 @@
   color: #2C3E2D;
 }
 
-.form-dots {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 50px;
-}
 
-.form-dots span {
-  width: 6px;
-  height: 6px;
-  background: #111;
-  border-radius: 50%;
-}
 
 .login-error {
   color: #b91c1c;
@@ -280,60 +267,12 @@
   100% { transform: scale(1) translate(-10%, -5%); }
 }
 
-.visual-nav {
-  position: relative;
-  z-index: 10;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 25px;
-}
-
-.visual-nav a {
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-decoration: none;
-  text-transform: uppercase;
-}
-
-.visual-nav a:hover {
-  color: white;
-}
-
-.nav-signin {
-  background: #2C3E2D; /* Dark badge overlay */
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  cursor: pointer;
-  letter-spacing: 0.5px;
-}
-
-.nav-menu {
-  background: none;
-  border: none;
-  color: white;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.nav-menu svg {
-  width: 20px;
-  height: 20px;
-}
-
 .welcome-text {
   position: relative;
   z-index: 10;
   margin-top: auto;
   margin-bottom: 40px;
-  margin-left: auto; /* Pushed to the right */
+  margin-left: auto;
   color: white;
   max-width: 400px;
 }
@@ -351,22 +290,6 @@
   line-height: 1.6;
   opacity: 0.9;
   margin-bottom: 25px;
-}
-
-.signup-prompt {
-  font-size: 0.75rem;
-  opacity: 0.9;
-}
-
-.signup-prompt a {
-  color: white;
-  font-weight: 800;
-  text-decoration: none;
-  margin-left: 5px;
-}
-
-.signup-prompt a:hover {
-  text-decoration: underline;
 }
 
 @media (max-width: 900px) {

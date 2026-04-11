@@ -133,34 +133,18 @@ export default function LoginPage() {
                 </label>
                 <a href="#" className="forgot-link">Forgot your password?</a>
               </div>
-              
-              <div className="form-dots">
-                <span></span><span></span><span></span>
-              </div>
+
             </form>
           </div>
         </div>
 
         {/* RIGHT SIDE */}
         <div className="login-right">
-          
-          <div className="visual-nav">
-             <a href="#">ABOUT</a>
-             <a href="#">DOWNLOAD</a>
-             <a href="#">PROMO</a>
-             <a href="#">CONTACT</a>
-             <button className="nav-signin">SIGN IN</button>
-             <button className="nav-menu">
-               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-             </button>
-          </div>
+
 
           <div className="welcome-text">
             <h1>Welcome.</h1>
             <p>Experience seamless attendance tracking with our smart, dynamic QR-based monitoring system optimized for modern campuses.</p>
-            <div className="signup-prompt">
-              Not a member? <a href="#">Sign up now</a>
-            </div>
           </div>
 
           {/* Animated Background Blob Motion behind right side */}
