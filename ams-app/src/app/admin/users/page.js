@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { collection, getDocs, deleteDoc, doc, setDoc } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc, setDoc, updateDoc } from "firebase/firestore";
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { db, firebaseConfig } from "@/lib/firebase";
@@ -79,6 +79,18 @@ export default function AdminUsers() {
   // Form submission state
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editFormData, setEditFormData] = useState({ name: "", section: "" });
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSuccess, setEditSuccess] = useState("");
+  const [resetSent, setResetSent] = useState(false);
+  const [resetSending, setResetSending] = useState(false);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetCopied, setResetCopied] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -163,6 +175,98 @@ export default function AdminUsers() {
       navigator.clipboard.writeText(createdUser.password);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // ── Edit Handlers ──
+  const handleEdit = (user) => {
+    setEditingUser(user);
+    setEditFormData({
+      name: user.name || user.fullName || "",
+      section: user.section || "",
+    });
+    setEditError("");
+    setEditSuccess("");
+    setResetSent(false);
+    setResetPassword("");
+    setResetCopied(false);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+    setEditSubmitting(true);
+    setEditError("");
+    setEditSuccess("");
+
+    try {
+      const userDocRef = doc(db, "users", editingUser.id);
+      await updateDoc(userDocRef, {
+        name: editFormData.name,
+        fullName: editFormData.name,
+        section: editFormData.section,
+      });
+
+      // Update local state
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === editingUser.id
+            ? { ...u, name: editFormData.name, fullName: editFormData.name, section: editFormData.section }
+            : u
+        )
+      );
+
+      setEditSuccess("Changes saved successfully!");
+      setTimeout(() => {
+        setShowEditModal(false);
+        setEditingUser(null);
+        setEditSuccess("");
+      }, 1200);
+    } catch (err) {
+      console.error("Error updating user:", err);
+      setEditError(err.message || "Failed to save changes. Please try again.");
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!editingUser?.id) return;
+    setResetSending(true);
+    setEditError("");
+    setResetPassword("");
+    setResetCopied(false);
+
+    const newPassword = generatePassword();
+
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: editingUser.id, newPassword }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to reset password.");
+      }
+
+      setResetPassword(newPassword);
+      setResetSent(true);
+    } catch (err) {
+      console.error("Error resetting password:", err);
+      setEditError(err.message || "Failed to reset password. Please try again.");
+    } finally {
+      setResetSending(false);
+    }
+  };
+
+  const handleCopyResetPassword = () => {
+    if (resetPassword) {
+      navigator.clipboard.writeText(resetPassword);
+      setResetCopied(true);
+      setTimeout(() => setResetCopied(false), 2000);
     }
   };
 
@@ -674,7 +778,7 @@ export default function AdminUsers() {
                   </td>
                   <td>
                     <div style={{ display: "flex", gap: "8px" }}>
-                      <button className="btn btn-green btn-sm">Edit</button>
+                      <button className="btn btn-green btn-sm" onClick={() => handleEdit(user)}>Edit</button>
                       <button className="btn btn-red btn-sm" onClick={() => handleDelete(user.id)}>Delete</button>
                     </div>
                   </td>
@@ -703,6 +807,304 @@ export default function AdminUsers() {
           )}
         </div>
       </div>
+
+      {/* ── Edit User Modal ── */}
+      {showEditModal && editingUser && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            animation: "fadeIn 0.25s ease",
+          }}
+          onClick={() => setShowEditModal(false)}
+        >
+          <div
+            style={{
+              background: "var(--bg-card)",
+              borderRadius: "var(--radius-xl)",
+              padding: "36px 32px",
+              maxWidth: "480px",
+              width: "90%",
+              boxShadow: "var(--shadow-xl)",
+              animation: "fadeInUp 0.35s ease",
+              position: "relative",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowEditModal(false)}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                background: "none",
+                border: "none",
+                fontSize: "1.2rem",
+                cursor: "pointer",
+                color: "var(--text-muted)",
+                lineHeight: 1,
+                padding: "4px",
+              }}
+            >
+              ✕
+            </button>
+
+            {/* Header */}
+            <div
+              style={{
+                width: "56px",
+                height: "56px",
+                borderRadius: "50%",
+                background: "var(--accent-soft)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.6rem",
+                margin: "0 auto 16px",
+              }}
+            >
+              ✏️
+            </div>
+            <h3
+              style={{
+                textAlign: "center",
+                fontSize: "1.2rem",
+                fontWeight: 700,
+                marginBottom: "6px",
+                color: "var(--text-primary)",
+              }}
+            >
+              Edit User
+            </h3>
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: "0.85rem",
+                color: "var(--text-secondary)",
+                marginBottom: "24px",
+              }}
+            >
+              {editingUser.email}
+            </p>
+
+            {/* Error / Success messages */}
+            {editError && (
+              <div
+                style={{
+                  padding: "10px 16px",
+                  background: "var(--danger-bg)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--danger)",
+                  fontSize: "0.85rem",
+                  color: "var(--danger)",
+                  marginBottom: "16px",
+                  fontWeight: 500,
+                }}
+              >
+                ⚠ {editError}
+              </div>
+            )}
+            {editSuccess && (
+              <div
+                style={{
+                  padding: "10px 16px",
+                  background: "var(--success-bg)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-green)",
+                  fontSize: "0.85rem",
+                  color: "var(--primary-dark)",
+                  marginBottom: "16px",
+                  fontWeight: 500,
+                }}
+              >
+                ✅ {editSuccess}
+              </div>
+            )}
+
+            {/* Reset Password */}
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
+                  marginBottom: "8px",
+                }}
+              >
+                Reset Password
+              </label>
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={resetSending}
+                style={{
+                  width: "100%",
+                  padding: "10px 16px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-light)",
+                  background: "linear-gradient(135deg, var(--primary-darker), var(--primary-dark))",
+                  color: "#fff",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  cursor: resetSending ? "default" : "pointer",
+                  opacity: resetSending ? 0.7 : 1,
+                  transition: "var(--transition-fast)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  marginBottom: "8px",
+                }}
+              >
+                {resetSending ? "Generating..." : "🔑 Generate New Password"}
+              </button>
+
+              {/* Show generated password */}
+              {resetSent && resetPassword && (
+                <div
+                  style={{
+                    background: "linear-gradient(135deg, var(--primary-darker), var(--primary-dark))",
+                    borderRadius: "var(--radius-md)",
+                    padding: "14px 16px",
+                    color: "#fff",
+                    marginTop: "8px",
+                  }}
+                >
+                  <div style={{ fontSize: "0.75rem", opacity: 0.8, marginBottom: "6px" }}>
+                    🔑 New Password
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                    }}
+                  >
+                    <code
+                      style={{
+                        fontSize: "1.1rem",
+                        fontWeight: 700,
+                        letterSpacing: "1.5px",
+                        fontFamily: "'Courier New', monospace",
+                      }}
+                    >
+                      {resetPassword}
+                    </code>
+                    <button
+                      onClick={handleCopyResetPassword}
+                      style={{
+                        background: "rgba(255,255,255,0.2)",
+                        border: "1px solid rgba(255,255,255,0.3)",
+                        color: "#fff",
+                        padding: "6px 14px",
+                        borderRadius: "var(--radius-sm)",
+                        cursor: "pointer",
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
+                        transition: "var(--transition-fast)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {resetCopied ? "✓ Copied!" : "📋 Copy"}
+                    </button>
+                  </div>
+                  <p
+                    style={{
+                      fontSize: "0.75rem",
+                      opacity: 0.7,
+                      marginTop: "8px",
+                      marginBottom: 0,
+                    }}
+                  >
+                    Please share this password with the user securely.
+                  </p>
+                </div>
+              )}
+
+              {!resetSent && (
+                <p
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--text-muted)",
+                    marginTop: "4px",
+                  }}
+                >
+                  This will generate a new random password for this user.
+                </p>
+              )}
+            </div>
+
+            {/* Username */}
+            <div style={{ marginBottom: "16px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
+                  marginBottom: "8px",
+                }}
+              >
+                Username
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                value={editFormData.name}
+                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                placeholder="Enter username"
+                style={{ width: "100%" }}
+              />
+            </div>
+
+            {/* Section */}
+            <div style={{ marginBottom: "24px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
+                  marginBottom: "8px",
+                }}
+              >
+                Section
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                value={editFormData.section}
+                onChange={(e) => setEditFormData({ ...editFormData, section: e.target.value })}
+                placeholder="e.g. G12-ICT"
+                style={{ width: "100%" }}
+              />
+            </div>
+
+            {/* Save Changes Button */}
+            <button
+              onClick={handleSaveEdit}
+              disabled={editSubmitting}
+              className="btn btn-purple"
+              style={{
+                width: "100%",
+                justifyContent: "center",
+                opacity: editSubmitting ? 0.7 : 1,
+              }}
+            >
+              {editSubmitting ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
