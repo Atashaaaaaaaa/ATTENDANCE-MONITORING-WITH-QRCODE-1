@@ -1,5 +1,6 @@
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import GlobalGuard from "@/components/GlobalGuard";
 
 export const metadata = {
   title: "AMS - Attendance Monitoring System",
@@ -11,7 +12,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <AuthProvider>
-          {children}
+          <GlobalGuard>
+            {children}
+          </GlobalGuard>
         </AuthProvider>
       </body>
     </html>

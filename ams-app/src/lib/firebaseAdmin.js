@@ -1,15 +1,25 @@
 import admin from "firebase-admin";
 
 if (!admin.apps.length) {
-  // Initialize with service account credentials from environment variables
-  // If no service account is provided, use the project ID from the Firebase config
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "a-m-s-27607";
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  // Handle multiline private key from env var
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
     : null;
 
-  if (serviceAccount) {
+  if (clientEmail && privateKey) {
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      credential: admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+    });
+  } else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    // Fallback exactly as before for existing keys
+    admin.initializeApp({
+      credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)),
     });
   } else {
     // Fallback: initialize with project config (works with GOOGLE_APPLICATION_CREDENTIALS env var)

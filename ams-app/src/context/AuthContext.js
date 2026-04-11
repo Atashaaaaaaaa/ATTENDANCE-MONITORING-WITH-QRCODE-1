@@ -18,6 +18,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  const [userData, setUserData] = useState(null)
+  
   // Monitor auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -29,7 +31,9 @@ export const AuthProvider = ({ children }) => {
           const userDocSnap = await getDoc(userDocRef)
 
           if (userDocSnap.exists()) {
-            setUserRole(userDocSnap.data().role)
+            const data = userDocSnap.data();
+            setUserRole(data.role)
+            setUserData(data)
           }
         } catch (err) {
           console.error('Error fetching user role:', err)
@@ -38,6 +42,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         setUser(null)
         setUserRole(null)
+        setUserData(null)
       }
       setLoading(false)
     })
@@ -119,6 +124,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     userRole,
+    userData,
+    setUserData,
     loading,
     error,
     signUp,
