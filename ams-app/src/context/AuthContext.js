@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
       setError(null)
 
       // Hardcoded admin bypass
-      if (email === 'admin' && password === 'admin') {
+      if (email.trim().toLowerCase() === 'admin' && password === 'admin') {
         const mockUser = { uid: 'hardcoded-admin-id', email: 'admin' };
         setUser(mockUser);
         setUserRole('admin');
