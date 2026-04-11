@@ -97,7 +97,9 @@ export const AuthProvider = ({ children }) => {
       const userDocSnap = await getDoc(userDocRef)
 
       if (userDocSnap.exists()) {
-        setUserRole(userDocSnap.data().role)
+        const data = userDocSnap.data();
+        setUserRole(data.role)
+        setUserData(data)
       }
 
       setUser(currentUser)
