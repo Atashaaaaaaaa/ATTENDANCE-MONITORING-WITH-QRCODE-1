@@ -8,7 +8,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth'
  */
 export async function POST(request) {
   try {
-    const { email, password, role, fullName, adminUid } = await request.json()
+    const { email, password, role, fullName, section, department, adminUid } = await request.json()
 
     // Validate input
     if (!email || !password || !role || !fullName) {
@@ -20,7 +20,7 @@ export async function POST(request) {
 
     // Validate role
     const validRoles = ['admin', 'teacher', 'student']
-    if (!validRoles.includes(role)) {
+    if (!validRoles.includes(role.toLowerCase())) {
       return new Response(
         JSON.stringify({ error: 'Invalid role' }),
         { status: 400 }
@@ -38,6 +38,9 @@ export async function POST(request) {
       email: newUser.email,
       role: role,
       fullName: fullName,
+      section: section || '',
+      department: department || '',
+      status: 'active',
       createdAt: new Date(),
       createdBy: adminUid || 'system',
     })
@@ -49,6 +52,9 @@ export async function POST(request) {
           uid: newUser.uid,
           email: newUser.email,
           role: role,
+          fullName: fullName,
+          section: section || '',
+          department: department || '',
         },
       }),
       { status: 201 }

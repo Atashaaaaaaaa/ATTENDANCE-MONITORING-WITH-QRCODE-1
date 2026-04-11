@@ -11,7 +11,7 @@ export default function LandingPage() {
     <>
       <Navbar />
 
-      {/* ===== HERO SECTION ===== */}
+      {/* HERO SECTION */}
       <section className="hero" id="hero">
         <div className="hero-badge">
           <span className="hero-badge-dot"></span>
