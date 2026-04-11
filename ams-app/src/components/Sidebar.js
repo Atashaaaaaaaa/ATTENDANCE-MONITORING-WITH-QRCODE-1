@@ -1,9 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 const navConfigs = {
   admin: {
@@ -76,9 +75,11 @@ export default function Sidebar({ role }) {
   const config = navConfigs[role];
   const [collapsed, setCollapsed] = useState(false);
 
+  const { logout } = useAuth();
+
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
     } catch (e) {
       // Ignore errors
     }

