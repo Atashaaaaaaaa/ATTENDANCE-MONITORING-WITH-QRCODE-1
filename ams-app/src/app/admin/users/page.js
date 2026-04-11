@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, getDocs, deleteDoc, doc, setDoc } from "firebase/firestore";
+import { initializeApp, deleteApp } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { db, firebaseConfig } from "@/lib/firebase";
 
-// Generate a random password (8 chars: uppercase, lowercase, digits, special)
+// Generate a random password (10 chars: uppercase, lowercase, digits, special)
 function generatePassword(length = 10) {
   const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const lower = "abcdefghijklmnopqrstuvwxyz";
@@ -11,7 +13,6 @@ function generatePassword(length = 10) {
   const special = "!@#$%&*";
   const all = upper + lower + digits + special;
 
-  // Guarantee at least one of each type
   let password = [
     upper[Math.floor(Math.random() * upper.length)],
     lower[Math.floor(Math.random() * lower.length)],
@@ -30,6 +31,29 @@ function generatePassword(length = 10) {
   }
 
   return password.join("");
+}
+
+/**
+ * Create a Firebase Auth account using a SECONDARY app instance.
+ * This prevents the admin from being signed out when creating new users.
+ */
+async function createAuthAccount(email, password) {
+  // Create a temporary secondary Firebase app
+  const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp_" + Date.now());
+  const secondaryAuth = getAuth(secondaryApp);
+
+  try {
+    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const uid = userCredential.user.uid;
+
+    // Sign out from the secondary app so it doesn't hold credentials
+    await signOut(secondaryAuth);
+
+    return uid;
+  } finally {
+    // Always clean up the secondary app
+    await deleteApp(secondaryApp);
+  }
 }
 
 export default function AdminUsers() {
@@ -80,47 +104,45 @@ export default function AdminUsers() {
     setSubmitting(true);
 
     const defaultPassword = generatePassword();
+    // Store role as lowercase to match login routing ("teacher", "student")
+    const roleLower = formData.role.toLowerCase();
 
     try {
-      // Call the API to create a real Firebase Auth account + Firestore profile
-      const res = await fetch("/api/auth/create-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: defaultPassword,
-          role: formData.role,
-          fullName: formData.name,
-          section: formData.section,
-          department: formData.department,
-        }),
-      });
+      // 1) Create a real Firebase Auth account using a secondary app
+      const uid = await createAuthAccount(formData.email, defaultPassword);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create user");
-      }
-
-      // Add the new user to the local list
-      const newUser = {
-        id: data.user.uid,
-        name: formData.name,
+      // 2) Save the user profile to Firestore (keyed by the Auth UID)
+      const userDocRef = doc(db, "users", uid);
+      const userData = {
+        uid: uid,
         email: formData.email,
-        role: formData.role,
-        section: formData.section,
-        department: formData.department,
+        fullName: formData.name,
+        name: formData.name,
+        role: roleLower,
+        section: formData.section || "",
+        department: formData.department || "",
         status: "active",
         createdAt: new Date().toISOString(),
       };
+      await setDoc(userDocRef, userData);
 
-      setUsers([...users, newUser]);
-      setCreatedUser({ ...newUser, password: defaultPassword });
+      // 3) Update the local list
+      setUsers([...users, { id: uid, ...userData }]);
+      setCreatedUser({ ...userData, password: defaultPassword });
       setShowSuccess(true);
       setCopied(false);
       setFormData({ name: "", email: "", role: "", section: "", department: "" });
     } catch (err) {
-      setFormError(err.message || "Something went wrong. Please try again.");
+      console.error("Error creating user:", err);
+      if (err.code === "auth/email-already-in-use") {
+        setFormError("This email is already registered.");
+      } else if (err.code === "auth/weak-password") {
+        setFormError("Password is too weak. Please try again.");
+      } else if (err.code === "auth/invalid-email") {
+        setFormError("Invalid email address.");
+      } else {
+        setFormError(err.message || "Something went wrong. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -150,13 +172,19 @@ export default function AdminUsers() {
 
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
-      u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.id?.toLowerCase().includes(searchQuery.toLowerCase());
+      (u.name || u.fullName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.id || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = roleFilter === "All" || u.role === roleFilter;
     const matchesSection = sectionFilter === "All" || u.section === sectionFilter;
     return matchesSearch && matchesRole && matchesSection;
   });
+
+  // Helper to display role nicely (capitalize first letter)
+  const displayRole = (role) => {
+    if (!role) return "—";
+    return role.charAt(0).toUpperCase() + role.slice(1);
+  };
 
   return (
     <>
@@ -352,7 +380,7 @@ export default function AdminUsers() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                 <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Role</span>
-                <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{createdUser.role}</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{displayRole(createdUser.role)}</span>
               </div>
               {createdUser.section && (
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
@@ -450,7 +478,7 @@ export default function AdminUsers() {
               <option value="All">All Roles</option>
               {uniqueRoles.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {displayRole(r)}
                 </option>
               ))}
             </select>
@@ -513,7 +541,7 @@ export default function AdminUsers() {
                   fontWeight: 600,
                 }}
               >
-                Role: {roleFilter}
+                Role: {displayRole(roleFilter)}
                 <button
                   onClick={() => setRoleFilter("All")}
                   style={{
@@ -609,7 +637,7 @@ export default function AdminUsers() {
                   <td style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
                     {user.id.length > 10 ? user.id.slice(0, 10) + "…" : user.id}
                   </td>
-                  <td style={{ fontWeight: 600 }}>{user.name}</td>
+                  <td style={{ fontWeight: 600 }}>{user.name || user.fullName}</td>
                   <td style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{user.email}</td>
                   <td>
                     <span
@@ -620,20 +648,20 @@ export default function AdminUsers() {
                         fontSize: "0.78rem",
                         fontWeight: 600,
                         background:
-                          user.role === "Teacher"
+                          user.role === "teacher" || user.role === "Teacher"
                             ? "var(--info-bg)"
-                            : user.role === "Student"
+                            : user.role === "student" || user.role === "Student"
                             ? "var(--accent-soft)"
                             : "var(--warning-bg)",
                         color:
-                          user.role === "Teacher"
+                          user.role === "teacher" || user.role === "Teacher"
                             ? "var(--info)"
-                            : user.role === "Student"
+                            : user.role === "student" || user.role === "Student"
                             ? "var(--primary)"
                             : "var(--warning)",
                       }}
                     >
-                      {user.role}
+                      {displayRole(user.role)}
                     </span>
                   </td>
                   <td>{user.section || "—"}</td>
