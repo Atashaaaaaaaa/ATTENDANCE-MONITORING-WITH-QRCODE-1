@@ -49,7 +49,6 @@ export default function LoginPage() {
   return (
     <div className="login-wrapper">
       <div className="login-container">
-        
         {/* LEFT SIDE */}
         <div className="login-left">
           <div className="login-header-logo">
