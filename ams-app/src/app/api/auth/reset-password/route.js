@@ -1,4 +1,4 @@
-import { adminAuth } from "@/lib/firebaseAdmin";
+import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
 
 /**
  * POST /api/auth/reset-password
@@ -27,6 +27,11 @@ export async function POST(request) {
     // Update the user's password using Firebase Admin SDK
     await adminAuth.updateUser(uid, {
       password: newPassword,
+    });
+
+    // Enforce password change upon next login
+    await adminDb.collection("users").doc(uid).update({
+      forcePasswordChange: true,
     });
 
     return new Response(

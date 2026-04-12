@@ -134,6 +134,7 @@ export default function AdminUsers() {
         section: formData.section || "",
         department: formData.department || "",
         status: "active",
+        forcePasswordChange: true,
         createdAt: new Date().toISOString(),
       };
       await setDoc(userDocRef, userData);
