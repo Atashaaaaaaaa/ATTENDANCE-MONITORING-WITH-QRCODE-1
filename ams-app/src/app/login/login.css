@@ -384,7 +384,84 @@
     width: 100%;
     padding: 40px;
   }
-  .login-right {
-    display: none;
-  }
+}
+
+/* FORGOT PASSWORD MODAL */
+.forgot-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+.forgot-modal-content {
+  background: white;
+  padding: 30px 40px;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+}
+
+.forgot-modal-content .modal-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.forgot-modal-content h3 {
+  color: #111;
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 15px;
+}
+
+.forgot-modal-content p {
+  color: #555;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 25px;
+}
+
+.forgot-modal-content strong {
+  display: block;
+  margin-top: 10px;
+  color: #4A7C59;
+  font-size: 0.95rem;
+}
+
+.close-modal-btn {
+  background: #4A7C59;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 10px 24px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+  background: #3D6A4C;
+  transform: translateY(-1px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [showForgotModal, setShowForgotModal] = useState(false);
   // Redirect if already authenticated
   useEffect(() => {
     if (userRole) {
@@ -107,7 +107,7 @@ export default function LoginPage() {
                 <label className="remember-me">
                   <input type="radio" name="remember" /> <span>Remember me</span>
                 </label>
-                <a href="#" className="forgot-link">Forgot your password?</a>
+                <span className="forgot-link" style={{cursor: 'pointer'}} onClick={() => setShowForgotModal(true)}>Forgot your password?</span>
               </div>
 
             </form>
@@ -131,6 +131,22 @@ export default function LoginPage() {
         </div>
 
       </div>
+
+      {/* FORGOT PASSWORD MODAL */}
+      {showForgotModal && (
+        <div className="forgot-modal-overlay" onClick={() => setShowForgotModal(false)}>
+          <div className="forgot-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-icon">🔒</div>
+            <h3>Password Reset</h3>
+            <div style={{color: '#555', fontSize: '0.85rem', lineHeight: '1.5', marginBottom: '25px'}}>
+              Please contact your System Administrator to request a password reset for your account.<br /><br />
+              <strong style={{color: '#4A7C59', fontSize: '0.95rem'}}>admin@dlsu.edu.ph</strong>
+            </div>
+            <button className="close-modal-btn" onClick={() => setShowForgotModal(false)}>Got it</button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
