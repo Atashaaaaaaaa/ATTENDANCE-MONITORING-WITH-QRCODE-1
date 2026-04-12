@@ -1,6 +1,4 @@
-import { db, auth } from '@/lib/firebase'
-import { doc, setDoc, getDoc } from 'firebase/firestore'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { adminAuth, adminDb } from '@/lib/firebaseAdmin'
 
 /**
  * POST /api/auth/create-user
@@ -27,20 +25,26 @@ export async function POST(request) {
       )
     }
 
-    // Create user in Firebase Auth
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-    const newUser = userCredential.user
+    // Create user in Firebase Auth using Admin SDK
+    const userRecord = await adminAuth.createUser({
+      email,
+      password,
+      displayName: fullName,
+    })
+    
+    // Set custom claims for role-based access if needed later
+    // await adminAuth.setCustomUserClaims(userRecord.uid, { role: role.toLowerCase() });
 
-    // Save user data to Firestore
-    const userRef = doc(db, 'users', newUser.uid)
-    await setDoc(userRef, {
-      uid: newUser.uid,
-      email: newUser.email,
+    // Save user data to Firestore using Admin SDK
+    await adminDb.collection('users').doc(userRecord.uid).set({
+      uid: userRecord.uid,
+      email: userRecord.email,
       role: role,
       fullName: fullName,
       section: section || '',
       department: department || '',
       status: 'active',
+      forcePasswordChange: true, // Force user to change password on first login
       createdAt: new Date(),
       createdBy: adminUid || 'system',
     })
@@ -49,8 +53,8 @@ export async function POST(request) {
       JSON.stringify({
         message: 'User created successfully',
         user: {
-          uid: newUser.uid,
-          email: newUser.email,
+          uid: userRecord.uid,
+          email: userRecord.email,
           role: role,
           fullName: fullName,
           section: section || '',

@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { hasRole } from '@/lib/authUtils'
+import ForcePasswordChange from '@/components/ForcePasswordChange'
 
 /**
  * Higher-order component to protect routes
@@ -47,8 +48,20 @@ export const withProtectedRoute = (Component, requiredRole) => {
       return null
     }
 
-    // Render protected component
-    return <Component {...props} />
+    // Check if user is forced to change password
+    const { userData } = useAuth()
+    const isForcedToChangePassword = userData?.forcePasswordChange === true;
+
+    // Render protected component, optionally wrapped or replaced by the forced password change
+    return (
+      <>
+        {isForcedToChangePassword ? (
+          <ForcePasswordChange />
+        ) : (
+          <Component {...props} />
+        )}
+      </>
+    )
   }
 }
 
@@ -59,7 +72,7 @@ export const withProtectedRoute = (Component, requiredRole) => {
  */
 export const useRouteGuard = (requiredRole) => {
   const router = useRouter()
-  const { user, userRole, loading } = useAuth()
+  const { user, userRole, loading, userData } = useAuth()
 
   useEffect(() => {
     if (!loading) {
@@ -76,5 +89,6 @@ export const useRouteGuard = (requiredRole) => {
     userRole,
     loading,
     isAuthorized: !!user && hasRole(userRole, requiredRole),
+    isForcedToChangePassword: userData?.forcePasswordChange === true,
   }
 }
