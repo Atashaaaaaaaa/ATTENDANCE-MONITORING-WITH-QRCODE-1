@@ -13,25 +13,27 @@ export default function LandingPage() {
 
       {/* HERO SECTION */}
       <section className="hero" id="hero">
-        <div className="hero-badge">
-          <span className="hero-badge-dot"></span>
-          Smart Attendance. Bigger Possibilities.
-        </div>
+        <div className="hero-content">
+          <div className="hero-badge">
+            <span className="hero-badge-dot"></span>
+            Smart Attendance. Bigger Possibilities.
+          </div>
 
-        <h1>Maximize the Power of Your Attendance System</h1>
+          <h1>Maximize the Power of Your Attendance System</h1>
 
-        <p className="hero-subtitle">
-          Leverage cutting-edge facial recognition technology to automate, track, and manage
-          attendance — no paperwork required.
-        </p>
+          <p className="hero-subtitle">
+            Leverage cutting-edge facial recognition technology to automate, track, and manage
+            attendance — no paperwork required.
+          </p>
 
-        <div className="hero-buttons">
-          <Link href="/login" className="btn-primary">
-            Get Started →
-          </Link>
-          <a href="#features" className="btn-secondary">
-            Learn More
-          </a>
+          <div className="hero-buttons">
+            <Link href="/login" className="btn-primary">
+              Get Started →
+            </Link>
+            <a href="#features" className="btn-secondary">
+              Learn More
+            </a>
+          </div>
         </div>
 
         {/* Dashboard Preview */}
@@ -86,8 +88,8 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: "20px", alignItems: "flex-start", flexWrap: "wrap" }}>
-                  <div style={{ flex: "1 1 250px" }}>
+                <div style={{ display: "flex", gap: "20px", alignItems: "flex-start", flexWrap: "wrap", width: "100%" }}>
+                  <div style={{ flex: "1 1 100%", minWidth: "0" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                       <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Attendance Insight</span>
                       <div style={{ display: "flex", gap: "6px" }}>
@@ -108,7 +110,7 @@ export default function LandingPage() {
                       ))}
                     </div>
                   </div>
-                  <div style={{ flex: "1 1 150px", textAlign: "right", paddingRight: "10px" }}>
+                  <div style={{ flex: "1 1 100%", textAlign: "right", paddingRight: "10px", minWidth: "0" }}>
                     <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginBottom: "4px" }}>Total Students</div>
                     <div style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.5px" }}>450</div>
                     <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginTop: "12px", marginBottom: "4px" }}>Active Today</div>
@@ -241,22 +243,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ===== INTEGRATIONS SECTION ===== */}
-      <section className="integrations-section" id="integrations">
-        <span className="section-badge">Ecosystem</span>
-        <h2 className="section-title">
-          Connect with the<br />tools you love
-        </h2>
-        <p className="section-subtitle">
-          Seamlessly integrate AMS with your existing school platforms, process
-          attendance efficiently, and accelerate academic operations.
-        </p>
-
-        <Link href="/login" className="btn btn-purple" style={{ borderRadius: "999px", padding: "12px 28px" }}>
-          Explore Now →
-        </Link>
-      </section>
-
       {/* ===== FOOTER ===== */}
       <footer className="footer" id="footer">
         <div className="footer-logo">⚡ AMS</div>
@@ -268,7 +254,7 @@ export default function LandingPage() {
           <li><a href="#hero">Home</a></li>
           <li><a href="#features">Features</a></li>
           <li><a href="#stats">About</a></li>
-          <li><a href="#integrations">Integrations</a></li>
+
         </ul>
         <div className="footer-bottom">
           © 2026 AMS - Attendance Monitoring System. All rights reserved.

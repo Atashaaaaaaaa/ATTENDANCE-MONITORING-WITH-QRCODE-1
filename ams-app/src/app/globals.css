@@ -403,16 +403,19 @@ img {
    HERO SECTION
    ============================================ */
 .hero {
-  min-height: 100vh;
   background: var(--bg-hero);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-content {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 100px 60px 40px;
-  position: relative;
-  overflow: hidden;
+  padding: 80px 60px 40px;
 }
 
 .hero::before {
@@ -520,12 +523,12 @@ img {
   transform: translateY(-2px);
 }
 
-/* Dashboard Preview in Hero */
 .hero-dashboard {
   position: relative;
   width: 100%;
   max-width: 950px;
   animation: fadeInUp 0.8s ease 0.3s both;
+  margin: 0 auto 100px;
 }
 
 .hero-dashboard-card {
@@ -2396,7 +2399,20 @@ img {
     flex-direction: row;
     display: flex;
     overflow-x: auto;
-    gap: 4px;
+    gap: 8px;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+  }
+
+  .hero-dashboard-sidebar::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome/Safari */
+  }
+
+  .hero-dash-nav-item {
+    flex-shrink: 0;
+    margin-bottom: 0;
+    white-space: nowrap;
   }
 
   .section-title {
