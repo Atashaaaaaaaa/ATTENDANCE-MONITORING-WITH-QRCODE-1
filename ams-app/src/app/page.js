@@ -36,96 +36,6 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Dashboard Preview */}
-        <div className="hero-dashboard">
-          <div className="hero-dashboard-card">
-            <div className="hero-dashboard-header">
-              <div>
-                <div className="hero-dashboard-title">📊 Dashboard</div>
-                <div className="hero-dashboard-subtitle">
-                  Real-time attendance overview
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <button className="btn-icon" aria-label="Share">📤</button>
-                <button className="btn-icon" aria-label="Notifications">🔔</button>
-                <Link href="/login" className="btn btn-purple btn-sm">📋 Report</Link>
-              </div>
-            </div>
-
-            <div className="hero-dashboard-body">
-              <div className="hero-dashboard-sidebar">
-                <div className="hero-dash-nav-item active">📊 Dashboard</div>
-                <div className="hero-dash-nav-item">💳 Attendance</div>
-                <div className="hero-dash-nav-item">📈 Analytics</div>
-                <div className="hero-dash-nav-item">🤳 Face Scan</div>
-                <div className="hero-dash-nav-item">📜 History</div>
-                <div className="hero-dash-nav-item">📱 Devices</div>
-              </div>
-
-              <div className="hero-dashboard-main">
-                <div className="hero-stats-row">
-                  <div className="hero-stat-card">
-                    <div className="hero-stat-label">Attendance Rate</div>
-                    <div className="hero-stat-value">
-                      88.91%
-                      <span className="hero-stat-badge up">↑ 2.4%</span>
-                    </div>
-                  </div>
-                  <div className="hero-stat-card">
-                    <div className="hero-stat-label">Present Today</div>
-                    <div className="hero-stat-value">
-                      88.91%
-                      <span className="hero-stat-badge up">↑ 1.2%</span>
-                    </div>
-                  </div>
-                  <div className="hero-stat-card">
-                    <div className="hero-stat-label">Absent Today</div>
-                    <div className="hero-stat-value">
-                      11.09%
-                      <span className="hero-stat-badge down">↓ 0.8%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: "20px", alignItems: "flex-start", flexWrap: "wrap", width: "100%" }}>
-                  <div style={{ flex: "1 1 100%", minWidth: "0" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                      <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Attendance Insight</span>
-                      <div style={{ display: "flex", gap: "6px" }}>
-                        <span style={{ width: "24px", height: "24px", borderRadius: "6px", background: "#F3F4F6", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem" }}>◀</span>
-                        <span style={{ width: "24px", height: "24px", borderRadius: "6px", background: "#F3F4F6", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem" }}>▶</span>
-                      </div>
-                    </div>
-                    {/* Chart placeholder bars */}
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "80px" }}>
-                      {[60, 80, 45, 90, 70, 85, 50, 75, 65, 95, 55, 88].map((h, i) => (
-                        <div key={i} style={{
-                          flex: 1,
-                          height: `${h}%`,
-                          background: i === 9 ? "linear-gradient(to top, #4A7C59, #6B9E78)" : "#E8F5E9",
-                          borderRadius: "4px",
-                          transition: "height 0.5s ease",
-                        }}></div>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ flex: "1 1 100%", textAlign: "right", paddingRight: "10px", minWidth: "0" }}>
-                    <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginBottom: "4px" }}>Total Students</div>
-                    <div style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.5px" }}>450</div>
-                    <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginTop: "12px", marginBottom: "4px" }}>Active Today</div>
-                    <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "8px" }}>
-                      <div style={{ flex: 1, height: "6px", background: "#E8F5E9", borderRadius: "99px", overflow: "hidden" }}>
-                        <div style={{ width: "85%", height: "100%", background: "linear-gradient(90deg, #4A7C59, #6B9E78)", borderRadius: "99px" }}></div>
-                      </div>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#4A7C59" }}>85%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* ===== FEATURES SECTION ===== */}
@@ -220,6 +130,98 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+
+        {/* Dashboard Preview */}
+        <div className="hero-dashboard">
+          <div className="hero-dashboard-card">
+            <div className="hero-dashboard-header">
+              <div>
+                <div className="hero-dashboard-title">📊 Dashboard</div>
+                <div className="hero-dashboard-subtitle">
+                  Real-time attendance overview
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <button className="btn-icon" aria-label="Share">📤</button>
+                <button className="btn-icon" aria-label="Notifications">🔔</button>
+                <Link href="/login" className="btn btn-purple btn-sm">📋 Report</Link>
+              </div>
+            </div>
+
+            <div className="hero-dashboard-body">
+              <div className="hero-dashboard-sidebar">
+                <div className="hero-dash-nav-item active">📊 Dashboard</div>
+                <div className="hero-dash-nav-item">💳 Attendance</div>
+                <div className="hero-dash-nav-item">📈 Analytics</div>
+                <div className="hero-dash-nav-item">🤳 Face Scan</div>
+                <div className="hero-dash-nav-item">📜 History</div>
+                <div className="hero-dash-nav-item">📱 Devices</div>
+              </div>
+
+              <div className="hero-dashboard-main">
+                <div className="hero-stats-row">
+                  <div className="hero-stat-card">
+                    <div className="hero-stat-label">Attendance Rate</div>
+                    <div className="hero-stat-value">
+                      88.91%
+                      <span className="hero-stat-badge up">↑ 2.4%</span>
+                    </div>
+                  </div>
+                  <div className="hero-stat-card">
+                    <div className="hero-stat-label">Present Today</div>
+                    <div className="hero-stat-value">
+                      88.91%
+                      <span className="hero-stat-badge up">↑ 1.2%</span>
+                    </div>
+                  </div>
+                  <div className="hero-stat-card">
+                    <div className="hero-stat-label">Absent Today</div>
+                    <div className="hero-stat-value">
+                      11.09%
+                      <span className="hero-stat-badge down">↓ 0.8%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "20px", alignItems: "flex-start", flexWrap: "wrap", width: "100%" }}>
+                  <div style={{ flex: "1 1 100%", minWidth: "0" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Attendance Insight</span>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <span style={{ width: "24px", height: "24px", borderRadius: "6px", background: "#F3F4F6", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem" }}>◀</span>
+                        <span style={{ width: "24px", height: "24px", borderRadius: "6px", background: "#F3F4F6", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem" }}>▶</span>
+                      </div>
+                    </div>
+                    {/* Chart placeholder bars */}
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "80px" }}>
+                      {[60, 80, 45, 90, 70, 85, 50, 75, 65, 95, 55, 88].map((h, i) => (
+                        <div key={i} style={{
+                          flex: 1,
+                          height: `${h}%`,
+                          background: i === 9 ? "linear-gradient(to top, #4A7C59, #6B9E78)" : "#E8F5E9",
+                          borderRadius: "4px",
+                          transition: "height 0.5s ease",
+                        }}></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ flex: "1 1 100%", textAlign: "right", paddingRight: "10px", minWidth: "0" }}>
+                    <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginBottom: "4px" }}>Total Students</div>
+                    <div style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.5px" }}>450</div>
+                    <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginTop: "12px", marginBottom: "4px" }}>Active Today</div>
+                    <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "8px" }}>
+                      <div style={{ flex: 1, height: "6px", background: "#E8F5E9", borderRadius: "99px", overflow: "hidden" }}>
+                        <div style={{ width: "85%", height: "100%", background: "linear-gradient(90deg, #4A7C59, #6B9E78)", borderRadius: "99px" }}></div>
+                      </div>
+                      <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#4A7C59" }}>85%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
       {/* ===== STATS SECTION ===== */}
       <section className="stats-section" id="stats">
