@@ -76,17 +76,17 @@ export default function TeacherReports() {
 
       <div className="stats-row">
         <div className="stat-card stat-green">
-          <div className="stat-card-icon">📊</div>
+
           <div className="stat-card-label">Average Attendance</div>
           <div className="stat-card-value" style={{ color: "var(--success)" }}>—</div>
         </div>
         <div className="stat-card stat-red">
-          <div className="stat-card-icon">📉</div>
+
           <div className="stat-card-label">Total Absences</div>
           <div className="stat-card-value" style={{ color: "var(--danger)" }}>—</div>
         </div>
         <div className="stat-card stat-blue">
-          <div className="stat-card-icon">⏰</div>
+
           <div className="stat-card-label">Total Late</div>
           <div className="stat-card-value" style={{ color: "var(--info)" }}>—</div>
         </div>
@@ -96,7 +96,7 @@ export default function TeacherReports() {
         <div className="card-header">
           <div className="card-title">Student Consistency</div>
           <button className="btn btn-outline btn-sm" onClick={handleExport}>
-            📥 Export to CSV
+            Export to CSV
           </button>
         </div>
 

@@ -8,20 +8,19 @@ const navConfigs = {
   admin: {
     title: "AMS",
     role: "Admin Panel",
-    icon: "⚡",
     sections: [
       {
         label: "Main",
         links: [
-          { href: "/admin/overview", icon: "📊", label: "System Overview" },
-          { href: "/admin/users", icon: "👥", label: "User Management" },
-          { href: "/admin/mapping", icon: "🔗", label: "Section Mapping" },
+          { href: "/admin/overview", icon: "", label: "System Overview" },
+          { href: "/admin/users", icon: "", label: "User Management" },
+          { href: "/admin/mapping", icon: "", label: "Section Mapping" },
         ],
       },
       {
         label: "Account",
         links: [
-          { href: "/admin/profile", icon: "👤", label: "Profile" },
+          { href: "/admin/profile", icon: "", label: "Profile" },
         ],
       },
     ],
@@ -29,27 +28,20 @@ const navConfigs = {
   teacher: {
     title: "AMS",
     role: "Teacher Portal",
-    icon: "📚",
+
     sections: [
       {
         label: "Attendance",
         links: [
-          { href: "/teacher/dashboard", icon: "📋", label: "Class Attendance" },
-          { href: "/teacher/schedule", icon: "📅", label: "Class Schedule" },
-          { href: "/teacher/reports", icon: "📈", label: "Reports" },
-        ],
-      },
-      {
-        label: "Management",
-        links: [
-          { href: "/teacher/mapping", icon: "🔗", label: "Section Mapping" },
-          { href: "/teacher/students", icon: "🎓", label: "My Students" },
+          { href: "/teacher/dashboard", icon: "", label: "Class Attendance" },
+          { href: "/teacher/schedule", icon: "", label: "Class Schedule" },
+          { href: "/teacher/reports", icon: "", label: "Reports" },
         ],
       },
       {
         label: "Account",
         links: [
-          { href: "/teacher/profile", icon: "👤", label: "Profile" },
+          { href: "/teacher/profile", icon: "", label: "Profile" },
         ],
       },
     ],
@@ -57,19 +49,19 @@ const navConfigs = {
   student: {
     title: "AMS",
     role: "Student Portal",
-    icon: "🎓",
+
     sections: [
       {
         label: "My Classes",
         links: [
-          { href: "/student/attendance", icon: "✅", label: "My Attendance" },
-          { href: "/student/schedule", icon: "📅", label: "Schedule" },
+          { href: "/student/attendance", icon: "", label: "My Attendance" },
+          { href: "/student/schedule", icon: "", label: "Schedule" },
         ],
       },
       {
         label: "Account",
         links: [
-          { href: "/student/profile", icon: "👤", label: "Profile" },
+          { href: "/student/profile", icon: "", label: "Profile" },
         ],
       },
     ],
@@ -144,7 +136,7 @@ export default function Sidebar({ role }) {
       {/* Footer */}
       <div className="sidebar-footer">
         <button className="sidebar-logout" onClick={handleLogout} title={collapsed ? "Logout" : undefined}>
-          <span className="sidebar-link-icon">🚪</span>
+          <span className="sidebar-link-icon"></span>
           {!collapsed && "Logout"}
         </button>
       </div>

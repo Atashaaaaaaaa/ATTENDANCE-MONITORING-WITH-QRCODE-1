@@ -13,7 +13,7 @@ export default function StudentSchedule() {
 
       <div className="card" style={{ borderLeft: "5px solid var(--warning)" }}>
         <div className="card-title" style={{ color: "#D35400", marginBottom: "16px" }}>
-          📅 Today&apos;s Classes
+          Today&apos;s Classes
         </div>
 
         <div className="today-classes">
@@ -78,7 +78,7 @@ export default function StudentSchedule() {
 
       <div className="info-card">
         <p>
-          <strong>📌 Note:</strong> Please arrive 5 minutes before the class starts to ensure successful face scanning.
+          <strong> Note:</strong> Please arrive 5 minutes before the class starts to ensure successful face scanning.
         </p>
       </div>
     </>

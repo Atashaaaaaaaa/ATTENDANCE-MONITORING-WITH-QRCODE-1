@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function AdminOverview() {
@@ -14,12 +14,18 @@ export default function AdminOverview() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const teachersSnap = await getDocs(collection(db, "teachers"));
-        const studentsSnap = await getDocs(collection(db, "students"));
+        const usersSnap = await getDocs(collection(db, "users"));
+        let teacherCount = 0;
+        let studentCount = 0;
+        usersSnap.forEach((doc) => {
+          const data = doc.data();
+          if (data.role === "teacher") teacherCount++;
+          if (data.role === "student") studentCount++;
+        });
         const sectionsSnap = await getDocs(collection(db, "sections"));
         setStats({
-          teachers: teachersSnap.size,
-          students: studentsSnap.size,
+          teachers: teacherCount,
+          students: studentCount,
           sections: sectionsSnap.size,
         });
       } catch (e) {
@@ -38,19 +44,16 @@ export default function AdminOverview() {
 
       <div className="stats-row">
         <div className="stat-card stat-purple">
-          <div className="stat-card-icon">👨‍🏫</div>
           <div className="stat-card-label">Total Teachers</div>
           <div className="stat-card-value">{stats.teachers}</div>
         </div>
 
         <div className="stat-card stat-blue">
-          <div className="stat-card-icon">🎓</div>
           <div className="stat-card-label">Total Students</div>
           <div className="stat-card-value">{stats.students}</div>
         </div>
 
         <div className="stat-card stat-orange">
-          <div className="stat-card-icon">📂</div>
           <div className="stat-card-label">Active Sections</div>
           <div className="stat-card-value">{stats.sections}</div>
         </div>

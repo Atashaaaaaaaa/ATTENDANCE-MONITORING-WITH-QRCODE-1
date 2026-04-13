@@ -29,14 +29,14 @@ export default function DashboardHeader() {
     <header className="dashboard-header">
       <div className="dashboard-header-left">
         <div className="dashboard-breadcrumb">
-          <span className="breadcrumb-home">🏠</span>
+          <span className="breadcrumb-home"></span>
           <span className="breadcrumb-sep">/</span>
           <span className="breadcrumb-parent">{pageInfo.breadcrumb}</span>
           <span className="breadcrumb-sep">/</span>
           <span className="breadcrumb-current">{pageInfo.title}</span>
         </div>
         <div className="dashboard-header-greeting">
-          {greeting}! 👋
+          {greeting}!
           <span className="header-date">{dateStr}</span>
         </div>
       </div>
@@ -44,7 +44,7 @@ export default function DashboardHeader() {
       <div className="dashboard-header-right">
         <div className={`header-search ${searchOpen ? "open" : ""}`}>
           <button className="header-icon-btn" onClick={() => setSearchOpen(!searchOpen)} aria-label="Search">
-            🔍
+
           </button>
           {searchOpen && (
             <input
@@ -57,7 +57,7 @@ export default function DashboardHeader() {
           )}
         </div>
         <button className="header-icon-btn" aria-label="Notifications">
-          🔔
+
           <span className="header-badge">3</span>
         </button>
         <button className="header-icon-btn" aria-label="Messages">
