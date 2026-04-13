@@ -410,7 +410,7 @@ img {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 120px 60px 80px;
+  padding: 100px 60px 40px;
   position: relative;
   overflow: hidden;
 }
@@ -451,7 +451,7 @@ img {
 }
 
 .hero h1 {
-  font-size: 4rem;
+  font-size: 3.5rem;
   font-weight: 800;
   color: var(--text-light);
   line-height: 1.1;
@@ -466,14 +466,14 @@ img {
   color: rgba(255, 255, 255, 0.7);
   max-width: 520px;
   line-height: 1.7;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
   animation: fadeInUp 0.7s ease 0.1s both;
 }
 
 .hero-buttons {
   display: flex;
   gap: 16px;
-  margin-bottom: 70px;
+  margin-bottom: 40px;
   animation: fadeInUp 0.7s ease 0.2s both;
 }
 
@@ -532,7 +532,7 @@ img {
   background: var(--bg-card);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl), 0 0 60px rgba(74, 124, 89, 0.1);
-  padding: 30px;
+  padding: 24px;
   position: relative;
   overflow: hidden;
 }
