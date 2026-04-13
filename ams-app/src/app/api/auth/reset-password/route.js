@@ -1,5 +1,6 @@
 import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
 
+export const dynamic = "force-dynamic";
 /**
  * POST /api/auth/reset-password
  * Reset a user's password using Firebase Admin SDK.

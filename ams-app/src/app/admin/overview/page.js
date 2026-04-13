@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function AdminOverview() {
@@ -14,18 +14,12 @@ export default function AdminOverview() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const usersSnap = await getDocs(collection(db, "users"));
-        let teacherCount = 0;
-        let studentCount = 0;
-        usersSnap.forEach((doc) => {
-          const data = doc.data();
-          if (data.role === "teacher") teacherCount++;
-          if (data.role === "student") studentCount++;
-        });
+        const teachersSnap = await getDocs(collection(db, "teachers"));
+        const studentsSnap = await getDocs(collection(db, "students"));
         const sectionsSnap = await getDocs(collection(db, "sections"));
         setStats({
-          teachers: teacherCount,
-          students: studentCount,
+          teachers: teachersSnap.size,
+          students: studentsSnap.size,
           sections: sectionsSnap.size,
         });
       } catch (e) {

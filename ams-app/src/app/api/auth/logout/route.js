@@ -2,6 +2,9 @@
  * POST /api/auth/logout
  * Logout endpoint (mainly for client-side use with auth context)
  */
+import { cookies } from "next/headers";
+export const dynamic = "force-dynamic";
+
 export async function POST(request) {
   try {
     return new Response(

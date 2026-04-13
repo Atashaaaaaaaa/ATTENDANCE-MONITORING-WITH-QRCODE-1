@@ -5,33 +5,60 @@ import { db } from "@/lib/firebase";
 
 export default function AdminMapping() {
   const [mappings, setMappings] = useState([]);
+  const [teachers, setTeachers] = useState([]);
 
   const [formData, setFormData] = useState({
-    teacher: "",
+    teacherId: "",
+    teacherName: "",
     section: "",
     subject: "",
   });
 
+  // Fetch existing mappings and teachers list
   useEffect(() => {
-    const fetchMappings = async () => {
+    const fetchData = async () => {
       try {
-        const snap = await getDocs(collection(db, "sections"));
-        if (snap.size > 0) {
-          const fetched = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        // Fetch section mappings
+        const sectionsSnap = await getDocs(collection(db, "sections"));
+        if (sectionsSnap.size > 0) {
+          const fetched = sectionsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
           setMappings(fetched);
         }
+
+        // Fetch teachers for the dropdown
+        const teachersSnap = await getDocs(collection(db, "teachers"));
+        const teachersList = teachersSnap.docs.map((d) => ({
+          id: d.id,
+          name: d.data().name || d.data().fullName || d.data().email,
+          ...d.data(),
+        }));
+        setTeachers(teachersList);
       } catch (e) {
         // Will populate when database is connected
       }
     };
-    fetchMappings();
+    fetchData();
   }, []);
+
+  const handleTeacherSelect = (e) => {
+    const selectedId = e.target.value;
+    const selectedTeacher = teachers.find((t) => t.id === selectedId);
+    setFormData({
+      ...formData,
+      teacherId: selectedId,
+      teacherName: selectedTeacher?.name || "",
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newMapping = {
-      ...formData,
+      teacherId: formData.teacherId,
+      teacher: formData.teacherName,
+      section: formData.section,
+      subject: formData.subject,
       schedule: "TBD",
+      students: [],
       createdAt: new Date().toISOString(),
     };
 
@@ -42,7 +69,7 @@ export default function AdminMapping() {
       setMappings([...mappings, { id: `local-${Date.now()}`, ...newMapping }]);
     }
 
-    setFormData({ teacher: "", section: "", subject: "" });
+    setFormData({ teacherId: "", teacherName: "", section: "", subject: "" });
     alert("Mapping Successful: Teacher has been assigned to the section!");
   };
 
@@ -74,24 +101,29 @@ export default function AdminMapping() {
               <label>Select Teacher</label>
               <select
                 className="form-select"
-                value={formData.teacher}
-                onChange={(e) => setFormData({ ...formData, teacher: e.target.value })}
+                value={formData.teacherId}
+                onChange={handleTeacherSelect}
                 required
               >
                 <option value="" disabled>Choose Teacher...</option>
+                {teachers.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div className="form-group">
-              <label>Select Section</label>
-              <select
-                className="form-select"
+              <label>Section Name</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="e.g. G12-ICT"
                 value={formData.section}
                 onChange={(e) => setFormData({ ...formData, section: e.target.value })}
                 required
-              >
-                <option value="" disabled>Choose Section...</option>
-              </select>
+              />
             </div>
 
             <div className="form-group">
@@ -125,13 +157,14 @@ export default function AdminMapping() {
               <th>Section</th>
               <th>Subject</th>
               <th>Schedule</th>
+              <th>Students</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {mappings.length === 0 ? (
               <tr>
-                <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                <td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
                   No section assignments yet. Use the form above to link teachers to sections.
                 </td>
               </tr>
@@ -142,6 +175,7 @@ export default function AdminMapping() {
                   <td>{map.section}</td>
                   <td>{map.subject}</td>
                   <td>{map.schedule}</td>
+                  <td>{(map.students || []).length}</td>
                   <td>
                     <button className="btn btn-red btn-sm" onClick={() => handleUnassign(map.id)}>
                       Unassign
