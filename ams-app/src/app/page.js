@@ -54,7 +54,7 @@ export default function LandingPage() {
         <div className="features-grid">
           <div className="features-list">
             <div className="feature-item">
-              <h3>🤳 Face Scan Attendance</h3>
+              <h3>Face Scan Attendance</h3>
               <p>
                 Our platform uses AI-powered facial recognition for fast,
                 contactless attendance marking. No manual paperwork needed.
@@ -66,7 +66,7 @@ export default function LandingPage() {
             </div>
 
             <div className="feature-item">
-              <h3>🔒 Secure & Reliable</h3>
+              <h3>Secure & Reliable</h3>
               <p>
                 Built with Firebase authentication and Firestore for real-time
                 data sync. Every scan is timestamped and verified.
@@ -74,7 +74,7 @@ export default function LandingPage() {
             </div>
 
             <div className="feature-item">
-              <h3>⚡ Real-Time Tracking</h3>
+              <h3>Real-Time Tracking</h3>
               <p>
                 Monitor attendance as it happens. Teachers see live updates,
                 admins get instant analytics, and students track their records.
@@ -84,7 +84,7 @@ export default function LandingPage() {
 
           <div className="feature-preview-card">
             <div className="feature-preview-header">
-              <span className="feature-preview-title">📊 Attendance Analytics</span>
+              <span className="feature-preview-title">Attendance Analytics</span>
               <span style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>This Semester</span>
             </div>
 
@@ -137,26 +137,26 @@ export default function LandingPage() {
           <div className="hero-dashboard-card">
             <div className="hero-dashboard-header">
               <div>
-                <div className="hero-dashboard-title">📊 Dashboard</div>
+                <div className="hero-dashboard-title">Dashboard</div>
                 <div className="hero-dashboard-subtitle">
                   Real-time attendance overview
                 </div>
               </div>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <button className="btn-icon" aria-label="Share">📤</button>
-                <button className="btn-icon" aria-label="Notifications">🔔</button>
-                <Link href="/login" className="btn btn-purple btn-sm">📋 Report</Link>
+                <button className="btn-secondary btn-sm" style={{padding: "5px 10px", fontSize: "0.8rem", borderRadius:"6px"}}>Share</button>
+                <button className="btn-secondary btn-sm" style={{padding: "5px 10px", fontSize: "0.8rem", borderRadius:"6px"}}>Alerts</button>
+                <Link href="/login" className="btn btn-purple btn-sm">Report</Link>
               </div>
             </div>
 
             <div className="hero-dashboard-body">
               <div className="hero-dashboard-sidebar">
-                <div className="hero-dash-nav-item active">📊 Dashboard</div>
-                <div className="hero-dash-nav-item">💳 Attendance</div>
-                <div className="hero-dash-nav-item">📈 Analytics</div>
-                <div className="hero-dash-nav-item">🤳 Face Scan</div>
-                <div className="hero-dash-nav-item">📜 History</div>
-                <div className="hero-dash-nav-item">📱 Devices</div>
+                <div className="hero-dash-nav-item active">Dashboard</div>
+                <div className="hero-dash-nav-item">Attendance</div>
+                <div className="hero-dash-nav-item">Analytics</div>
+                <div className="hero-dash-nav-item">Face Scan</div>
+                <div className="hero-dash-nav-item">History</div>
+                <div className="hero-dash-nav-item">Devices</div>
               </div>
 
               <div className="hero-dashboard-main">
@@ -247,7 +247,7 @@ export default function LandingPage() {
 
       {/* ===== FOOTER ===== */}
       <footer className="footer" id="footer">
-        <div className="footer-logo">⚡ AMS</div>
+        <div className="footer-logo">AMS</div>
         <p>
           Smart facial recognition-based attendance monitoring for DLSU-D. Built with Next.js and
           Firebase for speed, security, and reliability.
