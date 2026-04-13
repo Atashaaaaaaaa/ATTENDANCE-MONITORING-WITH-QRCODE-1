@@ -22,14 +22,23 @@ export default function TeacherDashboard() {
         const snap = await getDocs(q);
         const fetched = snap.docs.map((d) => {
           const data = d.data();
+          // Format schedule from object or legacy string
+          let scheduleStr = "TBD";
+          if (data.schedule && typeof data.schedule === "object") {
+            const days = (data.schedule.days || []).join(", ");
+            const time = data.schedule.time || "";
+            scheduleStr = days && time ? `${days} • ${time}` : days || time || "TBD";
+          } else if (typeof data.schedule === "string") {
+            scheduleStr = data.schedule;
+          }
           return {
             id: d.id,
             code: data.subject?.substring(0, 6)?.toUpperCase() || "SUBJ",
             name: data.subject || "Untitled",
             sectionId: d.id,
             section: data.section || "—",
-            schedule: data.schedule || "TBD",
-            room: "TBD",
+            schedule: scheduleStr,
+            room: data.room || "TBD",
           };
         });
         setSubjects(fetched);

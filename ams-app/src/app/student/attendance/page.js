@@ -31,6 +31,15 @@ export default function StudentAttendance() {
           const data = d.data();
           const studentsList = data.students || [];
           if (studentsList.includes(user.uid)) {
+            // Format schedule from object or legacy string
+            let scheduleStr = "TBD";
+            if (data.schedule && typeof data.schedule === "object") {
+              const days = (data.schedule.days || []).join(", ");
+              const time = data.schedule.time || "";
+              scheduleStr = days && time ? `${days} • ${time}` : days || time || "TBD";
+            } else if (typeof data.schedule === "string") {
+              scheduleStr = data.schedule;
+            }
             fetched.push({
               id: d.id,
               code: data.subject?.substring(0, 6)?.toUpperCase() || "SUBJ",
@@ -38,8 +47,8 @@ export default function StudentAttendance() {
               sectionId: d.id,
               section: data.section || "—",
               teacher: data.teacher || "TBD",
-              schedule: data.schedule || "TBD",
-              room: "TBD",
+              schedule: scheduleStr,
+              room: data.room || "TBD",
             });
           }
         });

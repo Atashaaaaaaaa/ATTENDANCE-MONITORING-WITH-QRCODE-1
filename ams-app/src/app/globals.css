@@ -2460,4 +2460,276 @@ img {
   .stats-row {
     grid-template-columns: 1fr;
   }
+
+  .day-checkbox-group {
+    flex-wrap: wrap;
+  }
+
+  .schedule-table {
+    font-size: 0.75rem;
+  }
+
+  .schedule-table th,
+  .schedule-table td {
+    padding: 8px 6px;
+  }
+
+  .today-classes {
+    grid-template-columns: 1fr;
+  }
+
+  .section-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   SCHEDULE & DAY SELECTOR STYLES
+   ============================================ */
+
+/* Day Checkbox Group */
+.day-checkbox-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.day-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  user-select: none;
+}
+
+.day-checkbox:hover {
+  border-color: var(--primary-light);
+  color: var(--primary);
+  background: var(--accent-soft);
+}
+
+.day-checkbox-active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.day-checkbox-active:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  color: white;
+}
+
+/* Schedule Table */
+.schedule-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.85rem;
+}
+
+.schedule-table th {
+  padding: 12px 14px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  background: var(--bg-body);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.schedule-table th:first-child {
+  text-align: left;
+  border-top-left-radius: var(--radius-md);
+}
+
+.schedule-table th:last-child {
+  border-top-right-radius: var(--radius-md);
+}
+
+.schedule-table td {
+  padding: 10px 14px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+
+.schedule-table td:first-child {
+  text-align: left;
+}
+
+.schedule-table tbody tr:hover {
+  background: rgba(74, 124, 89, 0.03);
+}
+
+/* Schedule Cell */
+.schedule-cell {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  border-left: 3px solid var(--primary);
+  text-align: left;
+  transition: var(--transition-fast);
+}
+
+.schedule-cell:hover {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-sm);
+}
+
+.schedule-cell strong {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-bottom: 2px;
+}
+
+.schedule-cell small {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.schedule-cell .schedule-cell-room {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.schedule-cell-blue {
+  background: var(--info-bg);
+  border-left-color: var(--info);
+}
+
+.schedule-cell-blue strong {
+  color: #1E40AF;
+}
+
+.schedule-cell-green {
+  background: var(--success-bg);
+  border-left-color: var(--success);
+}
+
+.schedule-cell-green strong {
+  color: #065F46;
+}
+
+/* Today's Classes */
+.today-classes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.today-class-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--primary);
+  background: var(--accent-soft);
+  transition: var(--transition-fast);
+}
+
+.today-class-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.today-class-card.current {
+  border-left-color: var(--success);
+  background: var(--success-bg);
+}
+
+.today-class-card.upcoming {
+  border-left-color: var(--info);
+  background: var(--info-bg);
+}
+
+.today-class-card.completed {
+  border-left-color: var(--text-muted);
+  background: #F9FAFB;
+  opacity: 0.7;
+}
+
+.today-class-time {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 0.3px;
+}
+
+.today-class-card.current .today-class-time {
+  color: var(--success);
+}
+
+.today-class-card.upcoming .today-class-time {
+  color: var(--info);
+}
+
+.today-class-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.today-class-room {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.today-class-teacher {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Section Detail Cards */
+.section-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.section-card {
+  padding: 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  transition: var(--transition-base);
+}
+
+.section-card:hover {
+  border-color: var(--border-green);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.section-card h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.section-card p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.section-card .btn {
+  margin-top: 12px;
 }

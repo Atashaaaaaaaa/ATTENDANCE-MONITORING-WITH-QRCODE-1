@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+const ALL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+
 export default function AdminMapping() {
   const [mappings, setMappings] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -12,6 +14,9 @@ export default function AdminMapping() {
     teacherName: "",
     section: "",
     subject: "",
+    days: [],
+    time: "",
+    room: "",
   });
 
   // Fetch existing mappings and teachers list
@@ -50,14 +55,33 @@ export default function AdminMapping() {
     });
   };
 
+  const toggleDay = (day) => {
+    setFormData((prev) => ({
+      ...prev,
+      days: prev.days.includes(day)
+        ? prev.days.filter((d) => d !== day)
+        : [...prev.days, day],
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (formData.days.length === 0) {
+      alert("Please select at least one day for the schedule.");
+      return;
+    }
+
     const newMapping = {
       teacherId: formData.teacherId,
       teacher: formData.teacherName,
       section: formData.section,
       subject: formData.subject,
-      schedule: "TBD",
+      schedule: {
+        days: formData.days,
+        time: formData.time,
+      },
+      room: formData.room,
       students: [],
       createdAt: new Date().toISOString(),
     };
@@ -69,7 +93,7 @@ export default function AdminMapping() {
       setMappings([...mappings, { id: `local-${Date.now()}`, ...newMapping }]);
     }
 
-    setFormData({ teacherId: "", teacherName: "", section: "", subject: "" });
+    setFormData({ teacherId: "", teacherName: "", section: "", subject: "", days: [], time: "", room: "" });
     alert("Mapping Successful: Teacher has been assigned to the section!");
   };
 
@@ -81,6 +105,15 @@ export default function AdminMapping() {
       // Continue
     }
     setMappings(mappings.filter((m) => m.id !== mappingId));
+  };
+
+  // Helper to format schedule for display
+  const formatSchedule = (schedule) => {
+    if (!schedule) return "TBD";
+    if (typeof schedule === "string") return schedule;
+    const days = (schedule.days || []).join(", ");
+    const time = schedule.time || "";
+    return days && time ? `${days} • ${time}` : days || time || "TBD";
   };
 
   return (
@@ -137,8 +170,55 @@ export default function AdminMapping() {
                 required
               />
             </div>
+          </div>
 
-            <button type="submit" className="btn btn-purple" style={{ marginBottom: 0 }}>
+          {/* Schedule Fields */}
+          <div className="form-inline" style={{ marginTop: "16px" }}>
+            <div className="form-group" style={{ flex: "2" }}>
+              <label>Schedule Days</label>
+              <div className="day-checkbox-group">
+                {ALL_DAYS.map((day) => (
+                  <label
+                    key={day}
+                    className={`day-checkbox ${formData.days.includes(day) ? "day-checkbox-active" : ""}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.days.includes(day)}
+                      onChange={() => toggleDay(day)}
+                      style={{ display: "none" }}
+                    />
+                    {day}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Time</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="e.g. 7:30 AM - 9:00 AM"
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Room Number</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="e.g. Room 201"
+                value={formData.room}
+                onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                required
+              />
+            </div>
+
+            <button type="submit" className="btn btn-purple" style={{ marginBottom: 0, alignSelf: "flex-end" }}>
               Create Link
             </button>
           </div>
@@ -157,6 +237,7 @@ export default function AdminMapping() {
               <th>Section</th>
               <th>Subject</th>
               <th>Schedule</th>
+              <th>Room</th>
               <th>Students</th>
               <th>Action</th>
             </tr>
@@ -164,7 +245,7 @@ export default function AdminMapping() {
           <tbody>
             {mappings.length === 0 ? (
               <tr>
-                <td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                <td colSpan="7" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
                   No section assignments yet. Use the form above to link teachers to sections.
                 </td>
               </tr>
@@ -174,7 +255,8 @@ export default function AdminMapping() {
                   <td style={{ fontWeight: 600 }}>{map.teacher}</td>
                   <td>{map.section}</td>
                   <td>{map.subject}</td>
-                  <td>{map.schedule}</td>
+                  <td>{formatSchedule(map.schedule)}</td>
+                  <td>{map.room || "—"}</td>
                   <td>{(map.students || []).length}</td>
                   <td>
                     <button className="btn btn-red btn-sm" onClick={() => handleUnassign(map.id)}>

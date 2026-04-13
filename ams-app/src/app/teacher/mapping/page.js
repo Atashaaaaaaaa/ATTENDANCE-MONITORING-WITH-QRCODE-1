@@ -55,19 +55,20 @@ export default function TeacherMapping() {
               <th>Section</th>
               <th>Subject</th>
               <th>Schedule</th>
+              <th>Room</th>
               <th>Enrolled Students</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="4" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
                   Loading your assignments...
                 </td>
               </tr>
             ) : mappings.length === 0 ? (
               <tr>
-                <td colSpan="4" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
                   No sections assigned to you yet. Please contact the admin to be assigned to sections.
                 </td>
               </tr>
@@ -76,7 +77,12 @@ export default function TeacherMapping() {
                 <tr key={map.id}>
                   <td style={{ fontWeight: 600 }}>{map.section}</td>
                   <td>{map.subject}</td>
-                  <td>{map.schedule || "TBD"}</td>
+                  <td>
+                    {map.schedule && typeof map.schedule === "object"
+                      ? `${(map.schedule.days || []).join(", ")} • ${map.schedule.time || "TBD"}`
+                      : map.schedule || "TBD"}
+                  </td>
+                  <td>{map.room || "—"}</td>
                   <td>
                     <span style={{
                       padding: "3px 10px",
