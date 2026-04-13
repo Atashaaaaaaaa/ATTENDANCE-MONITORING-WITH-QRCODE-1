@@ -133,7 +133,7 @@ export default function LandingPage() {
 
 
         {/* Dashboard Preview */}
-        <div className="hero-dashboard">
+        <div className="hero-dashboard" id="dashboard">
           <div className="hero-dashboard-card">
             <div className="hero-dashboard-header">
               <div>

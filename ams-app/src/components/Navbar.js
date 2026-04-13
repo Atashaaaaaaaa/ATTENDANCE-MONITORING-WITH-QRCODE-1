@@ -26,8 +26,8 @@ export default function Navbar() {
       <ul className="navbar-links">
         <li><a href="#hero">Home</a></li>
         <li><a href="#features">Features</a></li>
+        <li><a href="#dashboard">Dashboard</a></li>
         <li><a href="#stats">About</a></li>
-        <li><a href="#integrations">Integrations</a></li>
         <li><a href="#footer">Contact</a></li>
       </ul>
 
