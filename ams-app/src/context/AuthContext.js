@@ -32,6 +32,15 @@ export const AuthProvider = ({ children }) => {
 
           if (userDocSnap.exists()) {
             const data = userDocSnap.data();
+            // Block archived accounts from staying logged in
+            if (data.status === 'archived') {
+              await signOut(auth)
+              setUser(null)
+              setUserRole(null)
+              setUserData(null)
+              setLoading(false)
+              return
+            }
             setUserRole(data.role)
             setUserData(data)
           }
@@ -98,6 +107,11 @@ export const AuthProvider = ({ children }) => {
 
       if (userDocSnap.exists()) {
         const data = userDocSnap.data();
+        // Block archived accounts from logging in
+        if (data.status === 'archived') {
+          await signOut(auth)
+          throw new Error('This account has been archived. Please contact an administrator.')
+        }
         setUserRole(data.role)
         setUserData(data)
       }
