@@ -404,7 +404,7 @@ export default function AdminUsers() {
                   width: "100%",
                 }}
               >
-                🔑 A random default password will be generated automatically upon registration.
+                A random default password will be generated automatically upon registration.
               </div>
             </div>
             <div className="full-width">

@@ -13,15 +13,15 @@ const navConfigs = {
       {
         label: "Main",
         links: [
-          { href: "/admin/overview", icon: "📊", label: "System Overview" },
-          { href: "/admin/users", icon: "👥", label: "User Management" },
-          { href: "/admin/mapping", icon: "🔗", label: "Section Mapping" },
+          { href: "/admin/overview", icon: <img src="/green-laptop.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "System Overview" },
+          { href: "/admin/users", icon: <img src="/green-people.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "User Management" },
+          { href: "/admin/mapping", icon: <img src="/green-map.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Section Mapping" },
         ],
       },
       {
         label: "Account",
         links: [
-          { href: "/admin/profile", icon: "👤", label: "Profile" },
+          { href: "/admin/profile", icon: <img src="/green-profile.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Profile" },
         ],
       },
     ],
@@ -42,14 +42,14 @@ const navConfigs = {
       {
         label: "Management",
         links: [
-          { href: "/teacher/mapping", icon: "🔗", label: "Section Mapping" },
+          { href: "/teacher/mapping", icon: <img src="/green-map.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Section Mapping" },
           { href: "/teacher/students", icon: "🎓", label: "My Students" },
         ],
       },
       {
         label: "Account",
         links: [
-          { href: "/teacher/profile", icon: "👤", label: "Profile" },
+          { href: "/teacher/profile", icon: <img src="/green-profile.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Profile" },
         ],
       },
     ],
@@ -69,7 +69,7 @@ const navConfigs = {
       {
         label: "Account",
         links: [
-          { href: "/student/profile", icon: "👤", label: "Profile" },
+          { href: "/student/profile", icon: <img src="/green-profile.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Profile" },
         ],
       },
     ],
