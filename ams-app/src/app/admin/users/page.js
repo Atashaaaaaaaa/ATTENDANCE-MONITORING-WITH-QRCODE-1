@@ -95,14 +95,18 @@ export default function AdminUsers() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const snap = await getDocs(collection(db, "users"));
-        if (snap.size > 0) {
-          const fetched = snap.docs.map((d) => ({
-            id: d.id,
-            ...d.data(),
-          }));
-          setUsers(fetched);
-        }
+        const combined = [];
+        // Fetch teachers
+        const teachersSnap = await getDocs(collection(db, "teachers"));
+        teachersSnap.forEach((d) => {
+          combined.push({ id: d.id, ...d.data(), role: "teacher" });
+        });
+        // Fetch students
+        const studentsSnap = await getDocs(collection(db, "students"));
+        studentsSnap.forEach((d) => {
+          combined.push({ id: d.id, ...d.data(), role: "student" });
+        });
+        setUsers(combined);
       } catch (e) {
         // Will populate when database is connected
       }
@@ -124,24 +128,39 @@ export default function AdminUsers() {
       const uid = await createAuthAccount(formData.email, defaultPassword);
 
       // 2) Save the user profile to Firestore (keyed by the Auth UID)
+      // Write to `users` collection for auth/role lookup
       const userDocRef = doc(db, "users", uid);
-      const userData = {
+      const baseUserData = {
         uid: uid,
         email: formData.email,
         fullName: formData.name,
         name: formData.name,
         role: roleLower,
-        section: formData.section || "",
-        department: formData.department || "",
         status: "active",
         forcePasswordChange: true,
         createdAt: new Date().toISOString(),
       };
-      await setDoc(userDocRef, userData);
+      await setDoc(userDocRef, baseUserData);
 
-      // 3) Update the local list
-      setUsers([...users, { id: uid, ...userData }]);
-      setCreatedUser({ ...userData, password: defaultPassword });
+      // 3) Write to role-specific collection
+      const roleCollection = roleLower === "teacher" ? "teachers" : "students";
+      const roleDocRef = doc(db, roleCollection, uid);
+      const roleData = {
+        uid: uid,
+        email: formData.email,
+        fullName: formData.name,
+        name: formData.name,
+        status: "active",
+        createdAt: new Date().toISOString(),
+        ...(roleLower === "teacher" ? { department: formData.department || "" } : {}),
+        ...(roleLower === "student" ? { section: formData.section || "" } : {}),
+      };
+      await setDoc(roleDocRef, roleData);
+
+      // 4) Update the local list
+      const displayData = { ...roleData, role: roleLower };
+      setUsers([...users, { id: uid, ...displayData }]);
+      setCreatedUser({ ...displayData, password: defaultPassword });
       setShowSuccess(true);
       setCopied(false);
       setFormData({ name: "", email: "", role: "", section: "", department: "" });
@@ -163,8 +182,16 @@ export default function AdminUsers() {
 
   const handleDelete = async (userId) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
+    const userToDelete = users.find((u) => u.id === userId);
     try {
+      // Delete from users collection (auth/role lookup)
       await deleteDoc(doc(db, "users", userId));
+      // Delete from role-specific collection
+      if (userToDelete?.role === "teacher") {
+        await deleteDoc(doc(db, "teachers", userId));
+      } else if (userToDelete?.role === "student") {
+        await deleteDoc(doc(db, "students", userId));
+      }
     } catch (e) {
       // Continue with local delete
     }
@@ -341,26 +368,30 @@ export default function AdminUsers() {
                 <option value="Student">Student</option>
               </select>
             </div>
-            <div className="form-group">
-              <label>Section</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="e.g. G12-ICT"
-                value={formData.section}
-                onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label>Department</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="e.g. College of Computer Studies"
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              />
-            </div>
+            {formData.role.toLowerCase() === "student" && (
+              <div className="form-group">
+                <label>Section</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. G12-ICT"
+                  value={formData.section}
+                  onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                />
+              </div>
+            )}
+            {formData.role.toLowerCase() === "teacher" && (
+              <div className="form-group">
+                <label>Department</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. College of Computer Studies"
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                />
+              </div>
+            )}
             <div className="form-group" style={{ display: "flex", alignItems: "flex-end" }}>
               <div
                 style={{

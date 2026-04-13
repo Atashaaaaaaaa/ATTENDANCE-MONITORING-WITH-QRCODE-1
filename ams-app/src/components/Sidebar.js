@@ -40,6 +40,13 @@ const navConfigs = {
         ],
       },
       {
+        label: "Management",
+        links: [
+          { href: "/teacher/mapping", icon: "🔗", label: "Section Mapping" },
+          { href: "/teacher/students", icon: "🎓", label: "My Students" },
+        ],
+      },
+      {
         label: "Account",
         links: [
           { href: "/teacher/profile", icon: "👤", label: "Profile" },

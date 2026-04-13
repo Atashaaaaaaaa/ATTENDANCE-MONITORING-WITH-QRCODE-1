@@ -1,25 +1,57 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { addDoc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { addDoc, collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 
 export default function StudentAttendance() {
+  const { user } = useAuth();
   // Camera state
   const [activeSubject, setActiveSubject] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [scanResults, setScanResults] = useState({});
   const [activeSessions, setActiveSessions] = useState({});
+  const [subjects, setSubjects] = useState([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Student's enrolled subjects — replace with Firestore data later
-  const subjects = [
-    { id: "cs211", code: "CS 211", name: "Data Structures", sectionId: "secA", section: "Section A", teacher: "Prof. Santos", schedule: "MWF 9:00 - 10:00 AM", room: "Room 301" },
-    { id: "cs312", code: "CS 312", name: "Web Development", sectionId: "secB", section: "Section B", teacher: "Prof. Reyes", schedule: "TTh 1:00 - 2:30 PM", room: "Room 205" },
-    { id: "cs321", code: "CS 321", name: "Database Systems", sectionId: "secA", section: "Section A", teacher: "Prof. Cruz", schedule: "MWF 11:00 AM - 12:00 PM", room: "Room 402" },
-  ];
+  // Fetch sections where student is enrolled
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const fetchSubjects = async () => {
+      try {
+        // Get all sections and filter for ones containing this student
+        const sectionsSnap = await getDocs(collection(db, "sections"));
+        const fetched = [];
+        sectionsSnap.forEach((d) => {
+          const data = d.data();
+          const studentsList = data.students || [];
+          if (studentsList.includes(user.uid)) {
+            fetched.push({
+              id: d.id,
+              code: data.subject?.substring(0, 6)?.toUpperCase() || "SUBJ",
+              name: data.subject || "Untitled",
+              sectionId: d.id,
+              section: data.section || "—",
+              teacher: data.teacher || "TBD",
+              schedule: data.schedule || "TBD",
+              room: "TBD",
+            });
+          }
+        });
+        setSubjects(fetched);
+      } catch (e) {
+        // Will populate when database is connected
+      } finally {
+        setLoadingSubjects(false);
+      }
+    };
+    fetchSubjects();
+  }, [user?.uid]);
 
   // Listen for active sessions from teachers in real-time
   useEffect(() => {
@@ -120,7 +152,7 @@ export default function StudentAttendance() {
 
     try {
       await addDoc(collection(db, "attendance"), {
-        studentId: "current-student",
+        studentId: user?.uid || "unknown",
         sessionId: sessionId,
         subjectId: activeSubject,
         subjectCode: subject?.code || "",
@@ -132,7 +164,7 @@ export default function StudentAttendance() {
     } catch (e) {
       // Local mode
     }
-  }, [activeSubject, subjects, stopCamera]);
+  }, [activeSubject, subjects, stopCamera, user?.uid]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -160,12 +192,16 @@ export default function StudentAttendance() {
         </div>
       )}
 
-      {subjects.length === 0 ? (
+      {loadingSubjects ? (
+        <div className="card" style={{ textAlign: "center", padding: "60px 24px" }}>
+          <p style={{ color: "var(--text-muted)" }}>Loading your classes...</p>
+        </div>
+      ) : subjects.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: "60px 24px" }}>
           <div style={{ fontSize: "3rem", marginBottom: "16px" }}>📚</div>
           <h3 style={{ margin: "0 0 8px", color: "var(--text-primary)" }}>No Subjects Enrolled</h3>
           <p style={{ color: "var(--text-muted)", maxWidth: "400px", margin: "0 auto" }}>
-            Your enrolled subjects will appear here once the admin assigns you to sections via the database.
+            Your enrolled subjects will appear here once your teacher adds you to their class.
           </p>
         </div>
       ) : (

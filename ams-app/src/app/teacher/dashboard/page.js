@@ -2,18 +2,45 @@
 import { useState, useCallback, useEffect } from "react";
 import { addDoc, collection, query, where, getDocs, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 
 export default function TeacherDashboard() {
+  const { user } = useAuth();
   const [activeSessions, setActiveSessions] = useState({});
   const [studentId, setStudentId] = useState("");
   const [attendanceRecords, setAttendanceRecords] = useState({});
+  const [subjects, setSubjects] = useState([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
 
-  // Teacher's assigned subjects/sections — replace with Firestore data later
-  const subjects = [
-    { id: "cs211", code: "CS 211", name: "Data Structures", sectionId: "secA", section: "Section A", schedule: "MWF 9:00 - 10:00 AM", room: "Room 301" },
-    { id: "cs312", code: "CS 312", name: "Web Development", sectionId: "secB", section: "Section B", schedule: "TTh 1:00 - 2:30 PM", room: "Room 205" },
-    { id: "cs321", code: "CS 321", name: "Database Systems", sectionId: "secA", section: "Section A", schedule: "MWF 11:00 AM - 12:00 PM", room: "Room 402" },
-  ];
+  // Fetch teacher's assigned sections from Firestore
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const fetchSubjects = async () => {
+      try {
+        const q = query(collection(db, "sections"), where("teacherId", "==", user.uid));
+        const snap = await getDocs(q);
+        const fetched = snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            code: data.subject?.substring(0, 6)?.toUpperCase() || "SUBJ",
+            name: data.subject || "Untitled",
+            sectionId: d.id,
+            section: data.section || "—",
+            schedule: data.schedule || "TBD",
+            room: "TBD",
+          };
+        });
+        setSubjects(fetched);
+      } catch (e) {
+        // Will populate when database is connected
+      } finally {
+        setLoadingSubjects(false);
+      }
+    };
+    fetchSubjects();
+  }, [user?.uid]);
 
   // Listen for active sessions in real-time
   useEffect(() => {
@@ -33,7 +60,7 @@ export default function TeacherDashboard() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [subjects]);
 
   // Start session for a subject + section
   const startSession = useCallback(async (subject) => {
@@ -45,7 +72,7 @@ export default function TeacherDashboard() {
         subjectName: subject.name,
         sectionId: subject.sectionId,
         sectionName: subject.section,
-        teacherId: "current-teacher",
+        teacherId: user?.uid || "unknown",
         date: new Date().toISOString().split("T")[0],
         startTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         active: true,
@@ -75,7 +102,7 @@ export default function TeacherDashboard() {
         },
       }));
     }
-  }, []);
+  }, [user?.uid]);
 
   // Stop session
   const stopSession = useCallback(async (subject) => {
@@ -137,12 +164,16 @@ export default function TeacherDashboard() {
         <p>Start a facial recognition session per subject and section.</p>
       </div>
 
-      {subjects.length === 0 ? (
+      {loadingSubjects ? (
+        <div className="card" style={{ textAlign: "center", padding: "60px 24px" }}>
+          <p style={{ color: "var(--text-muted)" }}>Loading your classes...</p>
+        </div>
+      ) : subjects.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: "60px 24px" }}>
           <div style={{ fontSize: "3rem", marginBottom: "16px" }}>📚</div>
           <h3 style={{ margin: "0 0 8px", color: "var(--text-primary)" }}>No Subjects Assigned</h3>
           <p style={{ color: "var(--text-muted)", maxWidth: "400px", margin: "0 auto" }}>
-            Subjects and sections will appear here once the admin assigns them to your account via the database.
+            Subjects and sections will appear here once the admin assigns them to your account via Section Mapping.
           </p>
         </div>
       ) : (

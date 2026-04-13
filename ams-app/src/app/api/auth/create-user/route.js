@@ -1,5 +1,7 @@
 import { adminAuth, adminDb } from '@/lib/firebaseAdmin'
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/auth/create-user
  * Create a new user (admin only)
