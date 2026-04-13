@@ -29,7 +29,7 @@ export default function DashboardHeader() {
     <header className="dashboard-header">
       <div className="dashboard-header-left">
         <div className="dashboard-breadcrumb">
-          <span className="breadcrumb-home">🏠</span>
+          <span className="breadcrumb-home"><img src="/green-house.png" alt="Home" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /></span>
           <span className="breadcrumb-sep">/</span>
           <span className="breadcrumb-parent">{pageInfo.breadcrumb}</span>
           <span className="breadcrumb-sep">/</span>
