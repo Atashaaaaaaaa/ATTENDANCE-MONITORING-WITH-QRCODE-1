@@ -36,7 +36,7 @@ export default function DashboardHeader() {
           <span className="breadcrumb-current">{pageInfo.title}</span>
         </div>
         <div className="dashboard-header-greeting">
-          {greeting}! 👋
+          {greeting}!
           <span className="header-date">{dateStr}</span>
         </div>
       </div>
