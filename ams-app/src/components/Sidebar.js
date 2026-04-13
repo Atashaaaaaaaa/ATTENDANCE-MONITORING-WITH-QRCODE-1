@@ -15,7 +15,7 @@ const navConfigs = {
         links: [
           { href: "/admin/overview", icon: <img src="/green-laptop.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "System Overview" },
           { href: "/admin/users", icon: <img src="/green-people.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "User Management" },
-          { href: "/admin/mapping", icon: <img src="/green-map.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Section Mapping" },
+          { href: "/admin/mapping", icon: <img src="/green-map.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Section Mapping" },
         ],
       },
       {
@@ -42,7 +42,7 @@ const navConfigs = {
       {
         label: "Management",
         links: [
-          { href: "/teacher/mapping", icon: <img src="/green-map.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Section Mapping" },
+          { href: "/teacher/mapping", icon: <img src="/green-map.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Section Mapping" },
           { href: "/teacher/students", icon: <img src="/green-squares.png" alt="icon" style={{width: "24px", height: "24px", objectFit: "contain"}} />, label: "My Students" },
         ],
       },
