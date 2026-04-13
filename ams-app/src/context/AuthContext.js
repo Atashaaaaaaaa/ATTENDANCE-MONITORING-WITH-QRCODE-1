@@ -8,7 +8,7 @@ import {
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
 
 const AuthContext = createContext()
 
@@ -24,8 +24,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        setUser(currentUser)
-        // Fetch user role from Firestore
+        // Fetch user role from Firestore BEFORE setting user state
         try {
           const userDocRef = doc(db, 'users', currentUser.uid)
           const userDocSnap = await getDoc(userDocRef)
@@ -41,12 +40,36 @@ export const AuthProvider = ({ children }) => {
               setLoading(false)
               return
             }
+            setUser(currentUser)
             setUserRole(data.role)
             setUserData(data)
+          } else {
+            // Also check role-specific collections as fallback
+            let isArchived = false
+            const teacherSnap = await getDoc(doc(db, 'teachers', currentUser.uid))
+            if (teacherSnap.exists() && teacherSnap.data().status === 'archived') {
+              isArchived = true
+            }
+            if (!isArchived) {
+              const studentSnap = await getDoc(doc(db, 'students', currentUser.uid))
+              if (studentSnap.exists() && studentSnap.data().status === 'archived') {
+                isArchived = true
+              }
+            }
+            if (isArchived) {
+              await signOut(auth)
+              setUser(null)
+              setUserRole(null)
+              setUserData(null)
+              setLoading(false)
+              return
+            }
+            setUser(currentUser)
           }
         } catch (err) {
           console.error('Error fetching user role:', err)
           setError(err.message)
+          setUser(currentUser)
         }
       } else {
         setUser(null)
@@ -58,6 +81,32 @@ export const AuthProvider = ({ children }) => {
 
     return unsubscribe
   }, [])
+
+  // Real-time listener: auto sign-out if account gets archived while logged in
+  useEffect(() => {
+    if (!user || !user.uid || user.uid === 'hardcoded-admin-id') return
+
+    const userDocRef = doc(db, 'users', user.uid)
+    const unsubscribeSnapshot = onSnapshot(userDocRef, async (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data()
+        if (data.status === 'archived') {
+          try {
+            await signOut(auth)
+          } catch (e) {
+            // ignore sign-out errors
+          }
+          setUser(null)
+          setUserRole(null)
+          setUserData(null)
+        }
+      }
+    }, (err) => {
+      console.error('Snapshot listener error:', err)
+    })
+
+    return () => unsubscribeSnapshot()
+  }, [user?.uid])
 
   // Sign up function
   const signUp = async (email, password, role, userData) => {
@@ -101,19 +150,31 @@ export const AuthProvider = ({ children }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const currentUser = userCredential.user
 
-      // Fetch user role from Firestore
+      // Check archived status BEFORE setting user state
+      // Check users collection first
       const userDocRef = doc(db, 'users', currentUser.uid)
       const userDocSnap = await getDoc(userDocRef)
 
       if (userDocSnap.exists()) {
         const data = userDocSnap.data();
-        // Block archived accounts from logging in
         if (data.status === 'archived') {
           await signOut(auth)
           throw new Error('This account has been archived. Please contact an administrator.')
         }
         setUserRole(data.role)
         setUserData(data)
+      } else {
+        // Fallback: check role-specific collections
+        const teacherSnap = await getDoc(doc(db, 'teachers', currentUser.uid))
+        if (teacherSnap.exists() && teacherSnap.data().status === 'archived') {
+          await signOut(auth)
+          throw new Error('This account has been archived. Please contact an administrator.')
+        }
+        const studentSnap = await getDoc(doc(db, 'students', currentUser.uid))
+        if (studentSnap.exists() && studentSnap.data().status === 'archived') {
+          await signOut(auth)
+          throw new Error('This account has been archived. Please contact an administrator.')
+        }
       }
 
       setUser(currentUser)
