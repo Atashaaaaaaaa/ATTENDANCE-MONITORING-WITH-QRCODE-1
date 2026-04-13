@@ -115,7 +115,7 @@ export default function LoginPage() {
 
           <div className="welcome-text">
             <h1>Welcome.</h1>
-            <p>Experience seamless attendance tracking with our smart, AI-powered facial recognition system optimized for modern campuses.</p>
+            <p style={{ color: "var(--primary-dark)", fontWeight: "500" }}>Experience seamless attendance tracking with our smart, AI-powered facial recognition system optimized for modern campuses.</p>
           </div>
 
           {/* Animated Background Blob Motion behind right side */}
@@ -130,15 +130,83 @@ export default function LoginPage() {
 
       {/* FORGOT PASSWORD MODAL */}
       {showForgotModal && (
-        <div className="forgot-modal-overlay" onClick={() => setShowForgotModal(false)}>
-          <div className="forgot-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-icon">🔒</div>
-            <h3>Password Reset</h3>
-            <div style={{color: '#555', fontSize: '0.85rem', lineHeight: '1.5', marginBottom: '25px'}}>
-              Please contact your System Administrator to request a password reset for your account.<br /><br />
-              <strong style={{color: '#4A7C59', fontSize: '0.95rem'}}>admin@dlsu.edu.ph</strong>
+        <div 
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            animation: "fadeIn 0.25s ease",
+          }}
+          onClick={() => setShowForgotModal(false)}>
+          <div 
+            style={{
+              background: "var(--bg-card)",
+              borderRadius: "var(--radius-xl)",
+              padding: "36px 32px",
+              maxWidth: "460px",
+              width: "90%",
+              boxShadow: "var(--shadow-xl)",
+              animation: "fadeInUp 0.35s ease",
+              position: "relative",
+              textAlign: "center"
+            }}
+            onClick={(e) => e.stopPropagation()}>
+            <div
+              style={{
+                width: "56px",
+                height: "56px",
+                borderRadius: "50%",
+                background: "var(--warning-bg)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 16px",
+                color: "var(--warning)"
+              }}
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
             </div>
-            <button className="close-modal-btn" onClick={() => setShowForgotModal(false)}>Got it</button>
+            <h3
+              style={{
+                fontSize: "1.2rem",
+                fontWeight: 700,
+                marginBottom: "16px",
+                color: "var(--text-primary)",
+              }}
+            >
+              Password Reset
+            </h3>
+            <p
+              style={{
+                fontSize: "0.88rem",
+                color: "var(--text-secondary)",
+                marginBottom: "24px",
+                lineHeight: "1.6"
+              }}
+            >
+              Please contact your System Administrator to request a password reset for your account.
+            </p>
+            <div
+              style={{
+                background: "var(--bg-body)",
+                borderRadius: "var(--radius-md)",
+                padding: "16px",
+                marginBottom: "24px",
+              }}
+            >
+              <strong style={{color: 'var(--primary-dark)', fontSize: '0.95rem'}}>admin@dlsu.edu.ph</strong>
+            </div>
+            <button 
+              className="btn btn-purple" 
+              style={{ width: "100%", justifyContent: "center" }}
+              onClick={() => setShowForgotModal(false)}>
+              Got it
+            </button>
           </div>
         </div>
       )}

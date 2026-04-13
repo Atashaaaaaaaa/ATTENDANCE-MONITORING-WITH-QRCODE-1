@@ -34,9 +34,9 @@ const navConfigs = {
       {
         label: "Attendance",
         links: [
-          { href: "/teacher/dashboard", icon: <img src="/green-clipboard.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Class Attendance" },
-          { href: "/teacher/schedule", icon: <img src="/green-calendar.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Class Schedule" },
-          { href: "/teacher/reports", icon: <img src="/green-chart.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Reports" },
+          { href: "/teacher/dashboard", icon: <img src="/green-time-card.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Class Attendance" },
+          { href: "/teacher/schedule", icon: <img src="/green-calendar.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Class Schedule" },
+          { href: "/teacher/reports", icon: <img src="/green-report.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Reports" },
         ],
       },
       {
@@ -62,8 +62,8 @@ const navConfigs = {
       {
         label: "My Classes",
         links: [
-          { href: "/student/attendance", icon: <img src="/green-check.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "My Attendance" },
-          { href: "/student/schedule", icon: <img src="/green-calendar.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Schedule" },
+          { href: "/student/attendance", icon: <img src="/green-time-card.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "My Attendance" },
+          { href: "/student/schedule", icon: <img src="/green-calendar.png" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Schedule" },
         ],
       },
       {
