@@ -44,7 +44,7 @@ export default function LandingPage() {
                   Real-time attendance overview
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 <button className="btn-icon" aria-label="Share">📤</button>
                 <button className="btn-icon" aria-label="Notifications">🔔</button>
                 <Link href="/login" className="btn btn-purple btn-sm">📋 Report</Link>
@@ -86,8 +86,8 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}>
-                  <div style={{ flex: 2 }}>
+                <div style={{ display: "flex", gap: "20px", alignItems: "flex-start", flexWrap: "wrap" }}>
+                  <div style={{ flex: "1 1 250px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                       <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Attendance Insight</span>
                       <div style={{ display: "flex", gap: "6px" }}>
@@ -108,7 +108,7 @@ export default function LandingPage() {
                       ))}
                     </div>
                   </div>
-                  <div style={{ flex: 1, textAlign: "right" }}>
+                  <div style={{ flex: "1 1 150px", textAlign: "right", paddingRight: "10px" }}>
                     <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginBottom: "4px" }}>Total Students</div>
                     <div style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.5px" }}>450</div>
                     <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginTop: "12px", marginBottom: "4px" }}>Active Today</div>
@@ -255,18 +255,6 @@ export default function LandingPage() {
         <Link href="/login" className="btn btn-purple" style={{ borderRadius: "999px", padding: "12px 28px" }}>
           Explore Now →
         </Link>
-
-        <div className="integrations-grid">
-          <div className="integration-icon">📊</div>
-          <div className="integration-icon">☁️</div>
-          <div className="integration-icon">📧</div>
-          <div className="integration-icon">🔐</div>
-          <div className="integration-icon active">⚡</div>
-          <div className="integration-icon">📹</div>
-          <div className="integration-icon">💾</div>
-          <div className="integration-icon">📱</div>
-          <div className="integration-icon">🔔</div>
-        </div>
       </section>
 
       {/* ===== FOOTER ===== */}
