@@ -668,7 +668,7 @@ export default function AdminUsers() {
               gap: "8px",
             }}
           >
-            👥 Existing Profiles
+            Existing Profiles
             <span style={{
               background: activeTab === "existing" ? "var(--accent-soft)" : "var(--bg-body)",
               color: activeTab === "existing" ? "var(--primary-dark)" : "var(--text-muted)",
@@ -698,7 +698,7 @@ export default function AdminUsers() {
               gap: "8px",
             }}
           >
-            🗃️ Archived Accounts
+            Archived Accounts
             {archivedUsers.length > 0 && (
               <span style={{
                 background: activeTab === "archived" ? "var(--danger-bg)" : "var(--bg-body)",
