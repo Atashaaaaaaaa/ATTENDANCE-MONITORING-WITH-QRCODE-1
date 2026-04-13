@@ -51,13 +51,10 @@ export default function LoginPage() {
       <div className="login-container">
         {/* LEFT SIDE */}
         <div className="login-left">
-          <div className="login-header-logo">
+          <Link href="/" className="login-header-logo" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="logo-icon"></div>
             <span>AMS DESIGN</span>
-            <Link href="/" className="homepage-btn">
-              ← Homepage
-            </Link>
-          </div>
+          </Link>
 
           <div className="login-form-wrapper">
             <div className="avatar-container">
