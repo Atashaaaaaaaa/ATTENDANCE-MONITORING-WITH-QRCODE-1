@@ -8,7 +8,7 @@ const navConfigs = {
   admin: {
     title: "AMS",
     role: "Admin Panel",
-    icon: "⚡",
+    icon: <img src="/green-squares.png" alt="icon" style={{width: "24px", height: "24px", objectFit: "contain"}} />,
     sections: [
       {
         label: "Main",
@@ -29,21 +29,21 @@ const navConfigs = {
   teacher: {
     title: "AMS",
     role: "Teacher Portal",
-    icon: "📚",
+    icon: <img src="/green-squares.png" alt="icon" style={{width: "24px", height: "24px", objectFit: "contain"}} />,
     sections: [
       {
         label: "Attendance",
         links: [
-          { href: "/teacher/dashboard", icon: "📋", label: "Class Attendance" },
-          { href: "/teacher/schedule", icon: "📅", label: "Class Schedule" },
-          { href: "/teacher/reports", icon: "📈", label: "Reports" },
+          { href: "/teacher/dashboard", icon: <img src="/green-clipboard.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Class Attendance" },
+          { href: "/teacher/schedule", icon: <img src="/green-calendar.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Class Schedule" },
+          { href: "/teacher/reports", icon: <img src="/green-chart.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Reports" },
         ],
       },
       {
         label: "Management",
         links: [
           { href: "/teacher/mapping", icon: <img src="/green-map.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Section Mapping" },
-          { href: "/teacher/students", icon: "🎓", label: "My Students" },
+          { href: "/teacher/students", icon: <img src="/green-squares.png" alt="icon" style={{width: "24px", height: "24px", objectFit: "contain"}} />, label: "My Students" },
         ],
       },
       {
@@ -57,13 +57,13 @@ const navConfigs = {
   student: {
     title: "AMS",
     role: "Student Portal",
-    icon: "🎓",
+    icon: <img src="/green-squares.png" alt="icon" style={{width: "24px", height: "24px", objectFit: "contain"}} />,
     sections: [
       {
         label: "My Classes",
         links: [
-          { href: "/student/attendance", icon: "✅", label: "My Attendance" },
-          { href: "/student/schedule", icon: "📅", label: "Schedule" },
+          { href: "/student/attendance", icon: <img src="/green-check.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "My Attendance" },
+          { href: "/student/schedule", icon: <img src="/green-calendar.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} />, label: "Schedule" },
         ],
       },
       {
@@ -144,7 +144,7 @@ export default function Sidebar({ role }) {
       {/* Footer */}
       <div className="sidebar-footer">
         <button className="sidebar-logout" onClick={handleLogout} title={collapsed ? "Logout" : undefined}>
-          <span className="sidebar-link-icon">🚪</span>
+          <span className="sidebar-link-icon"><img src="/green-logout.svg" alt="icon" style={{width: "18px", height: "18px", objectFit: "contain"}} /></span>
           {!collapsed && "Logout"}
         </button>
       </div>
