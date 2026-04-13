@@ -42,26 +42,9 @@ export default function DashboardHeader() {
       </div>
 
       <div className="dashboard-header-right">
-        <div className={`header-search ${searchOpen ? "open" : ""}`}>
-          <button className="header-icon-btn" onClick={() => setSearchOpen(!searchOpen)} aria-label="Search">
-            🔍
-          </button>
-          {searchOpen && (
-            <input
-              type="text"
-              className="header-search-input"
-              placeholder="Search..."
-              autoFocus
-              onBlur={() => setSearchOpen(false)}
-            />
-          )}
-        </div>
         <button className="header-icon-btn" aria-label="Notifications">
-          🔔
+          <img src="/green-bell.png" alt="Notifications" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
           <span className="header-badge">3</span>
-        </button>
-        <button className="header-icon-btn" aria-label="Messages">
-          ✉️
         </button>
         <div className="header-avatar">
           <div className="header-avatar-circle">G</div>
