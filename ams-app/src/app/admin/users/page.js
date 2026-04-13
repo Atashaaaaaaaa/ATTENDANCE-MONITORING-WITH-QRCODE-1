@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { collection, getDocs, deleteDoc, doc, setDoc, updateDoc } from "firebase/firestore";
+
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { db, firebaseConfig } from "@/lib/firebase";
@@ -70,6 +71,9 @@ export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [sectionFilter, setSectionFilter] = useState("All");
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState("existing");
 
   // Success modal state
   const [showSuccess, setShowSuccess] = useState(false);
@@ -180,13 +184,45 @@ export default function AdminUsers() {
     }
   };
 
-  const handleDelete = async (userId) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+  const handleArchive = async (userId) => {
+    if (!confirm("Are you sure you want to archive this user? They will be moved to the Archived Accounts tab.")) return;
+    try {
+      // Update status in users collection
+      await updateDoc(doc(db, "users", userId), { status: "archived" });
+      // Update status in role-specific collection
+      const userToArchive = users.find((u) => u.id === userId);
+      if (userToArchive?.role === "teacher") {
+        await updateDoc(doc(db, "teachers", userId), { status: "archived" });
+      } else if (userToArchive?.role === "student") {
+        await updateDoc(doc(db, "students", userId), { status: "archived" });
+      }
+    } catch (e) {
+      // Continue with local update
+    }
+    setUsers(users.map((u) => u.id === userId ? { ...u, status: "archived" } : u));
+  };
+
+  const handleRestore = async (userId) => {
+    if (!confirm("Restore this user? They will be moved back to the Existing Profiles tab.")) return;
+    try {
+      await updateDoc(doc(db, "users", userId), { status: "active" });
+      const userToRestore = users.find((u) => u.id === userId);
+      if (userToRestore?.role === "teacher") {
+        await updateDoc(doc(db, "teachers", userId), { status: "active" });
+      } else if (userToRestore?.role === "student") {
+        await updateDoc(doc(db, "students", userId), { status: "active" });
+      }
+    } catch (e) {
+      // Continue with local update
+    }
+    setUsers(users.map((u) => u.id === userId ? { ...u, status: "active" } : u));
+  };
+
+  const handleDeletePermanent = async (userId) => {
+    if (!confirm("⚠️ This will PERMANENTLY delete this user. This action cannot be undone. Continue?")) return;
     const userToDelete = users.find((u) => u.id === userId);
     try {
-      // Delete from users collection (auth/role lookup)
       await deleteDoc(doc(db, "users", userId));
-      // Delete from role-specific collection
       if (userToDelete?.role === "teacher") {
         await deleteDoc(doc(db, "teachers", userId));
       } else if (userToDelete?.role === "student") {
@@ -298,11 +334,15 @@ export default function AdminUsers() {
     }
   };
 
-  // Derive unique sections and roles for filters
-  const uniqueRoles = [...new Set(users.map((u) => u.role).filter(Boolean))];
-  const uniqueSections = [...new Set(users.map((u) => u.section).filter(Boolean))];
+  // Split users into active and archived
+  const activeUsers = users.filter((u) => u.status !== "archived");
+  const archivedUsers = users.filter((u) => u.status === "archived");
 
-  const filteredUsers = users.filter((u) => {
+  // Derive unique sections and roles for filters (from active users)
+  const uniqueRoles = [...new Set(activeUsers.map((u) => u.role).filter(Boolean))];
+  const uniqueSections = [...new Set(activeUsers.map((u) => u.section).filter(Boolean))];
+
+  const filteredUsers = activeUsers.filter((u) => {
     const matchesSearch =
       (u.name || u.fullName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (u.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -310,6 +350,14 @@ export default function AdminUsers() {
     const matchesRole = roleFilter === "All" || u.role === roleFilter;
     const matchesSection = sectionFilter === "All" || u.section === sectionFilter;
     return matchesSearch && matchesRole && matchesSection;
+  });
+
+  const filteredArchivedUsers = archivedUsers.filter((u) => {
+    const matchesSearch =
+      (u.name || u.fullName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.id || "").toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
   // Helper to display role nicely (capitalize first letter)
@@ -594,10 +642,83 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {/* ── Existing Users Table ── */}
+      {/* ── Tab Navigation ── */}
       <div className="card">
-        <div className="card-header" style={{ flexWrap: "wrap", gap: "12px" }}>
-          <div className="card-title">Existing Profiles</div>
+        <div style={{
+          display: "flex",
+          borderBottom: "2px solid var(--border-light)",
+          padding: "0 24px",
+          gap: "0",
+        }}>
+          <button
+            onClick={() => setActiveTab("existing")}
+            style={{
+              padding: "14px 24px",
+              border: "none",
+              background: "none",
+              cursor: "pointer",
+              fontSize: "0.9rem",
+              fontWeight: activeTab === "existing" ? 700 : 500,
+              color: activeTab === "existing" ? "var(--primary)" : "var(--text-muted)",
+              borderBottom: activeTab === "existing" ? "2.5px solid var(--primary)" : "2.5px solid transparent",
+              marginBottom: "-2px",
+              transition: "var(--transition-fast)",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            👥 Existing Profiles
+            <span style={{
+              background: activeTab === "existing" ? "var(--accent-soft)" : "var(--bg-body)",
+              color: activeTab === "existing" ? "var(--primary-dark)" : "var(--text-muted)",
+              padding: "2px 8px",
+              borderRadius: "var(--radius-full)",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+            }}>
+              {activeUsers.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("archived")}
+            style={{
+              padding: "14px 24px",
+              border: "none",
+              background: "none",
+              cursor: "pointer",
+              fontSize: "0.9rem",
+              fontWeight: activeTab === "archived" ? 700 : 500,
+              color: activeTab === "archived" ? "var(--danger)" : "var(--text-muted)",
+              borderBottom: activeTab === "archived" ? "2.5px solid var(--danger)" : "2.5px solid transparent",
+              marginBottom: "-2px",
+              transition: "var(--transition-fast)",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            🗃️ Archived Accounts
+            {archivedUsers.length > 0 && (
+              <span style={{
+                background: activeTab === "archived" ? "var(--danger-bg)" : "var(--bg-body)",
+                color: activeTab === "archived" ? "var(--danger)" : "var(--text-muted)",
+                padding: "2px 8px",
+                borderRadius: "var(--radius-full)",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+              }}>
+                {archivedUsers.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* ── Existing Profiles Tab ── */}
+        {activeTab === "existing" && (
+          <>
+        <div className="card-header" style={{ flexWrap: "wrap", gap: "12px", borderTop: "none" }}>
+          <div className="card-title" style={{ fontSize: "0" }}></div>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
             {/* Role filter */}
             <select
@@ -811,7 +932,18 @@ export default function AdminUsers() {
                   <td>
                     <div style={{ display: "flex", gap: "8px" }}>
                       <button className="btn btn-green btn-sm" onClick={() => handleEdit(user)}>Edit</button>
-                      <button className="btn btn-red btn-sm" onClick={() => handleDelete(user.id)}>Delete</button>
+                      <button
+                        className="btn btn-sm"
+                        onClick={() => handleArchive(user.id)}
+                        style={{
+                          background: "var(--warning-bg)",
+                          color: "var(--warning)",
+                          border: "1px solid var(--warning)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Archive
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -832,12 +964,139 @@ export default function AdminUsers() {
           }}
         >
           <span>
-            Showing {filteredUsers.length} of {users.length} user{users.length !== 1 ? "s" : ""}
+            Showing {filteredUsers.length} of {activeUsers.length} active user{activeUsers.length !== 1 ? "s" : ""}
           </span>
           {(roleFilter !== "All" || sectionFilter !== "All" || searchQuery) && (
             <span style={{ color: "var(--primary)", fontWeight: 600 }}>Filtered</span>
           )}
         </div>
+          </>
+        )}
+
+        {/* ── Archived Accounts Tab ── */}
+        {activeTab === "archived" && (
+          <>
+            <div style={{ padding: "16px 24px 0" }}>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="🔍 Search archived accounts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ width: "100%", maxWidth: "360px" }}
+              />
+            </div>
+
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>User ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Section</th>
+                  <th>Department</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredArchivedUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                      {archivedUsers.length === 0
+                        ? "No archived accounts. Archived users will appear here."
+                        : "No archived users match the current search."}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredArchivedUsers.map((user) => (
+                    <tr key={user.id} style={{ opacity: 0.85 }}>
+                      <td style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
+                        {user.id.length > 10 ? user.id.slice(0, 10) + "…" : user.id}
+                      </td>
+                      <td style={{ fontWeight: 600 }}>{user.name || user.fullName}</td>
+                      <td style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{user.email}</td>
+                      <td>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "3px 10px",
+                            borderRadius: "var(--radius-full)",
+                            fontSize: "0.78rem",
+                            fontWeight: 600,
+                            background: "var(--bg-body)",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          {displayRole(user.role)}
+                        </span>
+                      </td>
+                      <td>{user.section || "—"}</td>
+                      <td>{user.department || "—"}</td>
+                      <td>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "3px 10px",
+                            borderRadius: "var(--radius-full)",
+                            fontSize: "0.78rem",
+                            fontWeight: 600,
+                            background: "var(--danger-bg)",
+                            color: "var(--danger)",
+                          }}
+                        >
+                          <span style={{
+                            width: "6px",
+                            height: "6px",
+                            borderRadius: "50%",
+                            background: "var(--danger)",
+                          }}></span>
+                          Archived
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            className="btn btn-sm"
+                            onClick={() => handleRestore(user.id)}
+                            style={{
+                              background: "var(--accent-soft)",
+                              color: "var(--primary-dark)",
+                              border: "1px solid var(--border-green)",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Restore
+                          </button>
+                          <button
+                            className="btn btn-red btn-sm"
+                            onClick={() => handleDeletePermanent(user.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            <div
+              style={{
+                padding: "12px 24px",
+                borderTop: "1px solid var(--border-light)",
+                fontSize: "0.82rem",
+                color: "var(--text-muted)",
+              }}
+            >
+              {archivedUsers.length} archived account{archivedUsers.length !== 1 ? "s" : ""}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Edit User Modal ── */}
