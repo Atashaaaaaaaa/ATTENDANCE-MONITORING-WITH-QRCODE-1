@@ -46,8 +46,6 @@ export async function send2FACode(toEmail, code) {
       TEMPLATE_ID,
       {
         to_email: toEmail,
-        email: toEmail,
-        user_email: toEmail,
         otp_code: code,
         passcode: code,
         app_name: "AMS - Attendance Monitoring System",
@@ -61,9 +59,8 @@ export async function send2FACode(toEmail, code) {
     console.error("[2FA] Service ID:", SERVICE_ID);
     console.error("[2FA] Template ID:", TEMPLATE_ID);
     console.error("[2FA] Recipient:", toEmail);
-    // Still return true so login can proceed — code is stored in Firestore
-    // and can be verified even if email delivery fails
-    return true;
+    // Return false instead of true so the UI can handle the failure properly
+    return false;
   }
 }
 
@@ -72,5 +69,11 @@ export async function send2FACode(toEmail, code) {
  * @returns {string} - 6-digit code
  */
 export function generate6DigitCode() {
+  if (typeof window !== "undefined" && window.crypto) {
+    const array = new Uint32Array(1);
+    window.crypto.getRandomValues(array);
+    return (100000 + (array[0] % 900000)).toString();
+  }
+  // Fallback for non-browser environments or older browsers
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
