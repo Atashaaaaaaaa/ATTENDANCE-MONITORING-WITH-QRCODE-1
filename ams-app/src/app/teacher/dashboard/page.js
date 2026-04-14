@@ -38,7 +38,7 @@ function determineStatus(scanDate, scheduleTime) {
 
   if (scanMinutes <= lateThreshold) return "Present";
   if (scanMinutes <= parsed.endMinutes) return "Late";
-  return "Late"; // If scanned after end, still mark as late (they showed up)
+  return "Absent"; // If scanned after class end time, mark as Absent
 }
 
 export default function TeacherDashboard() {
@@ -50,6 +50,8 @@ export default function TeacherDashboard() {
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [enrolledStudents, setEnrolledStudents] = useState({});
   const [expandedClassList, setExpandedClassList] = useState({});
+  // Tab state per subject: "current" or "previous"
+  const [sessionTab, setSessionTab] = useState({});
 
   // Fetch teacher's assigned sections from Firestore
   useEffect(() => {
@@ -180,6 +182,7 @@ export default function TeacherDashboard() {
             time: data.timeMarked || "",
             status: data.status || "Present",
             method: data.method || "manual",
+            sessionId: data.sessionId || null,
           });
         }
       });
@@ -204,6 +207,7 @@ export default function TeacherDashboard() {
       teacherId: user?.uid || "unknown",
       date: now.toISOString().split("T")[0],
       startTime: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      scheduleTime: subject.scheduleTime || "",
       active: true,
       createdAt: now.toISOString(),
     };
@@ -214,12 +218,15 @@ export default function TeacherDashboard() {
         ...prev,
         [sessionKey]: { ...sessionData, docId: docRef.id },
       }));
+      // Auto-switch to current session tab
+      setSessionTab((prev) => ({ ...prev, [subject.id]: "current" }));
     } catch (e) {
       // Local mode fallback
       setActiveSessions((prev) => ({
         ...prev,
         [sessionKey]: { ...sessionData, docId: sessionKey },
       }));
+      setSessionTab((prev) => ({ ...prev, [subject.id]: "current" }));
     }
   }, [user?.uid]);
 
@@ -241,9 +248,10 @@ export default function TeacherDashboard() {
       }
     }
 
-    // Mark absent students — those enrolled but not in attendance
+    // Mark absent students — those enrolled but not in attendance for this session
     const sectionRecords = attendanceRecords[subject.sectionId] || [];
-    const presentStudentIds = new Set(sectionRecords.map((r) => r.studentId));
+    const currentSessionRecords = sectionRecords.filter((r) => r.sessionId === session?.docId);
+    const presentStudentIds = new Set(currentSessionRecords.map((r) => r.studentId));
     const today = new Date().toISOString().split("T")[0];
 
     for (const studentId of subject.studentIds) {
@@ -274,6 +282,8 @@ export default function TeacherDashboard() {
       delete next[sessionKey];
       return next;
     });
+    // Switch to previous sessions tab after stopping
+    setSessionTab((prev) => ({ ...prev, [subject.id]: "previous" }));
   }, [activeSessions, attendanceRecords, enrolledStudents]);
 
   // Manual attendance
@@ -325,11 +335,15 @@ export default function TeacherDashboard() {
     }));
   };
 
-  // Get class list with attendance status for a subject
-  const getClassList = (subject) => {
+  // Get class list with attendance status for a subject, filtered by session
+  const getClassList = (subject, filterSessionId) => {
     const records = attendanceRecords[subject.sectionId] || [];
+    const filteredRecords = filterSessionId
+      ? records.filter((r) => r.sessionId === filterSessionId)
+      : records;
+
     const attendanceMap = {};
-    records.forEach((r) => {
+    filteredRecords.forEach((r) => {
       // Keep the first record per student (in case of duplicates)
       if (!attendanceMap[r.studentId]) {
         attendanceMap[r.studentId] = r;
@@ -349,9 +363,25 @@ export default function TeacherDashboard() {
     });
   };
 
+  // Get previous sessions' records (grouped by sessionId)
+  const getPreviousSessionRecords = (subject, currentSessionId) => {
+    const records = attendanceRecords[subject.sectionId] || [];
+    // Get all records NOT belonging to the current session
+    const previousRecords = records.filter((r) => r.sessionId && r.sessionId !== currentSessionId);
+
+    // Group by sessionId
+    const grouped = {};
+    previousRecords.forEach((r) => {
+      if (!grouped[r.sessionId]) grouped[r.sessionId] = [];
+      grouped[r.sessionId].push(r);
+    });
+
+    return grouped;
+  };
+
   // Count statuses for a subject
-  const getStatusCounts = (subject) => {
-    const classList = getClassList(subject);
+  const getStatusCounts = (subject, filterSessionId) => {
+    const classList = getClassList(subject, filterSessionId);
     return {
       total: classList.length,
       present: classList.filter((s) => s.status === "Present").length,
@@ -384,10 +414,17 @@ export default function TeacherDashboard() {
           {subjects.map((subject) => {
             const sessionKey = subject.id + "_" + subject.sectionId;
             const isActive = !!activeSessions[sessionKey];
+            const currentSessionDocId = activeSessions[sessionKey]?.docId;
+            const activeTab = sessionTab[subject.id] || (isActive ? "current" : "previous");
             const records = attendanceRecords[subject.sectionId] || [];
-            const counts = getStatusCounts(subject);
+            const currentRecords = currentSessionDocId
+              ? records.filter((r) => r.sessionId === currentSessionDocId)
+              : [];
+            const counts = getStatusCounts(subject, activeTab === "current" ? currentSessionDocId : null);
             const isClassListOpen = expandedClassList[subject.id];
-            const classList = getClassList(subject);
+            const classList = getClassList(subject, activeTab === "current" ? currentSessionDocId : null);
+            const previousGroups = getPreviousSessionRecords(subject, currentSessionDocId);
+            const hasPreviousSessions = Object.keys(previousGroups).length > 0;
 
             return (
               <div key={sessionKey} className="card" style={{
@@ -428,6 +465,42 @@ export default function TeacherDashboard() {
                   )}
                 </div>
 
+                {/* Session Tabs */}
+                {(isActive || hasPreviousSessions) && (
+                  <div style={{
+                    display: "flex", gap: "4px", marginBottom: "16px",
+                    background: "var(--bg-body)", borderRadius: "10px", padding: "4px",
+                    border: "1px solid var(--border-light)",
+                  }}>
+                    <button
+                      onClick={() => setSessionTab((prev) => ({ ...prev, [subject.id]: "current" }))}
+                      style={{
+                        flex: 1, padding: "8px 12px", borderRadius: "8px", border: "none",
+                        background: activeTab === "current" ? "var(--primary)" : "transparent",
+                        color: activeTab === "current" ? "white" : "var(--text-secondary)",
+                        fontWeight: 600, fontSize: "0.78rem", cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}><circle cx="12" cy="12" r="10"></circle></svg>
+                      Current Session
+                    </button>
+                    <button
+                      onClick={() => setSessionTab((prev) => ({ ...prev, [subject.id]: "previous" }))}
+                      style={{
+                        flex: 1, padding: "8px 12px", borderRadius: "8px", border: "none",
+                        background: activeTab === "previous" ? "var(--primary)" : "transparent",
+                        color: activeTab === "previous" ? "white" : "var(--text-secondary)",
+                        fontWeight: 600, fontSize: "0.78rem", cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                      Previous Sessions
+                    </button>
+                  </div>
+                )}
+
                 {/* Attendance Summary Bar */}
                 {subject.studentIds.length > 0 && (
                   <div style={{
@@ -458,7 +531,7 @@ export default function TeacherDashboard() {
                 )}
 
                 {/* Attendance Progress Bar */}
-                {subject.studentIds.length > 0 && records.length > 0 && (
+                {subject.studentIds.length > 0 && (counts.present + counts.late + counts.absent) > 0 && (
                   <div style={{ marginBottom: "16px" }}>
                     <div style={{ display: "flex", height: "8px", borderRadius: "4px", overflow: "hidden", background: "#F3F4F6" }}>
                       {counts.present > 0 && (
@@ -497,7 +570,7 @@ export default function TeacherDashboard() {
                   </div>
                   {isActive && (
                     <div style={{ fontSize: "0.75rem", marginTop: "8px", opacity: 0.7 }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> {records.length} student(s) marked
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> {currentRecords.length} student(s) marked
                     </div>
                   )}
                 </div>
@@ -569,61 +642,138 @@ export default function TeacherDashboard() {
                   </button>
                 )}
 
-                {/* Class List */}
-                {isClassListOpen && (
+                {/* Class List — Current Session */}
+                {isClassListOpen && activeTab === "current" && (
                   <div style={{ marginTop: "12px", animation: "fadeIn 0.3s ease" }}>
-                    <table className="data-table" style={{ fontSize: "0.82rem" }}>
-                      <thead>
-                        <tr>
-                          <th>Student Name</th>
-                          <th>Time</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {classList.length === 0 ? (
+                    {!isActive && !currentSessionDocId ? (
+                      <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                        No active session. Start a session to see the current class list, or switch to Previous Sessions.
+                      </div>
+                    ) : (
+                      <table className="data-table" style={{ fontSize: "0.82rem" }}>
+                        <thead>
                           <tr>
-                            <td colSpan="3" style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px" }}>
-                              No students enrolled yet.
-                            </td>
+                            <th>Student Name</th>
+                            <th>Time</th>
+                            <th>Status</th>
                           </tr>
-                        ) : (
-                          classList.map((student) => (
-                            <tr key={student.id}>
-                              <td style={{ fontWeight: 600 }}>{student.name}</td>
-                              <td style={{ color: "var(--text-muted)" }}>{student.time}</td>
-                              <td>
-                                <span className={`status-badge ${student.status === "Present" ? "present" : student.status === "Late" ? "late" : student.status === "Absent" ? "absent" : ""}`}
-                                  style={{
-                                    fontSize: "0.7rem",
-                                    background: student.status === "Present" ? "#ECFDF5"
-                                      : student.status === "Late" ? "#FFFBEB"
-                                        : student.status === "Absent" ? "#FEF2F2"
-                                          : "#F3F4F6",
-                                    color: student.status === "Present" ? "#047857"
-                                      : student.status === "Late" ? "#B45309"
-                                        : student.status === "Absent" ? "#991B1B"
-                                          : "#9CA3AF",
-                                    padding: "3px 10px",
-                                    borderRadius: "12px",
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  <span style={{
-                                    width: "6px", height: "6px", borderRadius: "50%", display: "inline-block", marginRight: "4px",
-                                    background: student.status === "Present" ? "#10B981"
-                                      : student.status === "Late" ? "#F59E0B"
-                                        : student.status === "Absent" ? "#EF4444"
-                                          : "#9CA3AF",
-                                  }}></span>
-                                  {student.status}
-                                </span>
+                        </thead>
+                        <tbody>
+                          {classList.length === 0 ? (
+                            <tr>
+                              <td colSpan="3" style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px" }}>
+                                No students enrolled yet.
                               </td>
                             </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
+                          ) : (
+                            classList.map((student) => (
+                              <tr key={student.id}>
+                                <td style={{ fontWeight: 600 }}>{student.name}</td>
+                                <td style={{ color: "var(--text-muted)" }}>{student.time}</td>
+                                <td>
+                                  <span className={`status-badge ${student.status === "Present" ? "present" : student.status === "Late" ? "late" : student.status === "Absent" ? "absent" : ""}`}
+                                    style={{
+                                      fontSize: "0.7rem",
+                                      background: student.status === "Present" ? "#ECFDF5"
+                                        : student.status === "Late" ? "#FFFBEB"
+                                          : student.status === "Absent" ? "#FEF2F2"
+                                            : "#F3F4F6",
+                                      color: student.status === "Present" ? "#047857"
+                                        : student.status === "Late" ? "#B45309"
+                                          : student.status === "Absent" ? "#991B1B"
+                                            : "#9CA3AF",
+                                      padding: "3px 10px",
+                                      borderRadius: "12px",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    <span style={{
+                                      width: "6px", height: "6px", borderRadius: "50%", display: "inline-block", marginRight: "4px",
+                                      background: student.status === "Present" ? "#10B981"
+                                        : student.status === "Late" ? "#F59E0B"
+                                          : student.status === "Absent" ? "#EF4444"
+                                            : "#9CA3AF",
+                                    }}></span>
+                                    {student.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+
+                {/* Class List — Previous Sessions */}
+                {isClassListOpen && activeTab === "previous" && (
+                  <div style={{ marginTop: "12px", animation: "fadeIn 0.3s ease" }}>
+                    {!hasPreviousSessions ? (
+                      <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                        No previous sessions today.
+                      </div>
+                    ) : (
+                      Object.entries(previousGroups).map(([sessId, sessRecords], idx) => {
+                        const firstRecord = sessRecords[0];
+                        return (
+                          <div key={sessId} style={{ marginBottom: "16px" }}>
+                            <div style={{
+                              display: "flex", alignItems: "center", gap: "8px",
+                              marginBottom: "8px", padding: "8px 12px",
+                              background: "var(--bg-body)", borderRadius: "8px",
+                              border: "1px solid var(--border-light)",
+                            }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                              <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                                Session {idx + 1}
+                              </span>
+                              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                                • {sessRecords.length} record(s)
+                              </span>
+                            </div>
+                            <table className="data-table" style={{ fontSize: "0.82rem" }}>
+                              <thead>
+                                <tr>
+                                  <th>Student Name</th>
+                                  <th>Time</th>
+                                  <th>Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {sessRecords.map((r) => (
+                                  <tr key={r.id}>
+                                    <td style={{ fontWeight: 600 }}>{r.name}</td>
+                                    <td style={{ color: "var(--text-muted)" }}>{r.time}</td>
+                                    <td>
+                                      <span style={{
+                                        fontSize: "0.7rem",
+                                        background: r.status === "Present" ? "#ECFDF5"
+                                          : r.status === "Late" ? "#FFFBEB"
+                                            : r.status === "Absent" ? "#FEF2F2" : "#F3F4F6",
+                                        color: r.status === "Present" ? "#047857"
+                                          : r.status === "Late" ? "#B45309"
+                                            : r.status === "Absent" ? "#991B1B" : "#9CA3AF",
+                                        padding: "3px 10px", borderRadius: "12px", fontWeight: 600,
+                                      }}>
+                                        <span style={{
+                                          width: "6px", height: "6px", borderRadius: "50%",
+                                          display: "inline-block", marginRight: "4px",
+                                          background: r.status === "Present" ? "#10B981"
+                                            : r.status === "Late" ? "#F59E0B"
+                                              : r.status === "Absent" ? "#EF4444" : "#9CA3AF",
+                                        }}></span>
+                                        {r.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 )}
               </div>

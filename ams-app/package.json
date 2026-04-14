@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@opentelemetry/api": "^1.9.1",
     "firebase": "^12.12.0",
     "firebase-admin": "^13.8.0",

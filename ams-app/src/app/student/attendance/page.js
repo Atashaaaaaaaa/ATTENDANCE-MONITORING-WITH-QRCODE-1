@@ -38,7 +38,7 @@ function determineStatus(scanDate, scheduleTime) {
 
   if (scanMinutes <= lateThreshold) return "Present";
   if (scanMinutes <= parsed.endMinutes) return "Late";
-  return "Late"; // If scanned after end, still mark as late (they showed up)
+  return "Absent"; // If scanned after class end time, mark as Absent
 }
 
 export default function StudentAttendance() {
@@ -52,6 +52,9 @@ export default function StudentAttendance() {
   const [subjects, setSubjects] = useState([]);
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const [allTodayRecords, setAllTodayRecords] = useState([]);
+  // Session tab state per subject: "current" or "previous"
+  const [sessionTab, setSessionTab] = useState({});
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const canvasRef = useRef(null);
@@ -136,20 +139,29 @@ export default function StudentAttendance() {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const results = {};
+      const allRecords = [];
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
+        const record = {
+          id: docSnap.id,
+          time: data.timeMarked || "",
+          date: today,
+          status: data.status || "Present",
+          subjectName: data.subjectName || "",
+          subjectId: data.subjectId || "",
+          method: data.method || "",
+          sessionId: data.sessionId || null,
+        };
+        allRecords.push(record);
         if (data.subjectId) {
-          results[data.subjectId] = {
-            id: docSnap.id,
-            time: data.timeMarked || "",
-            date: today,
-            status: data.status || "Present",
-            subjectName: data.subjectName || "",
-            method: data.method || "",
-          };
+          // For scanResults, keep the latest record per subject (for current session detection)
+          if (!results[data.subjectId] || (data.sessionId && !results[data.subjectId].sessionId)) {
+            results[data.subjectId] = record;
+          }
         }
       });
       setScanResults(results);
+      setAllTodayRecords(allRecords);
     }, () => {
       // silent fail
     });
@@ -241,9 +253,12 @@ export default function StudentAttendance() {
     const subject = subjects.find((s) => s.id === activeSubject);
     const now = new Date();
     const today = now.toISOString().split("T")[0];
-    const status = determineStatus(now, subject?.scheduleTime);
+
+    // Use the schedule time from the active session if available, otherwise from section
     const sessionKey = subject?.id + "_" + subject?.sectionId;
     const session = activeSessions[sessionKey];
+    const scheduleTime = session?.scheduleTime || subject?.scheduleTime;
+    const status = determineStatus(now, scheduleTime);
 
     stopCamera();
     setActiveSubject(null);
@@ -291,6 +306,25 @@ export default function StudentAttendance() {
     const absent = subjectRecords.filter((r) => r.status === "Absent").length;
     const total = present + late + absent;
     return { present, late, absent, total };
+  };
+
+  // Get current session result for a subject
+  const getCurrentSessionResult = (subject) => {
+    const sessionKey = subject.id + "_" + subject.sectionId;
+    const session = activeSessions[sessionKey];
+    if (!session?.docId) return null;
+    return allTodayRecords.find(
+      (r) => r.subjectId === subject.id && r.sessionId === session.docId
+    );
+  };
+
+  // Get previous session results for a subject
+  const getPreviousSessionResults = (subject) => {
+    const sessionKey = subject.id + "_" + subject.sectionId;
+    const currentSessionId = activeSessions[sessionKey]?.docId;
+    return allTodayRecords.filter(
+      (r) => r.subjectId === subject.id && r.sessionId && r.sessionId !== currentSessionId
+    );
   };
 
   // Draw donut chart
@@ -392,8 +426,14 @@ export default function StudentAttendance() {
             {subjects.map((subject) => {
               const sessionKey = subject.id + "_" + subject.sectionId;
               const isSessionActive = !!activeSessions[sessionKey];
-              const hasResult = scanResults[subject.id];
+              const currentSessionId = activeSessions[sessionKey]?.docId;
+              const currentResult = getCurrentSessionResult(subject);
+              const previousResults = getPreviousSessionResults(subject);
+              const hasResult = currentResult || scanResults[subject.id];
+              const displayResult = currentResult || scanResults[subject.id];
               const isActive = activeSubject === subject.id;
+              const activeTab = sessionTab[subject.id] || (isSessionActive ? "current" : (previousResults.length > 0 ? "previous" : "current"));
+              const hasPreviousSessions = previousResults.length > 0;
 
               return (
                 <div key={subject.id} className="card" style={{
@@ -425,15 +465,15 @@ export default function StudentAttendance() {
                       </p>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
-                      {hasResult && (
+                      {displayResult && (
                         <div style={{
                           width: "32px", height: "32px", borderRadius: "50%",
-                          background: hasResult.status === "Present" ? "#ECFDF5" : hasResult.status === "Late" ? "#FFFBEB" : "#FEF2F2",
+                          background: displayResult.status === "Present" ? "#ECFDF5" : displayResult.status === "Late" ? "#FFFBEB" : "#FEF2F2",
                           display: "flex", alignItems: "center", justifyContent: "center",
                         }}>
-                          {hasResult.status === "Present" ? (
+                          {displayResult.status === "Present" ? (
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                          ) : hasResult.status === "Late" ? (
+                          ) : displayResult.status === "Late" ? (
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                           ) : (
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -467,6 +507,40 @@ export default function StudentAttendance() {
                     <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> {subject.schedule}</span>
                     <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> {subject.room}</span>
                   </div>
+
+                  {/* Session Tabs */}
+                  {(isSessionActive || hasPreviousSessions) && (
+                    <div style={{
+                      display: "flex", gap: "4px", marginBottom: "16px",
+                      background: "var(--bg-body)", borderRadius: "10px", padding: "4px",
+                      border: "1px solid var(--border-light)",
+                    }}>
+                      <button
+                        onClick={() => setSessionTab((prev) => ({ ...prev, [subject.id]: "current" }))}
+                        style={{
+                          flex: 1, padding: "7px 10px", borderRadius: "8px", border: "none",
+                          background: activeTab === "current" ? "var(--primary)" : "transparent",
+                          color: activeTab === "current" ? "white" : "var(--text-secondary)",
+                          fontWeight: 600, fontSize: "0.72rem", cursor: "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        Current
+                      </button>
+                      <button
+                        onClick={() => setSessionTab((prev) => ({ ...prev, [subject.id]: "previous" }))}
+                        style={{
+                          flex: 1, padding: "7px 10px", borderRadius: "8px", border: "none",
+                          background: activeTab === "previous" ? "var(--primary)" : "transparent",
+                          color: activeTab === "previous" ? "white" : "var(--text-secondary)",
+                          fontWeight: 600, fontSize: "0.72rem", cursor: "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        Previous
+                      </button>
+                    </div>
+                  )}
 
                   {/* Camera feed — only for active scan */}
                   {isActive && (
@@ -513,26 +587,26 @@ export default function StudentAttendance() {
                     </div>
                   )}
 
-                  {/* Scan result */}
-                  {hasResult && !isActive && (
+                  {/* Scan result — Current Tab */}
+                  {displayResult && !isActive && activeTab === "current" && (
                     <div style={{
                       display: "flex", alignItems: "center", gap: "12px",
                       padding: "12px", borderRadius: "10px",
-                      background: hasResult.status === "Present" ? "rgba(236, 253, 245, 0.8)"
-                        : hasResult.status === "Late" ? "rgba(255, 251, 235, 0.8)"
+                      background: displayResult.status === "Present" ? "rgba(236, 253, 245, 0.8)"
+                        : displayResult.status === "Late" ? "rgba(255, 251, 235, 0.8)"
                           : "rgba(254, 242, 242, 0.8)",
                       marginBottom: "12px",
                     }}>
                       <div style={{
                         width: "40px", height: "40px", borderRadius: "50%",
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        background: hasResult.status === "Present" ? "#ECFDF5"
-                          : hasResult.status === "Late" ? "#FFFBEB" : "#FEF2F2",
-                        border: `2px solid ${hasResult.status === "Present" ? "#4A7C59"
-                          : hasResult.status === "Late" ? "#F59E0B" : "#EF4444"}`,
+                        background: displayResult.status === "Present" ? "#ECFDF5"
+                          : displayResult.status === "Late" ? "#FFFBEB" : "#FEF2F2",
+                        border: `2px solid ${displayResult.status === "Present" ? "#4A7C59"
+                          : displayResult.status === "Late" ? "#F59E0B" : "#EF4444"}`,
                       }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                          stroke={hasResult.status === "Present" ? "#047857" : hasResult.status === "Late" ? "#B45309" : "#991B1B"}
+                          stroke={displayResult.status === "Present" ? "#047857" : displayResult.status === "Late" ? "#B45309" : "#991B1B"}
                           strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
@@ -540,43 +614,82 @@ export default function StudentAttendance() {
                       <div style={{ flex: 1 }}>
                         <div style={{
                           fontSize: "0.8rem", fontWeight: 700,
-                          color: hasResult.status === "Present" ? "#065F46"
-                            : hasResult.status === "Late" ? "#92400E" : "#991B1B",
+                          color: displayResult.status === "Present" ? "#065F46"
+                            : displayResult.status === "Late" ? "#92400E" : "#991B1B",
                         }}>
-                          Marked as {hasResult.status}
-                          {hasResult.status === "Present" && (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginLeft: '5px'}}><polyline points="20 6 9 17 4 12"></polyline></svg>
-                          )}
-                          {hasResult.status === "Late" && (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginLeft: '5px'}}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                          )}
+                          Marked as {displayResult.status}
                         </div>
                         <div style={{
                           fontSize: "0.72rem",
-                          color: hasResult.status === "Present" ? "#047857"
-                            : hasResult.status === "Late" ? "#B45309" : "#991B1B",
+                          color: displayResult.status === "Present" ? "#047857"
+                            : displayResult.status === "Late" ? "#B45309" : "#991B1B",
                         }}>
-                          {hasResult.date} at {hasResult.time}
+                          {displayResult.date} at {displayResult.time}
                         </div>
                       </div>
                     </div>
                   )}
 
+                  {/* Previous Session Results */}
+                  {activeTab === "previous" && !isActive && (
+                    <div style={{ marginBottom: "12px" }}>
+                      {previousResults.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "20px", color: "var(--text-muted)", fontSize: "0.82rem" }}>
+                          No previous sessions today.
+                        </div>
+                      ) : (
+                        previousResults.map((r, idx) => (
+                          <div key={r.id || idx} style={{
+                            display: "flex", alignItems: "center", gap: "12px",
+                            padding: "10px 12px", borderRadius: "8px",
+                            background: r.status === "Present" ? "rgba(236, 253, 245, 0.5)"
+                              : r.status === "Late" ? "rgba(255, 251, 235, 0.5)"
+                                : "rgba(254, 242, 242, 0.5)",
+                            marginBottom: "8px",
+                            border: "1px solid var(--border-light)",
+                          }}>
+                            <div style={{
+                              width: "28px", height: "28px", borderRadius: "50%",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              background: r.status === "Present" ? "#ECFDF5"
+                                : r.status === "Late" ? "#FFFBEB" : "#FEF2F2",
+                            }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke={r.status === "Present" ? "#10B981" : r.status === "Late" ? "#F59E0B" : "#EF4444"}
+                                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                              </svg>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                {r.status} — {r.time || "—"}
+                              </div>
+                            </div>
+                            <span style={{
+                              fontSize: "0.65rem", padding: "2px 8px", borderRadius: "10px",
+                              background: "#F3F4F6", color: "#9CA3AF", fontWeight: 600,
+                            }}>Past</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
                   {/* Action Button */}
-                  {!isActive && (
+                  {!isActive && activeTab === "current" && (
                     <button
                       onClick={() => isSessionActive && startCamera(subject.id)}
                       disabled={!!activeSubject || !isSessionActive}
                       title={!isSessionActive ? "Your teacher hasn't started a session yet" : ""}
                       style={{
                         width: "100%", padding: "12px", borderRadius: "10px",
-                        border: hasResult ? `1.5px solid ${hasResult.status === "Present" ? "#A7F3D0" : hasResult.status === "Late" ? "#FDE68A" : "#FECACA"}` : !isSessionActive ? "1.5px solid #E5E7EB" : "none",
+                        border: displayResult ? `1.5px solid ${displayResult.status === "Present" ? "#A7F3D0" : displayResult.status === "Late" ? "#FDE68A" : "#FECACA"}` : !isSessionActive ? "1.5px solid #E5E7EB" : "none",
                         background: !isSessionActive
                           ? "#F9FAFB"
-                          : hasResult
+                          : displayResult
                           ? "transparent"
                           : "linear-gradient(135deg, #4A7C59, #6B9E78)",
-                        color: !isSessionActive ? "#9CA3AF" : hasResult ? (hasResult.status === "Present" ? "#047857" : "#B45309") : "white",
+                        color: !isSessionActive ? "#9CA3AF" : displayResult ? (displayResult.status === "Present" ? "#047857" : "#B45309") : "white",
                         fontWeight: 700, fontSize: "0.85rem",
                         cursor: !isSessionActive || activeSubject ? "not-allowed" : "pointer",
                         opacity: activeSubject && !isActive ? 0.5 : 1,
@@ -586,7 +699,7 @@ export default function StudentAttendance() {
                     >
                       {!isSessionActive
                         ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Waiting for Teacher to Start Session</>
-                        : hasResult
+                        : displayResult
                         ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg> Retake Attendance</>
                         : <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> Take Attendance</>}
                     </button>

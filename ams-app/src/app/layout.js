@@ -1,6 +1,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import GlobalGuard from "@/components/GlobalGuard";
+import IdleTimerProvider from "@/components/IdleTimerProvider";
 
 export const metadata = {
   title: "AMS - Attendance Monitoring System",
@@ -13,7 +14,9 @@ export default function RootLayout({ children }) {
       <body>
         <AuthProvider>
           <GlobalGuard>
-            {children}
+            <IdleTimerProvider>
+              {children}
+            </IdleTimerProvider>
           </GlobalGuard>
         </AuthProvider>
       </body>
