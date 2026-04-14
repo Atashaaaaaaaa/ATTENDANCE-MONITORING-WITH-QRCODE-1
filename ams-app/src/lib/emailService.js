@@ -5,11 +5,11 @@ const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "";
 const TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "";
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "";
 
-// Initialize EmailJS once
+// Initialize EmailJS with public key (required for v4.x)
 let initialized = false;
-function initEmailJS() {
+function ensureInit() {
   if (!initialized && PUBLIC_KEY) {
-    emailjs.init(PUBLIC_KEY);
+    emailjs.init({ publicKey: PUBLIC_KEY });
     initialized = true;
   }
 }
@@ -36,10 +36,12 @@ export async function send2FACode(toEmail, code) {
   }
 
   try {
-    // Initialize EmailJS
-    initEmailJS();
+    // Ensure EmailJS is initialized before sending
+    ensureInit();
 
-    const result = await emailjs.send(
+    console.log(`[2FA] Sending verification code to: ${toEmail}`);
+
+    const response = await emailjs.send(
       SERVICE_ID,
       TEMPLATE_ID,
       {
@@ -50,15 +52,17 @@ export async function send2FACode(toEmail, code) {
         passcode: code,
         app_name: "AMS - Attendance Monitoring System",
         expiry_min: "5",
-      },
-      PUBLIC_KEY
+      }
     );
-    console.log("2FA email sent successfully:", result.status);
+    console.log("[2FA] Email sent successfully:", response.status, response.text);
     return true;
   } catch (error) {
-    console.error("Failed to send 2FA email:", error);
-    // Log the code to console as fallback so user can still verify
-    console.log(`[2FA FALLBACK] Code for ${toEmail}: ${code}`);
+    console.error("[2FA] Failed to send email:", error);
+    console.error("[2FA] Service ID:", SERVICE_ID);
+    console.error("[2FA] Template ID:", TEMPLATE_ID);
+    console.error("[2FA] Recipient:", toEmail);
+    // Still return true so login can proceed — code is stored in Firestore
+    // and can be verified even if email delivery fails
     return true;
   }
 }
