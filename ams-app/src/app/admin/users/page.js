@@ -219,7 +219,7 @@ export default function AdminUsers() {
   };
 
   const handleDeletePermanent = async (userId) => {
-    if (!confirm("⚠️ This will PERMANENTLY delete this user. This action cannot be undone. Continue?")) return;
+    if (!confirm("This will PERMANENTLY delete this user. This action cannot be undone. Continue?")) return;
     const userToDelete = users.find((u) => u.id === userId);
     try {
       await deleteDoc(doc(db, "users", userId));
@@ -469,7 +469,7 @@ export default function AdminUsers() {
                     fontWeight: 500,
                   }}
                 >
-                  ⚠ {formError}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> {formError}
                 </div>
               )}
               <button type="submit" className="btn btn-purple" disabled={submitting}>
@@ -520,9 +520,8 @@ export default function AdminUsers() {
                 justifyContent: "center",
                 fontSize: "1.6rem",
                 margin: "0 auto 16px",
-              }}
-            >
-              ✅
+              }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
             </div>
             <h3
               style={{
@@ -591,7 +590,7 @@ export default function AdminUsers() {
               }}
             >
               <div style={{ fontSize: "0.75rem", opacity: 0.8, marginBottom: "6px" }}>
-                🔑 Default Password
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Default Password
               </div>
               <div
                 style={{
@@ -626,7 +625,7 @@ export default function AdminUsers() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {copied ? "✓ Copied!" : "📋 Copy"}
+                  {copied ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!</> : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg> Copy</>}
                 </button>
               </div>
             </div>
@@ -764,7 +763,7 @@ export default function AdminUsers() {
             <input
               type="text"
               className="form-control"
-              placeholder="🔍 Search by name, email or ID..."
+              placeholder="Search by name, email or ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ width: "260px" }}
@@ -980,7 +979,7 @@ export default function AdminUsers() {
               <input
                 type="text"
                 className="form-control"
-                placeholder="🔍 Search archived accounts..."
+                placeholder="Search archived accounts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ width: "100%", maxWidth: "360px" }}
@@ -1159,9 +1158,8 @@ export default function AdminUsers() {
                 justifyContent: "center",
                 fontSize: "1.6rem",
                 margin: "0 auto 16px",
-              }}
-            >
-              ✏️
+              }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
             </div>
             <h3
               style={{
@@ -1199,7 +1197,7 @@ export default function AdminUsers() {
                   fontWeight: 500,
                 }}
               >
-                ⚠ {editError}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> {editError}
               </div>
             )}
             {editSuccess && (
@@ -1215,7 +1213,7 @@ export default function AdminUsers() {
                   fontWeight: 500,
                 }}
               >
-                ✅ {editSuccess}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><polyline points="20 6 9 17 4 12"></polyline></svg> {editSuccess}
               </div>
             )}
 
@@ -1255,7 +1253,7 @@ export default function AdminUsers() {
                   marginBottom: "8px",
                 }}
               >
-                {resetSending ? "Generating..." : "🔑 Generate New Password"}
+                {resetSending ? "Generating..." : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Generate New Password</>}
               </button>
 
               {/* Show generated password */}
@@ -1270,7 +1268,7 @@ export default function AdminUsers() {
                   }}
                 >
                   <div style={{ fontSize: "0.75rem", opacity: 0.8, marginBottom: "6px" }}>
-                    🔑 New Password
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> New Password
                   </div>
                   <div
                     style={{
@@ -1305,7 +1303,7 @@ export default function AdminUsers() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {resetCopied ? "✓ Copied!" : "📋 Copy"}
+                      {resetCopied ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!</> : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg> Copy</>}
                     </button>
                   </div>
                   <p

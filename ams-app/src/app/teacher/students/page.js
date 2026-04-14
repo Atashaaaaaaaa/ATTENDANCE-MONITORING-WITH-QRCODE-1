@@ -113,7 +113,7 @@ export default function TeacherStudents() {
       {/* Section Selector */}
       {sections.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: "60px 24px" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>📚</div>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg></div>
           <h3 style={{ margin: "0 0 8px", color: "var(--text-primary)" }}>No Sections Assigned</h3>
           <p style={{ color: "var(--text-muted)", maxWidth: "400px", margin: "0 auto" }}>
             You don&apos;t have any sections assigned yet. Please contact the admin to be assigned to sections.
@@ -264,7 +264,7 @@ export default function TeacherStudents() {
                   padding: "4px",
                 }}
               >
-                ✕
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
 
@@ -272,7 +272,7 @@ export default function TeacherStudents() {
             <input
               type="text"
               className="form-control"
-              placeholder="🔍 Search students by name, email, or section..."
+              placeholder="Search students by name, email, or section..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ marginBottom: "16px" }}

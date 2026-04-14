@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd ams-app && npm install && npm run build",
+  "outputDirectory": "ams-app/.next",
+  "framework": "nextjs",
+  "installCommand": "npm install"
+}

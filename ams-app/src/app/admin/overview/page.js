@@ -38,19 +38,19 @@ export default function AdminOverview() {
 
       <div className="stats-row">
         <div className="stat-card stat-purple">
-          <div className="stat-card-icon">👨‍🏫</div>
+          <div className="stat-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg></div>
           <div className="stat-card-label">Total Teachers</div>
           <div className="stat-card-value">{stats.teachers}</div>
         </div>
 
         <div className="stat-card stat-blue">
-          <div className="stat-card-icon">🎓</div>
+          <div className="stat-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg></div>
           <div className="stat-card-label">Total Students</div>
           <div className="stat-card-value">{stats.students}</div>
         </div>
 
         <div className="stat-card stat-orange">
-          <div className="stat-card-icon">📂</div>
+          <div className="stat-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>
           <div className="stat-card-label">Active Sections</div>
           <div className="stat-card-value">{stats.sections}</div>
         </div>

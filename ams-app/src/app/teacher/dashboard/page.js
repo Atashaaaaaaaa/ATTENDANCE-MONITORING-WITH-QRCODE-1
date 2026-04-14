@@ -179,7 +179,7 @@ export default function TeacherDashboard() {
         </div>
       ) : subjects.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: "60px 24px" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>📚</div>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg></div>
           <h3 style={{ margin: "0 0 8px", color: "var(--text-primary)" }}>No Subjects Assigned</h3>
           <p style={{ color: "var(--text-muted)", maxWidth: "400px", margin: "0 auto" }}>
             Subjects and sections will appear here once the admin assigns them to your account via Section Mapping.
@@ -214,7 +214,7 @@ export default function TeacherDashboard() {
                     </div>
                     <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700 }}>{subject.name}</h3>
                     <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                      🕐 {subject.schedule} • 📍 {subject.room}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> {subject.schedule} • <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> {subject.room}
                     </p>
                   </div>
                   {isActive && (
@@ -242,7 +242,7 @@ export default function TeacherDashboard() {
                   transition: "all 0.3s ease",
                 }}>
                   <div style={{ fontSize: "2rem", marginBottom: "8px" }}>
-                    {isActive ? "🟢" : "⏸️"}
+                    {isActive ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><circle cx="12" cy="12" r="10"></circle></svg> : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>}
                   </div>
                   <div style={{ fontSize: "0.9rem", fontWeight: 700 }}>
                     {isActive ? "Session Active" : "Session Inactive"}
@@ -254,7 +254,7 @@ export default function TeacherDashboard() {
                   </div>
                   {isActive && (
                     <div style={{ fontSize: "0.75rem", marginTop: "8px", opacity: 0.7 }}>
-                      👥 {records.length} student(s) marked present
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> {records.length} student(s) marked present
                     </div>
                   )}
                 </div>
@@ -267,7 +267,7 @@ export default function TeacherDashboard() {
                       onClick={() => startSession(subject)}
                       style={{ flex: 1, padding: "12px", fontSize: "0.9rem" }}
                     >
-                      🎥 Start Face Scan Session
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> Start Face Scan Session
                     </button>
                   ) : (
                     <button
@@ -275,7 +275,7 @@ export default function TeacherDashboard() {
                       onClick={() => stopSession(subject)}
                       style={{ flex: 1, padding: "12px", fontSize: "0.9rem" }}
                     >
-                      ⏹️ End Session
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg> End Session
                     </button>
                   )}
                 </div>

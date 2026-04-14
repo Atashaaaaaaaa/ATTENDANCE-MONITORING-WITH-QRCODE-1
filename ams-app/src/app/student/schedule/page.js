@@ -51,7 +51,7 @@ export default function StudentSchedule() {
     .map((sec) => ({
       time: sec.schedule?.time || "TBD",
       name: sec.subject || "Untitled",
-      room: sec.room ? `📍 ${sec.room}` : "📍 TBD",
+      room: sec.room ? sec.room : "TBD",
       teacher: sec.teacher || "TBD",
       section: sec.section || "—",
       type: "upcoming", // Default style
@@ -119,7 +119,7 @@ export default function StudentSchedule() {
 
       <div className="card" style={{ borderLeft: "5px solid var(--warning)" }}>
         <div className="card-title" style={{ color: "#D35400", marginBottom: "16px" }}>
-          📅 Today&apos;s Classes
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Today&apos;s Classes
           <span style={{
             marginLeft: "12px",
             padding: "3px 10px",
@@ -145,10 +145,10 @@ export default function StudentSchedule() {
           ) : (
             todayClasses.map((cls, idx) => (
               <div className={`today-class-card ${cls.type}`} key={idx}>
-                <div className="today-class-time">🕐 {cls.time}</div>
+                <div className="today-class-time"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> {cls.time}</div>
                 <div className="today-class-name">{cls.name}</div>
-                <div className="today-class-room">{cls.room}</div>
-                <div className="today-class-teacher">👨‍🏫 {cls.teacher} • {cls.section}</div>
+                <div className="today-class-room"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> {cls.room}</div>
+                <div className="today-class-teacher"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg> {cls.teacher} • {cls.section}</div>
               </div>
             ))
           )}
@@ -192,7 +192,7 @@ export default function StudentSchedule() {
                         <div className="schedule-cell">
                           <strong>{row[day].subject}</strong>
                           <small>{row[day].section}</small>
-                          <div className="schedule-cell-room">📍 {row[day].room}</div>
+                          <div className="schedule-cell-room"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> {row[day].room}</div>
                         </div>
                       ) : (
                         <span style={{ color: "var(--text-muted)" }}>—</span>
@@ -208,7 +208,7 @@ export default function StudentSchedule() {
 
       <div className="info-card">
         <p>
-          <strong>📌 Note:</strong> Please arrive 5 minutes before the class starts to ensure successful face scanning.
+          <strong><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg> Note:</strong> Please arrive 5 minutes before the class starts to ensure successful face scanning.
         </p>
       </div>
     </>

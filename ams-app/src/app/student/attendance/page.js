@@ -193,7 +193,7 @@ export default function StudentAttendance() {
           background: "#FEF2F2", border: "1px solid #FECACA",
           color: "#991B1B", fontWeight: 600, fontSize: "0.9rem",
         }}>
-          ⚠️ {cameraError}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> {cameraError}
           <button onClick={closeCamera} style={{
             marginLeft: "12px", background: "none", border: "none",
             color: "#991B1B", cursor: "pointer", textDecoration: "underline",
@@ -207,7 +207,7 @@ export default function StudentAttendance() {
         </div>
       ) : subjects.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: "60px 24px" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>📚</div>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg></div>
           <h3 style={{ margin: "0 0 8px", color: "var(--text-primary)" }}>No Subjects Enrolled</h3>
           <p style={{ color: "var(--text-muted)", maxWidth: "400px", margin: "0 auto" }}>
             Your enrolled subjects will appear here once your teacher adds you to their class.
@@ -258,7 +258,7 @@ export default function StudentAttendance() {
                           width: "32px", height: "32px", borderRadius: "50%",
                           background: "#ECFDF5", display: "flex", alignItems: "center",
                           justifyContent: "center", fontSize: "1rem",
-                        }}>✅</div>
+                        }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
                       )}
                       {/* Session status badge */}
                       <div style={{
@@ -284,8 +284,8 @@ export default function StudentAttendance() {
                     display: "flex", gap: "16px", fontSize: "0.78rem",
                     color: "var(--text-secondary)", marginBottom: "16px",
                   }}>
-                    <span>🕐 {subject.schedule}</span>
-                    <span>📍 {subject.room}</span>
+                    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> {subject.schedule}</span>
+                    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> {subject.room}</span>
                   </div>
 
                   {/* Camera feed — only for active scan */}
@@ -321,14 +321,14 @@ export default function StudentAttendance() {
                           background: "rgba(255,255,255,0.2)", color: "white",
                           fontWeight: 600, fontSize: "0.85rem", cursor: "pointer",
                           backdropFilter: "blur(4px)",
-                        }}>✕ Cancel</button>
+                        }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Cancel</button>
                         <button onClick={captureFace} disabled={!scanning} style={{
                           padding: "10px 24px", borderRadius: "10px", border: "none",
                           background: scanning ? "linear-gradient(135deg, #4A7C59, #6B9E78)" : "#666",
                           color: "white", fontWeight: 700, fontSize: "0.85rem",
                           cursor: scanning ? "pointer" : "not-allowed",
                           boxShadow: scanning ? "0 4px 15px rgba(74, 124, 89, 0.4)" : "none",
-                        }}>📸 Capture & Mark</button>
+                        }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Capture & Mark</button>
                       </div>
                     </div>
                   )}
@@ -347,7 +347,7 @@ export default function StudentAttendance() {
                       }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#065F46" }}>
-                          Attendance Marked ✓
+                          Attendance Marked <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginLeft: '5px'}}><polyline points="20 6 9 17 4 12"></polyline></svg>
                         </div>
                         <div style={{ fontSize: "0.72rem", color: "#047857" }}>
                           {hasResult.date} at {hasResult.time}
@@ -379,10 +379,10 @@ export default function StudentAttendance() {
                       }}
                     >
                       {!isSessionActive
-                        ? "🔒 Waiting for Teacher to Start Session"
+                        ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Waiting for Teacher to Start Session</>
                         : hasResult
-                        ? "🔄 Retake Attendance"
-                        : "🎥 Take Attendance"}
+                        ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg> Retake Attendance</>
+                        : <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> Take Attendance</>}
                     </button>
                   )}
                 </div>
