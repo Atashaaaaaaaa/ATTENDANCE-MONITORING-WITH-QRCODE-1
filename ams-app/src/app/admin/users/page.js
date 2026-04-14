@@ -61,7 +61,8 @@ export default function AdminUsers() {
   const [users, setUsers] = useState([]);
 
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     role: "",
     section: "",
@@ -126,6 +127,7 @@ export default function AdminUsers() {
     const defaultPassword = generatePassword();
     // Store role as lowercase to match login routing ("teacher", "student")
     const roleLower = formData.role.toLowerCase();
+    const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
 
     try {
       // 1) Create a real Firebase Auth account using a secondary app
@@ -137,8 +139,10 @@ export default function AdminUsers() {
       const baseUserData = {
         uid: uid,
         email: formData.email,
-        fullName: formData.name,
-        name: formData.name,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        fullName: fullName,
+        name: fullName,
         role: roleLower,
         status: "active",
         forcePasswordChange: true,
@@ -152,8 +156,10 @@ export default function AdminUsers() {
       const roleData = {
         uid: uid,
         email: formData.email,
-        fullName: formData.name,
-        name: formData.name,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        fullName: fullName,
+        name: fullName,
         status: "active",
         createdAt: new Date().toISOString(),
         ...(roleLower === "teacher" ? { department: formData.department || "" } : {}),
@@ -167,7 +173,7 @@ export default function AdminUsers() {
       setCreatedUser({ ...displayData, password: defaultPassword });
       setShowSuccess(true);
       setCopied(false);
-      setFormData({ name: "", email: "", role: "", section: "", department: "" });
+      setFormData({ firstName: "", lastName: "", email: "", role: "", section: "", department: "" });
     } catch (err) {
       console.error("Error creating user:", err);
       if (err.code === "auth/email-already-in-use") {
@@ -382,13 +388,24 @@ export default function AdminUsers() {
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
             <div className="form-group">
-              <label>Full Name</label>
+              <label>First Name</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. Mica Smith"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Mica"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Last Name</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="e.g. Smith"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 required
               />
             </div>

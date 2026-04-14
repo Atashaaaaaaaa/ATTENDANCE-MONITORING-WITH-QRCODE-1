@@ -5,14 +5,21 @@ const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "";
 const TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "";
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "";
 
+// Initialize EmailJS once
+let initialized = false;
+function initEmailJS() {
+  if (!initialized && PUBLIC_KEY) {
+    emailjs.init(PUBLIC_KEY);
+    initialized = true;
+  }
+}
+
 /**
  * Send a 2FA verification code to the user's email via EmailJS.
  *
- * EmailJS Template variables expected:
- *   {{to_email}}   - recipient email
- *   {{otp_code}}   - the 6-digit verification code
- *   {{app_name}}   - "AMS - Attendance Monitoring System"
- *   {{expiry_min}} - minutes until code expires (e.g. "5")
+ * EmailJS Template setup:
+ *   - In the template "To Email" field, use: {{to_email}}
+ *   - Template body should reference: {{otp_code}}, {{app_name}}, {{expiry_min}}
  *
  * @param {string} toEmail - The recipient email address
  * @param {string} code - The 6-digit OTP code
@@ -25,26 +32,33 @@ export async function send2FACode(toEmail, code) {
     );
     // In development/demo mode, log the code to console
     console.log(`[2FA DEV MODE] Code for ${toEmail}: ${code}`);
-    return true; // Allow login to proceed even without email config
+    return true;
   }
 
   try {
-    await emailjs.send(
+    // Initialize EmailJS
+    initEmailJS();
+
+    const result = await emailjs.send(
       SERVICE_ID,
       TEMPLATE_ID,
       {
         to_email: toEmail,
+        email: toEmail,
+        user_email: toEmail,
         otp_code: code,
+        passcode: code,
         app_name: "AMS - Attendance Monitoring System",
         expiry_min: "5",
       },
       PUBLIC_KEY
     );
+    console.log("2FA email sent successfully:", result.status);
     return true;
   } catch (error) {
     console.error("Failed to send 2FA email:", error);
-    // Still return true so login can proceed — code is stored in Firestore
-    // and can be verified even if email delivery fails
+    // Log the code to console as fallback so user can still verify
+    console.log(`[2FA FALLBACK] Code for ${toEmail}: ${code}`);
     return true;
   }
 }
