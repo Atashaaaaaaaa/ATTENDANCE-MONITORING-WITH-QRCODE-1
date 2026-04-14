@@ -4,8 +4,45 @@ import { addDoc, collection, query, where, onSnapshot, getDocs } from "firebase/
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 
+// Parse schedule time string like "7:30 AM - 9:00 AM" into { startMinutes, endMinutes }
+function parseScheduleTime(timeStr) {
+  if (!timeStr) return null;
+  const parts = timeStr.split("-").map((s) => s.trim());
+  if (parts.length < 2) return null;
+
+  const parseTime = (t) => {
+    const match = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!match) return null;
+    let h = parseInt(match[1]);
+    const m = parseInt(match[2]);
+    const ampm = match[3].toUpperCase();
+    if (ampm === "PM" && h !== 12) h += 12;
+    if (ampm === "AM" && h === 12) h = 0;
+    return h * 60 + m;
+  };
+
+  const start = parseTime(parts[0]);
+  const end = parseTime(parts[1]);
+  if (start === null || end === null) return null;
+  return { startMinutes: start, endMinutes: end };
+}
+
+// Determine attendance status based on scan time and schedule
+function determineStatus(scanDate, scheduleTime) {
+  if (!scheduleTime) return "Present";
+  const parsed = parseScheduleTime(scheduleTime);
+  if (!parsed) return "Present";
+
+  const scanMinutes = scanDate.getHours() * 60 + scanDate.getMinutes();
+  const lateThreshold = parsed.startMinutes + 15; // 15 min grace period
+
+  if (scanMinutes <= lateThreshold) return "Present";
+  if (scanMinutes <= parsed.endMinutes) return "Late";
+  return "Late"; // If scanned after end, still mark as late (they showed up)
+}
+
 export default function StudentAttendance() {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   // Camera state
   const [activeSubject, setActiveSubject] = useState(null);
   const [scanning, setScanning] = useState(false);
@@ -14,9 +51,11 @@ export default function StudentAttendance() {
   const [activeSessions, setActiveSessions] = useState({});
   const [subjects, setSubjects] = useState([]);
   const [loadingSubjects, setLoadingSubjects] = useState(true);
+  const [attendanceHistory, setAttendanceHistory] = useState([]);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const canvasRef = useRef(null);
+  const chartRef = useRef(null);
 
   // Fetch sections where student is enrolled
   useEffect(() => {
@@ -33,12 +72,15 @@ export default function StudentAttendance() {
           if (studentsList.includes(user.uid)) {
             // Format schedule from object or legacy string
             let scheduleStr = "TBD";
+            let scheduleTime = "";
             if (data.schedule && typeof data.schedule === "object") {
               const days = (data.schedule.days || []).join(", ");
               const time = data.schedule.time || "";
               scheduleStr = days && time ? `${days} • ${time}` : days || time || "TBD";
+              scheduleTime = time;
             } else if (typeof data.schedule === "string") {
               scheduleStr = data.schedule;
+              scheduleTime = data.schedule;
             }
             fetched.push({
               id: d.id,
@@ -48,6 +90,7 @@ export default function StudentAttendance() {
               section: data.section || "—",
               teacher: data.teacher || "TBD",
               schedule: scheduleStr,
+              scheduleTime: scheduleTime,
               room: data.room || "TBD",
             });
           }
@@ -79,6 +122,60 @@ export default function StudentAttendance() {
 
     return () => unsubscribe();
   }, []);
+
+  // Listen for today's attendance records for this student
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const today = new Date().toISOString().split("T")[0];
+    const q = query(
+      collection(db, "attendance"),
+      where("studentId", "==", user.uid),
+      where("date", "==", today)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const results = {};
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.subjectId) {
+          results[data.subjectId] = {
+            id: docSnap.id,
+            time: data.timeMarked || "",
+            date: today,
+            status: data.status || "Present",
+            subjectName: data.subjectName || "",
+            method: data.method || "",
+          };
+        }
+      });
+      setScanResults(results);
+    }, () => {
+      // silent fail
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  // Load attendance history for summary chart
+  useEffect(() => {
+    if (!user?.uid || subjects.length === 0) return;
+
+    const q = query(
+      collection(db, "attendance"),
+      where("studentId", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const history = [];
+      snapshot.forEach((docSnap) => {
+        history.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      setAttendanceHistory(history);
+    }, () => {});
+
+    return () => unsubscribe();
+  }, [user?.uid, subjects]);
 
   // Stop camera stream
   const stopCamera = useCallback(() => {
@@ -141,19 +238,12 @@ export default function StudentAttendance() {
     ctx.drawImage(video, 0, 0);
 
     const faceImageData = canvas.toDataURL("image/jpeg", 0.8);
-    const sessionId = "FACE_" + Date.now();
     const subject = subjects.find((s) => s.id === activeSubject);
-
-    setScanResults((prev) => ({
-      ...prev,
-      [activeSubject]: {
-        id: sessionId,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        date: new Date().toLocaleDateString(),
-        image: faceImageData,
-        subjectName: subject?.name || "",
-      },
-    }));
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+    const status = determineStatus(now, subject?.scheduleTime);
+    const sessionKey = subject?.id + "_" + subject?.sectionId;
+    const session = activeSessions[sessionKey];
 
     stopCamera();
     setActiveSubject(null);
@@ -162,23 +252,105 @@ export default function StudentAttendance() {
     try {
       await addDoc(collection(db, "attendance"), {
         studentId: user?.uid || "unknown",
-        sessionId: sessionId,
+        studentName: userData?.fullName || userData?.name || user?.email || "Unknown",
+        sessionId: session?.docId || "face_scan",
         subjectId: activeSubject,
         subjectCode: subject?.code || "",
+        subjectName: subject?.name || "",
         sectionId: subject?.sectionId || "",
-        timestamp: new Date().toISOString(),
-        status: "present",
+        date: today,
+        timestamp: now.toISOString(),
+        timeMarked: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        status: status,
         method: "facial_recognition",
       });
     } catch (e) {
-      // Local mode
+      // Local mode — save result locally
+      setScanResults((prev) => ({
+        ...prev,
+        [activeSubject]: {
+          time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          date: now.toLocaleDateString(),
+          status: status,
+          subjectName: subject?.name || "",
+        },
+      }));
     }
-  }, [activeSubject, subjects, stopCamera, user?.uid]);
+  }, [activeSubject, subjects, stopCamera, user?.uid, userData, activeSessions]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => stopCamera();
   }, [stopCamera]);
+
+  // Calculate attendance summary per subject
+  const getSubjectSummary = (subjectId) => {
+    const subjectRecords = attendanceHistory.filter((r) => r.subjectId === subjectId);
+    const present = subjectRecords.filter((r) => r.status === "Present").length;
+    const late = subjectRecords.filter((r) => r.status === "Late").length;
+    const absent = subjectRecords.filter((r) => r.status === "Absent").length;
+    const total = present + late + absent;
+    return { present, late, absent, total };
+  };
+
+  // Draw donut chart
+  const drawDonutChart = (canvasEl, present, late, absent) => {
+    if (!canvasEl) return;
+    const ctx = canvasEl.getContext("2d");
+    const total = present + late + absent;
+    const centerX = canvasEl.width / 2;
+    const centerY = canvasEl.height / 2;
+    const radius = Math.min(centerX, centerY) - 10;
+    const innerRadius = radius * 0.6;
+
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+    if (total === 0) {
+      // Draw empty state
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2, true);
+      ctx.fillStyle = "#F3F4F6";
+      ctx.fill();
+
+      ctx.font = "600 12px Inter, sans-serif";
+      ctx.fillStyle = "#9CA3AF";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("No Data", centerX, centerY);
+      return;
+    }
+
+    const segments = [
+      { value: present, color: "#10B981" },
+      { value: late, color: "#F59E0B" },
+      { value: absent, color: "#EF4444" },
+    ];
+
+    let startAngle = -Math.PI / 2;
+    segments.forEach((seg) => {
+      if (seg.value === 0) return;
+      const sliceAngle = (seg.value / total) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+      ctx.arc(centerX, centerY, innerRadius, startAngle + sliceAngle, startAngle, true);
+      ctx.closePath();
+      ctx.fillStyle = seg.color;
+      ctx.fill();
+      startAngle += sliceAngle;
+    });
+
+    // Center text
+    const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
+    ctx.font = "800 18px Inter, sans-serif";
+    ctx.fillStyle = "#1A3A28";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${rate}%`, centerX, centerY - 6);
+    ctx.font = "500 9px Inter, sans-serif";
+    ctx.fillStyle = "#9CA3AF";
+    ctx.fillText("Attendance", centerX, centerY + 10);
+  };
 
   return (
     <>
@@ -193,7 +365,7 @@ export default function StudentAttendance() {
           background: "#FEF2F2", border: "1px solid #FECACA",
           color: "#991B1B", fontWeight: 600, fontSize: "0.9rem",
         }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> {cameraError}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> {cameraError}
           <button onClick={closeCamera} style={{
             marginLeft: "12px", background: "none", border: "none",
             color: "#991B1B", cursor: "pointer", textDecoration: "underline",
@@ -207,7 +379,7 @@ export default function StudentAttendance() {
         </div>
       ) : subjects.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: "60px 24px" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "16px" }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg></div>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg></div>
           <h3 style={{ margin: "0 0 8px", color: "var(--text-primary)" }}>No Subjects Enrolled</h3>
           <p style={{ color: "var(--text-muted)", maxWidth: "400px", margin: "0 auto" }}>
             Your enrolled subjects will appear here once your teacher adds you to their class.
@@ -256,9 +428,17 @@ export default function StudentAttendance() {
                       {hasResult && (
                         <div style={{
                           width: "32px", height: "32px", borderRadius: "50%",
-                          background: "#ECFDF5", display: "flex", alignItems: "center",
-                          justifyContent: "center", fontSize: "1rem",
-                        }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                          background: hasResult.status === "Present" ? "#ECFDF5" : hasResult.status === "Late" ? "#FFFBEB" : "#FEF2F2",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          {hasResult.status === "Present" ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          ) : hasResult.status === "Late" ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                          ) : (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          )}
+                        </div>
                       )}
                       {/* Session status badge */}
                       <div style={{
@@ -284,8 +464,8 @@ export default function StudentAttendance() {
                     display: "flex", gap: "16px", fontSize: "0.78rem",
                     color: "var(--text-secondary)", marginBottom: "16px",
                   }}>
-                    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> {subject.schedule}</span>
-                    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> {subject.room}</span>
+                    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> {subject.schedule}</span>
+                    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> {subject.room}</span>
                   </div>
 
                   {/* Camera feed — only for active scan */}
@@ -321,14 +501,14 @@ export default function StudentAttendance() {
                           background: "rgba(255,255,255,0.2)", color: "white",
                           fontWeight: 600, fontSize: "0.85rem", cursor: "pointer",
                           backdropFilter: "blur(4px)",
-                        }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Cancel</button>
+                        }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Cancel</button>
                         <button onClick={captureFace} disabled={!scanning} style={{
                           padding: "10px 24px", borderRadius: "10px", border: "none",
                           background: scanning ? "linear-gradient(135deg, #4A7C59, #6B9E78)" : "#666",
                           color: "white", fontWeight: 700, fontSize: "0.85rem",
                           cursor: scanning ? "pointer" : "not-allowed",
                           boxShadow: scanning ? "0 4px 15px rgba(74, 124, 89, 0.4)" : "none",
-                        }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Capture & Mark</button>
+                        }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Capture &amp; Mark</button>
                       </div>
                     </div>
                   )}
@@ -338,18 +518,44 @@ export default function StudentAttendance() {
                     <div style={{
                       display: "flex", alignItems: "center", gap: "12px",
                       padding: "12px", borderRadius: "10px",
-                      background: "rgba(236, 253, 245, 0.8)", marginBottom: "12px",
+                      background: hasResult.status === "Present" ? "rgba(236, 253, 245, 0.8)"
+                        : hasResult.status === "Late" ? "rgba(255, 251, 235, 0.8)"
+                          : "rgba(254, 242, 242, 0.8)",
+                      marginBottom: "12px",
                     }}>
-                      <img src={hasResult.image} alt="Face" style={{
+                      <div style={{
                         width: "40px", height: "40px", borderRadius: "50%",
-                        objectFit: "cover", border: "2px solid #4A7C59",
-                        transform: "scaleX(-1)",
-                      }} />
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: hasResult.status === "Present" ? "#ECFDF5"
+                          : hasResult.status === "Late" ? "#FFFBEB" : "#FEF2F2",
+                        border: `2px solid ${hasResult.status === "Present" ? "#4A7C59"
+                          : hasResult.status === "Late" ? "#F59E0B" : "#EF4444"}`,
+                      }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                          stroke={hasResult.status === "Present" ? "#047857" : hasResult.status === "Late" ? "#B45309" : "#991B1B"}
+                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#065F46" }}>
-                          Attendance Marked <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginLeft: '5px'}}><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <div style={{
+                          fontSize: "0.8rem", fontWeight: 700,
+                          color: hasResult.status === "Present" ? "#065F46"
+                            : hasResult.status === "Late" ? "#92400E" : "#991B1B",
+                        }}>
+                          Marked as {hasResult.status}
+                          {hasResult.status === "Present" && (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginLeft: '5px'}}><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          )}
+                          {hasResult.status === "Late" && (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginLeft: '5px'}}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                          )}
                         </div>
-                        <div style={{ fontSize: "0.72rem", color: "#047857" }}>
+                        <div style={{
+                          fontSize: "0.72rem",
+                          color: hasResult.status === "Present" ? "#047857"
+                            : hasResult.status === "Late" ? "#B45309" : "#991B1B",
+                        }}>
                           {hasResult.date} at {hasResult.time}
                         </div>
                       </div>
@@ -364,13 +570,13 @@ export default function StudentAttendance() {
                       title={!isSessionActive ? "Your teacher hasn't started a session yet" : ""}
                       style={{
                         width: "100%", padding: "12px", borderRadius: "10px",
-                        border: hasResult ? "1.5px solid #A7F3D0" : !isSessionActive ? "1.5px solid #E5E7EB" : "none",
+                        border: hasResult ? `1.5px solid ${hasResult.status === "Present" ? "#A7F3D0" : hasResult.status === "Late" ? "#FDE68A" : "#FECACA"}` : !isSessionActive ? "1.5px solid #E5E7EB" : "none",
                         background: !isSessionActive
                           ? "#F9FAFB"
                           : hasResult
                           ? "transparent"
                           : "linear-gradient(135deg, #4A7C59, #6B9E78)",
-                        color: !isSessionActive ? "#9CA3AF" : hasResult ? "#047857" : "white",
+                        color: !isSessionActive ? "#9CA3AF" : hasResult ? (hasResult.status === "Present" ? "#047857" : "#B45309") : "white",
                         fontWeight: 700, fontSize: "0.85rem",
                         cursor: !isSessionActive || activeSubject ? "not-allowed" : "pointer",
                         opacity: activeSubject && !isActive ? 0.5 : 1,
@@ -379,10 +585,10 @@ export default function StudentAttendance() {
                       }}
                     >
                       {!isSessionActive
-                        ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Waiting for Teacher to Start Session</>
+                        ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Waiting for Teacher to Start Session</>
                         : hasResult
-                        ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg> Retake Attendance</>
-                        : <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> Take Attendance</>}
+                        ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg> Retake Attendance</>
+                        : <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> Take Attendance</>}
                     </button>
                   )}
                 </div>
@@ -390,7 +596,7 @@ export default function StudentAttendance() {
             })}
           </div>
 
-          {/* Summary Table */}
+          {/* Attendance Summary Section */}
           <div className="card">
             <div className="card-header">
               <div className="card-title">Today&apos;s Attendance Summary</div>
@@ -432,8 +638,19 @@ export default function StudentAttendance() {
                       <td>{result ? result.time : "—"}</td>
                       <td>
                         {result ? (
-                          <span className="status-badge present">
-                            <span className="status-dot"></span>Present
+                          <span style={{
+                            padding: "3px 10px", borderRadius: "12px", fontWeight: 600, fontSize: "0.72rem",
+                            background: result.status === "Present" ? "#ECFDF5"
+                              : result.status === "Late" ? "#FFFBEB" : "#FEF2F2",
+                            color: result.status === "Present" ? "#047857"
+                              : result.status === "Late" ? "#B45309" : "#991B1B",
+                          }}>
+                            <span style={{
+                              width: "6px", height: "6px", borderRadius: "50%", display: "inline-block", marginRight: "4px",
+                              background: result.status === "Present" ? "#10B981"
+                                : result.status === "Late" ? "#F59E0B" : "#EF4444",
+                            }}></span>
+                            {result.status}
                           </span>
                         ) : (
                           <span className="status-badge" style={{ background: "#F3F4F6", color: "#9CA3AF" }}>
@@ -447,6 +664,62 @@ export default function StudentAttendance() {
               </tbody>
             </table>
           </div>
+
+          {/* Attendance Overview Chart */}
+          {subjects.length > 0 && (
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title">Attendance Overview</div>
+                <div style={{ display: "flex", gap: "16px", fontSize: "0.75rem" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#10B981", display: "inline-block" }}></span> Present
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#F59E0B", display: "inline-block" }}></span> Late
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#EF4444", display: "inline-block" }}></span> Absent
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "20px", padding: "8px 0" }}>
+                {subjects.map((subject) => {
+                  const summary = getSubjectSummary(subject.id);
+                  return (
+                    <div key={subject.id} style={{
+                      textAlign: "center", padding: "16px",
+                      borderRadius: "12px", border: "1px solid var(--border-light)",
+                      background: "var(--bg-body)",
+                    }}>
+                      <canvas
+                        ref={(el) => {
+                          if (el) {
+                            el.width = 120;
+                            el.height = 120;
+                            drawDonutChart(el, summary.present, summary.late, summary.absent);
+                          }
+                        }}
+                        width="120" height="120"
+                        style={{ margin: "0 auto 8px", display: "block" }}
+                      />
+                      <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "2px" }}>
+                        {subject.code}
+                      </div>
+                      <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                        {subject.section}
+                      </div>
+                      {summary.total > 0 && (
+                        <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "6px" }}>
+                          P:{summary.present} L:{summary.late} A:{summary.absent}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </>
       )}
 
