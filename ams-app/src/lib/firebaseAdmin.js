@@ -4,9 +4,15 @@ if (!admin.apps.length) {
   const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "a-m-s-27607";
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   // Handle multiline private key from env var
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY
-    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-    : null;
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  if (privateKey) {
+    // Strip wrapping quotes if Vercel included them literally
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1);
+    }
+    // Convert literal \n strings to actual newlines
+    privateKey = privateKey.replace(/\\n/g, '\n');
+  }
 
   if (clientEmail && privateKey) {
     admin.initializeApp({
