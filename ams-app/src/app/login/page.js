@@ -13,6 +13,7 @@ export default function LoginPage() {
     loading: authLoading,
     pending2FA,
     pending2FAEmail,
+    pending2FARecipientEmail,
     twoFAError,
     verify2FACode,
     generate2FACode,
@@ -160,8 +161,17 @@ export default function LoginPage() {
     setResendCooldown(60);
     setOtpDigits(["", "", "", "", "", ""]);
     setOtpCountdown(300);
-    await generate2FACode(pending2FAEmail);
+    // Pass loginEmail — the context will look up the Firestore email internally
+    await generate2FACode(pending2FAEmail, null);
     otpRefs.current[0]?.focus();
+  };
+
+  // Helper to mask an email for display (e.g. "j***n@gmail.com")
+  const maskEmail = (email) => {
+    if (!email || !email.includes('@')) return email;
+    const [local, domain] = email.split('@');
+    if (local.length <= 2) return `${local[0]}***@${domain}`;
+    return `${local[0]}${local[1]}${'*'.repeat(Math.min(local.length - 3, 5))}${local[local.length - 1]}@${domain}`;
   };
 
   const handleCancel2FA = () => {
@@ -366,7 +376,7 @@ export default function LoginPage() {
                 lineHeight: "1.6",
               }}
             >
-              A verification code has been sent to
+              A verification code has been sent to your registered email
             </p>
             <p
               style={{
@@ -376,7 +386,7 @@ export default function LoginPage() {
                 color: "#4A7C59",
               }}
             >
-              {pending2FAEmail}
+              {maskEmail(pending2FARecipientEmail || pending2FAEmail)}
             </p>
 
             {/* Error */}

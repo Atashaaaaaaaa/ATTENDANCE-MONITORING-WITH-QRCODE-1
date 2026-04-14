@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
   const [pending2FA, setPending2FA] = useState(false)
   const [pending2FAUser, setPending2FAUser] = useState(null)
   const [pending2FAEmail, setPending2FAEmail] = useState('')
+  const [pending2FARecipientEmail, setPending2FARecipientEmail] = useState('')
   const [twoFAError, setTwoFAError] = useState(null)
   
   // Monitor auth state changes
@@ -32,6 +33,25 @@ export const AuthProvider = ({ children }) => {
       if (currentUser) {
         // If we're in 2FA pending state, don't set user yet
         if (pending2FA) {
+          setLoading(false)
+          return
+        }
+
+        // Check if this session has been verified via 2FA
+        // On page refresh, sessionStorage tells us if the user previously completed 2FA
+        const isVerifiedSession = typeof window !== 'undefined' && sessionStorage.getItem('2fa_verified') === 'true'
+
+        if (!isVerifiedSession) {
+          // User has a Firebase session but hasn't completed 2FA in this browser session
+          // Sign them out to force re-authentication with 2FA
+          try {
+            await signOut(auth)
+          } catch (e) {
+            // ignore sign-out errors
+          }
+          setUser(null)
+          setUserRole(null)
+          setUserData(null)
           setLoading(false)
           return
         }
@@ -49,6 +69,7 @@ export const AuthProvider = ({ children }) => {
               setUser(null)
               setUserRole(null)
               setUserData(null)
+              if (typeof window !== 'undefined') sessionStorage.removeItem('2fa_verified')
               setLoading(false)
               return
             }
@@ -73,6 +94,7 @@ export const AuthProvider = ({ children }) => {
               setUser(null)
               setUserRole(null)
               setUserData(null)
+              if (typeof window !== 'undefined') sessionStorage.removeItem('2fa_verified')
               setLoading(false)
               return
             }
@@ -149,31 +171,53 @@ export const AuthProvider = ({ children }) => {
   }
 
   // Generate and store 2FA code in Firestore, then send via email
-  const generate2FACode = async (email) => {
+  // Uses the Firestore-registered email (from admin), NOT the Firebase Auth login email
+  const generate2FACode = async (loginEmail, uid) => {
     try {
       setTwoFAError(null)
       const code = generate6DigitCode()
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes from now
 
-      // Clean up any existing codes for this email
+      // Look up the email registered by admin in Firestore
+      let recipientEmail = loginEmail
+      const resolvedUid = uid || (pending2FAUser ? pending2FAUser.uid : null)
+      if (resolvedUid) {
+        try {
+          const userDocRef = doc(db, 'users', resolvedUid)
+          const userDocSnap = await getDoc(userDocRef)
+          if (userDocSnap.exists()) {
+            const firestoreEmail = userDocSnap.data().email
+            if (firestoreEmail) {
+              recipientEmail = firestoreEmail
+            }
+          }
+        } catch (lookupErr) {
+          console.warn('Could not look up Firestore email, falling back to login email:', lookupErr)
+        }
+      }
+
+      // Clean up any existing codes for this user (by login email)
       const existingCodes = await getDocs(
-        query(collection(db, '2fa_codes'), where('email', '==', email))
+        query(collection(db, '2fa_codes'), where('email', '==', loginEmail))
       )
       for (const docSnap of existingCodes.docs) {
         await deleteDoc(doc(db, '2fa_codes', docSnap.id))
       }
 
-      // Store new code
+      // Store new code (keyed by login email for verification lookup)
       await addDoc(collection(db, '2fa_codes'), {
-        email: email,
+        email: loginEmail,
         code: code,
         createdAt: new Date().toISOString(),
         expiresAt: expiresAt.toISOString(),
         used: false,
       })
 
-      // Send via EmailJS
-      await send2FACode(email, code)
+      // Send via EmailJS to the admin-registered email in Firestore
+      await send2FACode(recipientEmail, code)
+
+      // Store the recipient email so we can display it in the 2FA modal
+      setPending2FARecipientEmail(recipientEmail)
 
       return true
     } catch (err) {
@@ -234,6 +278,11 @@ export const AuthProvider = ({ children }) => {
           setUserData(data)
         }
 
+        // Mark this session as 2FA-verified so page refresh keeps them logged in
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('2fa_verified', 'true')
+        }
+
         setUser(pending2FAUser)
       }
 
@@ -241,6 +290,7 @@ export const AuthProvider = ({ children }) => {
       setPending2FA(false)
       setPending2FAUser(null)
       setPending2FAEmail('')
+      setPending2FARecipientEmail('')
       setTwoFAError(null)
 
       return true
@@ -261,10 +311,12 @@ export const AuthProvider = ({ children }) => {
     setPending2FA(false)
     setPending2FAUser(null)
     setPending2FAEmail('')
+    setPending2FARecipientEmail('')
     setTwoFAError(null)
     setUser(null)
     setUserRole(null)
     setUserData(null)
+    if (typeof window !== 'undefined') sessionStorage.removeItem('2fa_verified')
   }
 
   // Sign in function — now with 2FA
@@ -276,6 +328,10 @@ export const AuthProvider = ({ children }) => {
       // Hardcoded admin bypass — skips 2FA
       if (email.trim().toLowerCase() === 'admin' && password === 'admin') {
         const mockUser = { uid: 'hardcoded-admin-id', email: 'admin' };
+        // Mark admin session as verified so refresh keeps them logged in
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('2fa_verified', 'true')
+        }
         setUser(mockUser);
         setUserRole('admin');
         return mockUser;
@@ -318,8 +374,8 @@ export const AuthProvider = ({ children }) => {
       setPending2FAUser(currentUser)
       setPending2FAEmail(email)
 
-      // Generate and send 2FA code
-      await generate2FACode(email)
+      // Generate and send 2FA code to the admin-registered email (from Firestore)
+      await generate2FACode(email, currentUser.uid)
 
       // Return a signal that 2FA is needed (don't complete login yet)
       return { requires2FA: true, email: email }
@@ -327,6 +383,7 @@ export const AuthProvider = ({ children }) => {
       setPending2FA(false)
       setPending2FAUser(null)
       setPending2FAEmail('')
+      setPending2FARecipientEmail('')
       setError(err.message)
       throw err
     }
@@ -343,6 +400,9 @@ export const AuthProvider = ({ children }) => {
       setPending2FA(false)
       setPending2FAUser(null)
       setPending2FAEmail('')
+      setPending2FARecipientEmail('')
+      // Clear the 2FA verification flag so next login requires 2FA again
+      if (typeof window !== 'undefined') sessionStorage.removeItem('2fa_verified')
     } catch (err) {
       setError(err.message)
       throw err
@@ -363,6 +423,7 @@ export const AuthProvider = ({ children }) => {
     // 2FA
     pending2FA,
     pending2FAEmail,
+    pending2FARecipientEmail,
     twoFAError,
     verify2FACode,
     generate2FACode,
