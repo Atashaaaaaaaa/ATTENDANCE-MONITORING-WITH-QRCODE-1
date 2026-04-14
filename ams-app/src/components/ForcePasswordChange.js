@@ -37,7 +37,7 @@ export default function ForcePasswordChange() {
 
     try {
       // Update password in Firebase Auth
-      await updatePassword(auth.currentUser, newPassword)
+      await updatePassword(user, newPassword)
 
       // Update Firestore document
       const userRef = doc(db, 'users', user.uid)
