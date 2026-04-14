@@ -28,17 +28,21 @@ function parseScheduleTime(timeStr) {
 }
 
 // Determine attendance status based on scan time and schedule
+// Present: on or before the scheduled start time
+// Late: 1–15 minutes after the scheduled start time
+// Absent: after 30 minutes past the scheduled start time
 function determineStatus(scanDate, scheduleTime) {
   if (!scheduleTime) return "Present";
   const parsed = parseScheduleTime(scheduleTime);
   if (!parsed) return "Present";
 
   const scanMinutes = scanDate.getHours() * 60 + scanDate.getMinutes();
-  const lateThreshold = parsed.startMinutes + 15; // 15 min grace period
+  const diff = scanMinutes - parsed.startMinutes;
 
-  if (scanMinutes <= lateThreshold) return "Present";
-  if (scanMinutes <= parsed.endMinutes) return "Late";
-  return "Absent"; // If scanned after class end time, mark as Absent
+  if (diff <= 0) return "Present"; // On or before scheduled time
+  if (diff <= 15) return "Late";   // 1–15 minutes after
+  if (diff <= 30) return "Late";   // 16–30 minutes after (still considered late)
+  return "Absent";                 // After 30 minutes
 }
 
 export default function TeacherDashboard() {
@@ -49,7 +53,7 @@ export default function TeacherDashboard() {
   const [subjects, setSubjects] = useState([]);
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [enrolledStudents, setEnrolledStudents] = useState({});
-  const [expandedClassList, setExpandedClassList] = useState({});
+  const [classListModal, setClassListModal] = useState(null); // { subject, tab: 'current'|'previous' }
   // Tab state per subject: "current" or "previous"
   const [sessionTab, setSessionTab] = useState({});
 
@@ -327,12 +331,16 @@ export default function TeacherDashboard() {
     setStudentId("");
   };
 
-  // Toggle class list visibility
-  const toggleClassList = (subjectId) => {
-    setExpandedClassList((prev) => ({
-      ...prev,
-      [subjectId]: !prev[subjectId],
-    }));
+  // Open class list modal for a subject
+  const openClassListModal = (subject) => {
+    const sessionKey = subject.id + "_" + subject.sectionId;
+    const currentSessionDocId = activeSessions[sessionKey]?.docId;
+    const isActive = !!activeSessions[sessionKey];
+    setClassListModal({
+      subject,
+      tab: isActive ? "current" : "previous",
+      currentSessionDocId,
+    });
   };
 
   // Get class list with attendance status for a subject, filtered by session
@@ -421,8 +429,6 @@ export default function TeacherDashboard() {
               ? records.filter((r) => r.sessionId === currentSessionDocId)
               : [];
             const counts = getStatusCounts(subject, activeTab === "current" ? currentSessionDocId : null);
-            const isClassListOpen = expandedClassList[subject.id];
-            const classList = getClassList(subject, activeTab === "current" ? currentSessionDocId : null);
             const previousGroups = getPreviousSessionRecords(subject, currentSessionDocId);
             const hasPreviousSessions = Object.keys(previousGroups).length > 0;
 
@@ -623,10 +629,10 @@ export default function TeacherDashboard() {
                   </div>
                 )}
 
-                {/* Class List Toggle Button */}
+                {/* View Class List Button — opens modal */}
                 {subject.studentIds.length > 0 && (
                   <button
-                    onClick={() => toggleClassList(subject.id)}
+                    onClick={() => openClassListModal(subject)}
                     style={{
                       width: "100%", padding: "10px", borderRadius: "10px",
                       border: "1px solid var(--border-light)", background: "var(--bg-card)",
@@ -637,150 +643,350 @@ export default function TeacherDashboard() {
                     }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                    {isClassListOpen ? "Hide Class List" : "View Class List"} ({subject.studentIds.length})
-                    <span style={{ transform: isClassListOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▼</span>
+                    View Class List ({subject.studentIds.length})
                   </button>
-                )}
-
-                {/* Class List — Current Session */}
-                {isClassListOpen && activeTab === "current" && (
-                  <div style={{ marginTop: "12px", animation: "fadeIn 0.3s ease" }}>
-                    {!isActive && !currentSessionDocId ? (
-                      <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                        No active session. Start a session to see the current class list, or switch to Previous Sessions.
-                      </div>
-                    ) : (
-                      <table className="data-table" style={{ fontSize: "0.82rem" }}>
-                        <thead>
-                          <tr>
-                            <th>Student Name</th>
-                            <th>Time</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {classList.length === 0 ? (
-                            <tr>
-                              <td colSpan="3" style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px" }}>
-                                No students enrolled yet.
-                              </td>
-                            </tr>
-                          ) : (
-                            classList.map((student) => (
-                              <tr key={student.id}>
-                                <td style={{ fontWeight: 600 }}>{student.name}</td>
-                                <td style={{ color: "var(--text-muted)" }}>{student.time}</td>
-                                <td>
-                                  <span className={`status-badge ${student.status === "Present" ? "present" : student.status === "Late" ? "late" : student.status === "Absent" ? "absent" : ""}`}
-                                    style={{
-                                      fontSize: "0.7rem",
-                                      background: student.status === "Present" ? "#ECFDF5"
-                                        : student.status === "Late" ? "#FFFBEB"
-                                          : student.status === "Absent" ? "#FEF2F2"
-                                            : "#F3F4F6",
-                                      color: student.status === "Present" ? "#047857"
-                                        : student.status === "Late" ? "#B45309"
-                                          : student.status === "Absent" ? "#991B1B"
-                                            : "#9CA3AF",
-                                      padding: "3px 10px",
-                                      borderRadius: "12px",
-                                      fontWeight: 600,
-                                    }}
-                                  >
-                                    <span style={{
-                                      width: "6px", height: "6px", borderRadius: "50%", display: "inline-block", marginRight: "4px",
-                                      background: student.status === "Present" ? "#10B981"
-                                        : student.status === "Late" ? "#F59E0B"
-                                          : student.status === "Absent" ? "#EF4444"
-                                            : "#9CA3AF",
-                                    }}></span>
-                                    {student.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                )}
-
-                {/* Class List — Previous Sessions */}
-                {isClassListOpen && activeTab === "previous" && (
-                  <div style={{ marginTop: "12px", animation: "fadeIn 0.3s ease" }}>
-                    {!hasPreviousSessions ? (
-                      <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                        No previous sessions today.
-                      </div>
-                    ) : (
-                      Object.entries(previousGroups).map(([sessId, sessRecords], idx) => {
-                        const firstRecord = sessRecords[0];
-                        return (
-                          <div key={sessId} style={{ marginBottom: "16px" }}>
-                            <div style={{
-                              display: "flex", alignItems: "center", gap: "8px",
-                              marginBottom: "8px", padding: "8px 12px",
-                              background: "var(--bg-body)", borderRadius: "8px",
-                              border: "1px solid var(--border-light)",
-                            }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                              <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)" }}>
-                                Session {idx + 1}
-                              </span>
-                              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                                • {sessRecords.length} record(s)
-                              </span>
-                            </div>
-                            <table className="data-table" style={{ fontSize: "0.82rem" }}>
-                              <thead>
-                                <tr>
-                                  <th>Student Name</th>
-                                  <th>Time</th>
-                                  <th>Status</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {sessRecords.map((r) => (
-                                  <tr key={r.id}>
-                                    <td style={{ fontWeight: 600 }}>{r.name}</td>
-                                    <td style={{ color: "var(--text-muted)" }}>{r.time}</td>
-                                    <td>
-                                      <span style={{
-                                        fontSize: "0.7rem",
-                                        background: r.status === "Present" ? "#ECFDF5"
-                                          : r.status === "Late" ? "#FFFBEB"
-                                            : r.status === "Absent" ? "#FEF2F2" : "#F3F4F6",
-                                        color: r.status === "Present" ? "#047857"
-                                          : r.status === "Late" ? "#B45309"
-                                            : r.status === "Absent" ? "#991B1B" : "#9CA3AF",
-                                        padding: "3px 10px", borderRadius: "12px", fontWeight: 600,
-                                      }}>
-                                        <span style={{
-                                          width: "6px", height: "6px", borderRadius: "50%",
-                                          display: "inline-block", marginRight: "4px",
-                                          background: r.status === "Present" ? "#10B981"
-                                            : r.status === "Late" ? "#F59E0B"
-                                              : r.status === "Absent" ? "#EF4444" : "#9CA3AF",
-                                        }}></span>
-                                        {r.status}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
                 )}
               </div>
             );
           })}
         </div>
       )}
+
+      {/* ── Class List Modal ── */}
+      {classListModal && (() => {
+        const { subject, tab, currentSessionDocId } = classListModal;
+        const sessionKey = subject.id + "_" + subject.sectionId;
+        const isActive = !!activeSessions[sessionKey];
+        const liveSessionDocId = activeSessions[sessionKey]?.docId || currentSessionDocId;
+        const modalClassList = getClassList(subject, tab === "current" ? liveSessionDocId : null);
+        const previousGroups = getPreviousSessionRecords(subject, liveSessionDocId);
+        const hasPreviousSessions = Object.keys(previousGroups).length > 0;
+        const modalCounts = getStatusCounts(subject, tab === "current" ? liveSessionDocId : null);
+
+        return (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.45)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+              animation: "fadeIn 0.25s ease",
+            }}
+            onClick={() => setClassListModal(null)}
+          >
+            <div
+              style={{
+                background: "var(--bg-card)",
+                borderRadius: "var(--radius-xl, 16px)",
+                padding: "32px 28px",
+                maxWidth: "600px",
+                width: "92%",
+                maxHeight: "85vh",
+                overflowY: "auto",
+                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+                animation: "fadeInUp 0.35s ease",
+                position: "relative",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setClassListModal(null)}
+                style={{
+                  position: "absolute",
+                  top: "16px",
+                  right: "16px",
+                  background: "none",
+                  border: "none",
+                  fontSize: "1.2rem",
+                  cursor: "pointer",
+                  color: "var(--text-muted)",
+                  lineHeight: 1,
+                  padding: "4px",
+                }}
+              >
+                ✕
+              </button>
+
+              {/* Header Icon */}
+              <div
+                style={{
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  background: "var(--accent-soft)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 12px",
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+
+              <h3 style={{
+                textAlign: "center",
+                fontSize: "1.15rem",
+                fontWeight: 700,
+                marginBottom: "4px",
+                color: "var(--text-primary)",
+              }}>
+                Class List
+              </h3>
+              <p style={{
+                textAlign: "center",
+                fontSize: "0.82rem",
+                color: "var(--text-secondary)",
+                marginBottom: "6px",
+              }}>
+                {subject.name} — {subject.section}
+              </p>
+              <p style={{
+                textAlign: "center",
+                fontSize: "0.75rem",
+                color: "var(--text-muted)",
+                marginBottom: "16px",
+              }}>
+                {subject.schedule} • {subject.room}
+              </p>
+
+              {/* Status summary inside modal */}
+              <div style={{
+                display: "flex", gap: "8px", marginBottom: "16px",
+                padding: "10px", borderRadius: "10px",
+                background: "var(--bg-body)", border: "1px solid var(--border-light)",
+              }}>
+                <div style={{ flex: 1, textAlign: "center" }}>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--primary)" }}>{modalCounts.total}</div>
+                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600 }}>Enrolled</div>
+                </div>
+                <div style={{ width: "1px", background: "var(--border-color)" }}></div>
+                <div style={{ flex: 1, textAlign: "center" }}>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#10B981" }}>{modalCounts.present}</div>
+                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600 }}>Present</div>
+                </div>
+                <div style={{ width: "1px", background: "var(--border-color)" }}></div>
+                <div style={{ flex: 1, textAlign: "center" }}>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#F59E0B" }}>{modalCounts.late}</div>
+                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600 }}>Late</div>
+                </div>
+                <div style={{ width: "1px", background: "var(--border-color)" }}></div>
+                <div style={{ flex: 1, textAlign: "center" }}>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#EF4444" }}>{modalCounts.absent}</div>
+                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600 }}>Absent</div>
+                </div>
+              </div>
+
+              {/* Attendance Rules Info */}
+              <div style={{
+                display: "flex", gap: "6px", marginBottom: "16px", flexWrap: "wrap",
+                padding: "10px 12px", borderRadius: "8px",
+                background: "#F0FDF4", border: "1px solid #BBF7D0",
+                fontSize: "0.7rem", color: "#15803D",
+              }}>
+                <span style={{ fontWeight: 700 }}>Rules:</span>
+                <span>✅ Present = on time</span>
+                <span>•</span>
+                <span>⏰ Late = 1–15 min</span>
+                <span>•</span>
+                <span>❌ Absent = after 30 min</span>
+              </div>
+
+              {/* Tab switcher inside modal */}
+              {(isActive || hasPreviousSessions) && (
+                <div style={{
+                  display: "flex", gap: "4px", marginBottom: "16px",
+                  background: "var(--bg-body)", borderRadius: "10px", padding: "4px",
+                  border: "1px solid var(--border-light)",
+                }}>
+                  <button
+                    onClick={() => setClassListModal((prev) => ({ ...prev, tab: "current" }))}
+                    style={{
+                      flex: 1, padding: "8px 12px", borderRadius: "8px", border: "none",
+                      background: tab === "current" ? "var(--primary)" : "transparent",
+                      color: tab === "current" ? "white" : "var(--text-secondary)",
+                      fontWeight: 600, fontSize: "0.78rem", cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    Current Session
+                  </button>
+                  <button
+                    onClick={() => setClassListModal((prev) => ({ ...prev, tab: "previous" }))}
+                    style={{
+                      flex: 1, padding: "8px 12px", borderRadius: "8px", border: "none",
+                      background: tab === "previous" ? "var(--primary)" : "transparent",
+                      color: tab === "previous" ? "white" : "var(--text-secondary)",
+                      fontWeight: 600, fontSize: "0.78rem", cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    Previous Sessions
+                  </button>
+                </div>
+              )}
+
+              {/* Current Session Tab Content */}
+              {tab === "current" && (
+                <div>
+                  {!isActive && !liveSessionDocId ? (
+                    <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                      No active session. Start a session to see the current class list.
+                    </div>
+                  ) : (
+                    <table className="data-table" style={{ fontSize: "0.82rem" }}>
+                      <thead>
+                        <tr>
+                          <th>Student Name</th>
+                          <th>Time-In</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {modalClassList.length === 0 ? (
+                          <tr>
+                            <td colSpan="3" style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px" }}>
+                              No students enrolled yet.
+                            </td>
+                          </tr>
+                        ) : (
+                          modalClassList.map((student) => (
+                            <tr key={student.id}>
+                              <td style={{ fontWeight: 600 }}>{student.name}</td>
+                              <td style={{ color: "var(--text-muted)" }}>{student.time}</td>
+                              <td>
+                                <span
+                                  style={{
+                                    fontSize: "0.7rem",
+                                    background: student.status === "Present" ? "#ECFDF5"
+                                      : student.status === "Late" ? "#FFFBEB"
+                                        : student.status === "Absent" ? "#FEF2F2"
+                                          : "#F3F4F6",
+                                    color: student.status === "Present" ? "#047857"
+                                      : student.status === "Late" ? "#B45309"
+                                        : student.status === "Absent" ? "#991B1B"
+                                          : "#9CA3AF",
+                                    padding: "3px 10px",
+                                    borderRadius: "12px",
+                                    fontWeight: 600,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                  }}
+                                >
+                                  <span style={{
+                                    width: "6px", height: "6px", borderRadius: "50%", display: "inline-block",
+                                    background: student.status === "Present" ? "#10B981"
+                                      : student.status === "Late" ? "#F59E0B"
+                                        : student.status === "Absent" ? "#EF4444"
+                                          : "#9CA3AF",
+                                  }}></span>
+                                  {student.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+
+              {/* Previous Sessions Tab Content */}
+              {tab === "previous" && (
+                <div>
+                  {!hasPreviousSessions ? (
+                    <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                      No previous sessions today.
+                    </div>
+                  ) : (
+                    Object.entries(previousGroups).map(([sessId, sessRecords], idx) => (
+                      <div key={sessId} style={{ marginBottom: "16px" }}>
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: "8px",
+                          marginBottom: "8px", padding: "8px 12px",
+                          background: "var(--bg-body)", borderRadius: "8px",
+                          border: "1px solid var(--border-light)",
+                        }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                          <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                            Session {idx + 1}
+                          </span>
+                          <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                            • {sessRecords.length} record(s)
+                          </span>
+                        </div>
+                        <table className="data-table" style={{ fontSize: "0.82rem" }}>
+                          <thead>
+                            <tr>
+                              <th>Student Name</th>
+                              <th>Time-In</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sessRecords.map((r) => (
+                              <tr key={r.id}>
+                                <td style={{ fontWeight: 600 }}>{r.name}</td>
+                                <td style={{ color: "var(--text-muted)" }}>{r.time}</td>
+                                <td>
+                                  <span style={{
+                                    fontSize: "0.7rem",
+                                    background: r.status === "Present" ? "#ECFDF5"
+                                      : r.status === "Late" ? "#FFFBEB"
+                                        : r.status === "Absent" ? "#FEF2F2" : "#F3F4F6",
+                                    color: r.status === "Present" ? "#047857"
+                                      : r.status === "Late" ? "#B45309"
+                                        : r.status === "Absent" ? "#991B1B" : "#9CA3AF",
+                                    padding: "3px 10px", borderRadius: "12px", fontWeight: 600,
+                                    display: "inline-flex", alignItems: "center", gap: "4px",
+                                  }}>
+                                    <span style={{
+                                      width: "6px", height: "6px", borderRadius: "50%",
+                                      display: "inline-block",
+                                      background: r.status === "Present" ? "#10B981"
+                                        : r.status === "Late" ? "#F59E0B"
+                                          : r.status === "Absent" ? "#EF4444" : "#9CA3AF",
+                                    }}></span>
+                                    {r.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* Close button at bottom */}
+              <button
+                onClick={() => setClassListModal(null)}
+                className="btn btn-purple"
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  marginTop: "20px",
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }
