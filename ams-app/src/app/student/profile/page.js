@@ -4,6 +4,7 @@ import { updatePassword } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { collection, getDocs } from "firebase/firestore";
+import FaceRegistration from "@/components/FaceRegistration";
 
 export default function StudentProfile() {
   const { user, userData } = useAuth();
@@ -149,6 +150,9 @@ export default function StudentProfile() {
           )}
         </div>
       </div>
+
+      {/* Face Registration */}
+      <FaceRegistration />
 
       {/* Enrolled Subjects */}
       <div className="card">
