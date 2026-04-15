@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
 import { auth, db } from '@/lib/firebase'
 import {
   createUserWithEmailAndPassword,
@@ -25,13 +25,22 @@ export const AuthProvider = ({ children }) => {
   const [pendingVerificationStatus, setPendingVerificationStatus] = useState(null) // 'pending' | 'approved' | 'rejected'
   const [verificationError, setVerificationError] = useState(null)
   const verificationListenerRef = useRef(null)
+
+  // Ref to track pendingVerification synchronously — prevents stale closure in onAuthStateChanged
+  const pendingVerificationRef = useRef(false)
+
+  // Helper to update both state and ref together
+  const setPendingVerificationSync = useCallback((value) => {
+    pendingVerificationRef.current = value
+    setPendingVerification(value)
+  }, [])
   
   // Monitor auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        // If we're in pending verification state, don't set user yet
-        if (pendingVerification) {
+        // Read from ref (always current) instead of state (stale closure)
+        if (pendingVerificationRef.current) {
           setLoading(false)
           return
         }
@@ -102,7 +111,8 @@ export const AuthProvider = ({ children }) => {
           setUser(currentUser)
         }
       } else {
-        if (!pendingVerification) {
+        // Read from ref (always current) instead of state (stale closure)
+        if (!pendingVerificationRef.current) {
           setUser(null)
           setUserRole(null)
           setUserData(null)
@@ -112,7 +122,7 @@ export const AuthProvider = ({ children }) => {
     })
 
     return unsubscribe
-  }, [pendingVerification])
+  }, []) // No dependency on pendingVerification — ref is always current
 
   // Real-time listener: auto sign-out if account gets archived while logged in
   useEffect(() => {
@@ -206,7 +216,7 @@ export const AuthProvider = ({ children }) => {
 
         // Clean up verification state
         setTimeout(() => {
-          setPendingVerification(false)
+          setPendingVerificationSync(false)
           setPendingVerificationUser(null)
           setPendingVerificationStatus(null)
           setVerificationError(null)
@@ -238,7 +248,7 @@ export const AuthProvider = ({ children }) => {
 
         // Clean up after a moment
         setTimeout(() => {
-          setPendingVerification(false)
+          setPendingVerificationSync(false)
           setPendingVerificationUser(null)
           setPendingVerificationStatus(null)
           setUser(null)
@@ -293,7 +303,7 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       // ignore
     }
-    setPendingVerification(false)
+    setPendingVerificationSync(false)
     setPendingVerificationUser(null)
     setPendingVerificationStatus(null)
     setVerificationError(null)
@@ -321,7 +331,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Set pending verification BEFORE Firebase auth to prevent onAuthStateChanged from completing login
-      setPendingVerification(true)
+      setPendingVerificationSync(true)
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const currentUser = userCredential.user
@@ -334,7 +344,7 @@ export const AuthProvider = ({ children }) => {
         const data = userDocSnap.data();
         if (data.status === 'archived') {
           await signOut(auth)
-          setPendingVerification(false)
+          setPendingVerificationSync(false)
           throw new Error('This account has been archived. Please contact an administrator.')
         }
 
@@ -345,7 +355,7 @@ export const AuthProvider = ({ children }) => {
           if (typeof window !== 'undefined') {
             localStorage.setItem(`verified_browser_${currentUser.uid}`, 'true')
           }
-          setPendingVerification(false)
+          setPendingVerificationSync(false)
           setUser(currentUser)
           setUserRole(data.role)
           setUserData(data)
@@ -356,13 +366,13 @@ export const AuthProvider = ({ children }) => {
         const teacherSnap = await getDoc(doc(db, 'teachers', currentUser.uid))
         if (teacherSnap.exists() && teacherSnap.data().status === 'archived') {
           await signOut(auth)
-          setPendingVerification(false)
+          setPendingVerificationSync(false)
           throw new Error('This account has been archived. Please contact an administrator.')
         }
         const studentSnap = await getDoc(doc(db, 'students', currentUser.uid))
         if (studentSnap.exists() && studentSnap.data().status === 'archived') {
           await signOut(auth)
-          setPendingVerification(false)
+          setPendingVerificationSync(false)
           throw new Error('This account has been archived. Please contact an administrator.')
         }
       }
@@ -372,7 +382,7 @@ export const AuthProvider = ({ children }) => {
 
       if (isVerifiedBrowser) {
         // Browser already verified — complete login immediately
-        setPendingVerification(false)
+        setPendingVerificationSync(false)
         if (userDocSnap.exists()) {
           const data = userDocSnap.data()
           setUserRole(data.role)
@@ -413,7 +423,7 @@ export const AuthProvider = ({ children }) => {
 
       return { requiresVerification: true }
     } catch (err) {
-      setPendingVerification(false)
+      setPendingVerificationSync(false)
       setPendingVerificationUser(null)
       setPendingVerificationStatus(null)
       setError(err.message)
@@ -436,7 +446,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null)
       setUserRole(null)
       setUserData(null)
-      setPendingVerification(false)
+      setPendingVerificationSync(false)
       setPendingVerificationUser(null)
       setPendingVerificationStatus(null)
       setVerificationError(null)
