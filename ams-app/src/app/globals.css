@@ -3383,4 +3383,78 @@ video, iframe, embed, object, table, pre {
 
 .section-card .btn {
   margin-top: 12px;
-}
+}
+
+/* ============================================
+   RESPONSIVE DESIGN OVERRIDES
+   ============================================ */
+@media (max-width: 1024px) {
+  .hero-dashboard-body {
+    flex-direction: column;
+  }
+  .hero-dashboard-sidebar {
+    width: 100%;
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 10px;
+  }
+  .hero-dash-nav-item {
+    white-space: nowrap;
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar-links {
+    display: none;
+  }
+  .hero-buttons {
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 300px;
+  }
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+  .hero-stats-row {
+    grid-template-columns: 1fr;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .hero-dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  .integrations-grid {
+    gap: 12px;
+  }
+  .footer-links {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .hero-dashboard-card {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero h1 {
+    font-size: 2rem;
+  }
+  .section-title {
+    font-size: 1.8rem;
+  }
+  .hero-content {
+    padding-top: 100px;
+  }
+}
+
