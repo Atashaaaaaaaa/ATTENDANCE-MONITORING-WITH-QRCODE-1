@@ -45,12 +45,11 @@ export const AuthProvider = ({ children }) => {
           return
         }
 
-        // Check if this browser is verified
-        const isVerifiedBrowser = typeof window !== 'undefined' && localStorage.getItem(`verified_browser_${currentUser.uid}`) === 'true'
+        // Check if this browser has an active verified session
+        const hasActiveSession = typeof window !== 'undefined' && sessionStorage.getItem(`active_session_${currentUser.uid}`) === 'true'
 
-        if (!isVerifiedBrowser) {
-          // User has a Firebase session but hasn't been verified by admin in this browser
-          // Sign them out to force re-authentication
+        if (!hasActiveSession) {
+          // No active session — sign them out
           try {
             await signOut(auth)
           } catch (e) {
@@ -193,9 +192,9 @@ export const AuthProvider = ({ children }) => {
         // Admin approved — complete login
         setPendingVerificationStatus('approved')
 
-        // Mark this browser as verified
+        // Mark this session as active (using sessionStorage, not localStorage)
         if (typeof window !== 'undefined') {
-          localStorage.setItem(`verified_browser_${currentUser.uid}`, 'true')
+          sessionStorage.setItem(`active_session_${currentUser.uid}`, 'true')
         }
 
         // Fetch user data and complete login
@@ -351,9 +350,9 @@ export const AuthProvider = ({ children }) => {
         // Check forcePasswordChange BEFORE verification
         if (data.forcePasswordChange === true) {
           // Let the user through so ForcePasswordChange modal can show
-          // Mark browser as temporarily verified so onAuthStateChanged doesn't sign them out
+          // Mark session as active so onAuthStateChanged doesn't sign them out
           if (typeof window !== 'undefined') {
-            localStorage.setItem(`verified_browser_${currentUser.uid}`, 'true')
+            sessionStorage.setItem(`active_session_${currentUser.uid}`, 'true')
           }
           setPendingVerificationSync(false)
           setUser(currentUser)
@@ -377,21 +376,7 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      // Check if this browser is already verified
-      const isVerifiedBrowser = typeof window !== 'undefined' && localStorage.getItem(`verified_browser_${currentUser.uid}`) === 'true'
-
-      if (isVerifiedBrowser) {
-        // Browser already verified — complete login immediately
-        setPendingVerificationSync(false)
-        if (userDocSnap.exists()) {
-          const data = userDocSnap.data()
-          setUserRole(data.role)
-          setUserData(data)
-        }
-        setUser(currentUser)
-        return currentUser
-      }
-
+      // Every login requires admin verification — no browser cache bypass
       // Browser not verified — create a pending verification request
       setPendingVerificationUser(currentUser)
       setPendingVerificationStatus('pending')
