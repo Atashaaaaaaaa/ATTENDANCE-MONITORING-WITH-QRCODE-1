@@ -186,7 +186,7 @@ export default function LoginPage() {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  if (authLoading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><div className="avatar-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width: 40, height: 40}}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div></div>;
+  if (authLoading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><div className="avatar-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 40, height: 40 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div></div>;
 
   return (
     <div className="login-wrapper">
@@ -195,7 +195,7 @@ export default function LoginPage() {
         <div className="login-left">
           <Link href="/" className="login-header-logo" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="logo-icon"></div>
-            <span>AMS DESIGN</span>
+            <span>AMS</span>
           </Link>
 
           <div className="login-form-wrapper">
@@ -265,7 +265,7 @@ export default function LoginPage() {
                 <label className="remember-me">
                   <input type="radio" name="remember" /> <span>Remember me</span>
                 </label>
-                <span className="forgot-link" style={{cursor: 'pointer'}} onClick={() => setShowForgotModal(true)}>Forgot your password?</span>
+                <span className="forgot-link" style={{ cursor: 'pointer' }} onClick={() => setShowForgotModal(true)}>Forgot your password?</span>
               </div>
 
             </form>
@@ -567,7 +567,7 @@ export default function LoginPage() {
 
       {/* FORGOT PASSWORD MODAL */}
       {showForgotModal && (
-        <div 
+        <div
           style={{
             position: "fixed",
             inset: 0,
@@ -580,7 +580,7 @@ export default function LoginPage() {
             animation: "fadeIn 0.25s ease",
           }}
           onClick={() => setShowForgotModal(false)}>
-          <div 
+          <div
             style={{
               background: "var(--bg-card)",
               borderRadius: "var(--radius-xl)",
@@ -636,10 +636,10 @@ export default function LoginPage() {
                 marginBottom: "24px",
               }}
             >
-              <strong style={{color: 'var(--primary-dark)', fontSize: '0.95rem'}}>admin@dlsu.edu.ph</strong>
+              <strong style={{ color: 'var(--primary-dark)', fontSize: '0.95rem' }}>admin@dlsu.edu.ph</strong>
             </div>
-            <button 
-              className="btn btn-purple" 
+            <button
+              className="btn btn-purple"
               style={{ width: "100%", justifyContent: "center" }}
               onClick={() => setShowForgotModal(false)}>
               Got it
