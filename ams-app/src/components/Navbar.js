@@ -12,6 +12,15 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close mobile menu when resizing to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) setMobileOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
       <Link href="/" className="navbar-logo">
@@ -23,22 +32,25 @@ export default function Navbar() {
         AMS
       </Link>
 
-      <ul className="navbar-links">
-        <li><a href="#hero">Home</a></li>
-        <li><a href="#features">Features</a></li>
-        <li><a href="#dashboard">Dashboard</a></li>
+      <ul className={`navbar-links ${mobileOpen ? "navbar-links-open" : ""}`}>
+        <li><a href="#hero" onClick={() => setMobileOpen(false)}>Home</a></li>
+        <li><a href="#features" onClick={() => setMobileOpen(false)}>Features</a></li>
+        <li><a href="#dashboard" onClick={() => setMobileOpen(false)}>Dashboard</a></li>
+        <li className="navbar-mobile-cta">
+          <Link href="/login" onClick={() => setMobileOpen(false)}>Get Started</Link>
+        </li>
       </ul>
 
-      <Link href="/login" className="navbar-cta">Get Started</Link>
+      <Link href="/login" className="navbar-cta navbar-cta-desktop">Get Started</Link>
 
       <button
         className="navbar-hamburger"
         onClick={() => setMobileOpen(!mobileOpen)}
         aria-label="Toggle menu"
       >
-        <span></span>
-        <span></span>
-        <span></span>
+        <span className={mobileOpen ? "hamburger-open" : ""}></span>
+        <span className={mobileOpen ? "hamburger-open" : ""}></span>
+        <span className={mobileOpen ? "hamburger-open" : ""}></span>
       </button>
     </nav>
   );

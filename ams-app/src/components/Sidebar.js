@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 const navConfigs = {
@@ -76,13 +76,22 @@ const navConfigs = {
   },
 };
 
-export default function Sidebar({ role }) {
+export default function Sidebar({ role, isOpen, onClose }) {
   const pathname = usePathname();
   const router = useRouter();
   const config = navConfigs[role];
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const { logout } = useAuth();
+
+  // Track screen size for mobile behavior
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -93,60 +102,88 @@ export default function Sidebar({ role }) {
     router.push("/login");
   };
 
+  // Close sidebar on mobile when a link is clicked
+  const handleLinkClick = () => {
+    if (isMobile && onClose) {
+      onClose();
+    }
+  };
+
   if (!config) return null;
 
   return (
-    <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
-      {/* Logo Area */}
-      <div className="sidebar-header">
-        <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">{config.icon}</div>
-          {!collapsed && (
-            <div>
-              <span className="sidebar-logo-text">{config.title}</span>
-              <span className="sidebar-logo-role">{config.role}</span>
-            </div>
+    <>
+      {/* Mobile overlay backdrop */}
+      {isMobile && isOpen && (
+        <div className="sidebar-overlay" onClick={onClose}></div>
+      )}
+
+      <aside className={`sidebar ${collapsed && !isMobile ? "sidebar-collapsed" : ""} ${isMobile && isOpen ? "sidebar-mobile-open" : ""}`}>
+        {/* Logo Area */}
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <div className="sidebar-logo-icon">{config.icon}</div>
+            {(!collapsed || isMobile) && (
+              <div>
+                <span className="sidebar-logo-text">{config.title}</span>
+                <span className="sidebar-logo-role">{config.role}</span>
+              </div>
+            )}
+          </div>
+          {/* Collapse button (desktop only) */}
+          {!isMobile && (
+            <button
+              className="sidebar-collapse-btn"
+              onClick={() => setCollapsed(!collapsed)}
+              aria-label="Toggle sidebar"
+            >
+              {collapsed ? "›" : "‹"}
+            </button>
+          )}
+          {/* Close button (mobile only) */}
+          {isMobile && (
+            <button
+              className="sidebar-close-btn"
+              onClick={onClose}
+              aria-label="Close sidebar"
+            >
+              ✕
+            </button>
           )}
         </div>
-        <button
-          className="sidebar-collapse-btn"
-          onClick={() => setCollapsed(!collapsed)}
-          aria-label="Toggle sidebar"
-        >
-          {collapsed ? "›" : "‹"}
-        </button>
-      </div>
 
-      {/* Navigation */}
-      <nav className="sidebar-nav">
-        {config.sections.map((section, idx) => (
-          <div key={idx}>
-            {!collapsed && <div className="sidebar-nav-label">{section.label}</div>}
-            {section.links.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`sidebar-link ${isActive ? "active" : ""}`}
-                  title={collapsed ? link.label : undefined}
-                >
-                  <span className="sidebar-link-icon">{link.icon}</span>
-                  {!collapsed && <span className="sidebar-link-text">{link.label}</span>}
-                  {isActive && <span className="sidebar-active-indicator"></span>}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
-      </nav>
+        {/* Navigation */}
+        <nav className="sidebar-nav">
+          {config.sections.map((section, idx) => (
+            <div key={idx}>
+              {(!collapsed || isMobile) && <div className="sidebar-nav-label">{section.label}</div>}
+              {section.links.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`sidebar-link ${isActive ? "active" : ""}`}
+                    title={collapsed && !isMobile ? link.label : undefined}
+                    onClick={handleLinkClick}
+                  >
+                    <span className="sidebar-link-icon">{link.icon}</span>
+                    {(!collapsed || isMobile) && <span className="sidebar-link-text">{link.label}</span>}
+                    {isActive && <span className="sidebar-active-indicator"></span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
 
-      {/* Footer */}
-      <div className="sidebar-footer">
-        <button className="sidebar-logout" onClick={handleLogout} title={collapsed ? "Logout" : undefined}>
-          {!collapsed && "Logout"}
-        </button>
-      </div>
-    </aside>
+        {/* Footer */}
+        <div className="sidebar-footer">
+          <button className="sidebar-logout" onClick={handleLogout} title={collapsed && !isMobile ? "Logout" : undefined}>
+            {(!collapsed || isMobile) && "Logout"}
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }
