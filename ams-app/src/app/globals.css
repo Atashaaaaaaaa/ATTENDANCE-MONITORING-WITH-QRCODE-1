@@ -489,7 +489,7 @@ video, iframe, embed, object, table, pre {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 80px clamp(20px, 5vw, 60px) 40px;
+  padding: 80px clamp(20px, 5vw, 60px) 0;
 }
 
 .hero::before {
@@ -602,8 +602,8 @@ video, iframe, embed, object, table, pre {
   width: 100%;
   max-width: 950px;
   animation: fadeInUp 0.8s ease 0.3s both;
-  margin: 0 auto 100px;
-  scroll-margin-top: 80px;
+  margin: 0 auto;
+  scroll-margin-top: 15vh;
 }
 
 .hero-dashboard-card {
@@ -2747,7 +2747,7 @@ video, iframe, embed, object, table, pre {
 
   /* -- Hero -- */
   .hero-content {
-    padding: 100px 20px 40px;
+    padding: 100px 20px 0;
   }
 
   .hero-buttons {
@@ -3022,7 +3022,7 @@ video, iframe, embed, object, table, pre {
   }
 
   .hero-dashboard {
-    margin: 0 auto 60px;
+    margin: 0 auto;
   }
 
   .dashboard-header {
