@@ -7,6 +7,12 @@ export const metadata = {
   description: "Smart facial recognition-based attendance monitoring system for DLSU-D. Track, manage, and analyze attendance with cutting-edge technology.",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
