@@ -25,7 +25,7 @@
 .login-left {
   width: 38%;
   background: white;
-  padding: 40px 50px;
+  padding: clamp(20px, 4vw, 40px) clamp(16px, 5vw, 50px);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -305,7 +305,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 40px;
+  padding: clamp(20px, 4vw, 40px);
   animation: loginSlideInRight 0.7s ease 0.2s both;
 }
 
@@ -397,7 +397,7 @@
 }
 
 .welcome-text h1 {
-  font-size: 4.5rem;
+  font-size: clamp(2rem, 8vw, 4.5rem);
   font-weight: 900;
   margin-bottom: 15px;
   letter-spacing: -2px;
@@ -419,18 +419,10 @@
   }
   .login-left {
     width: 100%;
-    padding: 30px 32px;
     min-height: auto;
   }
   .login-right {
     min-height: 200px;
-    padding: 30px;
-  }
-  .welcome-text h1 {
-    font-size: 3rem;
-  }
-  .welcome-text p {
-    font-size: 0.7rem;
   }
   .blob-1 { width: 500px; height: 500px; }
   .blob-2 { width: 400px; height: 400px; }
@@ -445,13 +437,9 @@
   }
   .login-left {
     width: 100%;
-    padding: 24px 20px;
   }
   .login-right {
     display: none;
-  }
-  .login-header-logo {
-    margin-bottom: 20px;
   }
   .avatar-container {
     margin-bottom: 24px;
@@ -464,14 +452,6 @@
     width: 26px;
     height: 26px;
   }
-  .input-group input {
-    padding: 10px 14px 10px 42px;
-    font-size: 0.75rem;
-  }
-  .login-btn {
-    padding: 12px;
-    font-size: 0.8rem;
-  }
   .form-actions {
     flex-direction: column;
     gap: 8px;
@@ -480,15 +460,6 @@
 }
 
 @media (max-width: 480px) {
-  .login-wrapper {
-    padding: 0;
-  }
-  .login-left {
-    padding: 20px 16px;
-  }
-  .login-header-logo span {
-    font-size: 0.75rem;
-  }
   .avatar-circle {
     width: 54px;
     height: 54px;
@@ -502,32 +473,6 @@
   }
   .input-group {
     border-width: 1.5px;
-  }
-  .input-group input {
-    padding: 10px 12px 10px 38px;
-    font-size: 0.72rem;
-  }
-  .input-icon {
-    left: 14px;
-  }
-  .input-icon svg {
-    width: 14px;
-    height: 14px;
-  }
-  .login-btn {
-    padding: 11px;
-    font-size: 0.78rem;
-    margin-top: 6px;
-  }
-  .remember-me {
-    font-size: 0.6rem;
-  }
-  .forgot-link {
-    font-size: 0.6rem;
-  }
-  .login-error {
-    font-size: 0.7rem;
-    padding: 6px;
   }
 }
 
@@ -549,7 +494,7 @@
 
 .forgot-modal-content {
   background: white;
-  padding: 30px 40px;
+  padding: clamp(20px, 4vw, 30px) clamp(16px, 4vw, 40px);
   border-radius: 16px;
   max-width: 400px;
   width: 90%;
@@ -613,14 +558,10 @@
 
 @media (max-width: 480px) {
   .forgot-modal-content {
-    padding: 24px 20px;
     width: 94%;
   }
   .forgot-modal-content h3 {
     font-size: 1.1rem;
-  }
-  .forgot-modal-content p {
-    font-size: 0.8rem;
   }
 }
 
