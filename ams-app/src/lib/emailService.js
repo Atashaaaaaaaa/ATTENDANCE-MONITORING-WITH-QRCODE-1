@@ -5,7 +5,7 @@ const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "";
 const TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "";
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "";
 
-// Initialize EmailJS with public key (required for v4.x)
+// Initialize EmailJS with public key
 let initialized = false;
 function ensureInit() {
   if (!initialized && PUBLIC_KEY) {
@@ -27,18 +27,23 @@ function ensureInit() {
  */
 export async function send2FACode(toEmail, code) {
   if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
-    console.warn(
-      "EmailJS not configured. Set NEXT_PUBLIC_EMAILJS_SERVICE_ID, NEXT_PUBLIC_EMAILJS_TEMPLATE_ID, and NEXT_PUBLIC_EMAILJS_PUBLIC_KEY in .env.local"
+    console.error(
+      "❌ EMAILJS IS NOT CONFIGURED! ❌\n" +
+      "To send actual emails (without needing Firebase's paid Blaze plan), create a free account at https://www.emailjs.com/ and configure:\n" +
+      "- NEXT_PUBLIC_EMAILJS_SERVICE_ID\n" +
+      "- NEXT_PUBLIC_EMAILJS_TEMPLATE_ID\n" +
+      "- NEXT_PUBLIC_EMAILJS_PUBLIC_KEY\n" +
+      "inside your .env.local file."
     );
-    // In development/demo mode, log the code to console
-    console.log(`[2FA DEV MODE] Code for ${toEmail}: ${code}`);
-    return true;
+    // Optionally display an alert so the developer realizes dev-mode is active
+    if (typeof window !== "undefined") {
+      console.log(`%c[2FA DEV MODE] Use this code to login: ${code}`, "color: #4A7C59; font-size: 16px; font-weight: bold;");
+    }
+    return true; // Return true so log-in proceeds and the code can be found in console
   }
 
   try {
-    // Ensure EmailJS is initialized before sending
     ensureInit();
-
     console.log(`[2FA] Sending verification code to: ${toEmail}`);
 
     const response = await emailjs.send(
@@ -52,14 +57,10 @@ export async function send2FACode(toEmail, code) {
         expiry_min: "5",
       }
     );
-    console.log("[2FA] Email sent successfully:", response.status, response.text);
+    console.log("[2FA] Email sent successfully via EmailJS:", response.status, response.text);
     return true;
   } catch (error) {
-    console.error("[2FA] Failed to send email:", error);
-    console.error("[2FA] Service ID:", SERVICE_ID);
-    console.error("[2FA] Template ID:", TEMPLATE_ID);
-    console.error("[2FA] Recipient:", toEmail);
-    // Return false instead of true so the UI can handle the failure properly
+    console.error("[2FA] Failed to send email via EmailJS:", error);
     return false;
   }
 }
@@ -74,6 +75,5 @@ export function generate6DigitCode() {
     window.crypto.getRandomValues(array);
     return (100000 + (array[0] % 900000)).toString();
   }
-  // Fallback for non-browser environments or older browsers
   return Math.floor(100000 + Math.random() * 900000).toString();
 }

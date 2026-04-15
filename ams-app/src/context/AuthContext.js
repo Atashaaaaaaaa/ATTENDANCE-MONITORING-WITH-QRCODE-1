@@ -26,6 +26,7 @@ export const AuthProvider = ({ children }) => {
   const [pending2FAEmail, setPending2FAEmail] = useState('')
   const [pending2FARecipientEmail, setPending2FARecipientEmail] = useState('')
   const [twoFAError, setTwoFAError] = useState(null)
+  const [expected2FACode, setExpected2FACode] = useState(null)
   
   // Monitor auth state changes
   useEffect(() => {
@@ -38,8 +39,8 @@ export const AuthProvider = ({ children }) => {
         }
 
         // Check if this session has been verified via 2FA
-        // On page refresh, sessionStorage tells us if the user previously completed 2FA
-        const isVerifiedSession = typeof window !== 'undefined' && sessionStorage.getItem('2fa_verified') === 'true'
+        // Using localStorage to remember verification per browser
+        const isVerifiedSession = typeof window !== 'undefined' && localStorage.getItem(`2fa_verified_${currentUser.uid}`) === 'true'
 
         if (!isVerifiedSession) {
           // User has a Firebase session but hasn't completed 2FA in this browser session
@@ -69,7 +70,6 @@ export const AuthProvider = ({ children }) => {
               setUser(null)
               setUserRole(null)
               setUserData(null)
-              if (typeof window !== 'undefined') sessionStorage.removeItem('2fa_verified')
               setLoading(false)
               return
             }
@@ -94,7 +94,6 @@ export const AuthProvider = ({ children }) => {
               setUser(null)
               setUserRole(null)
               setUserData(null)
-              if (typeof window !== 'undefined') sessionStorage.removeItem('2fa_verified')
               setLoading(false)
               return
             }
@@ -197,20 +196,10 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Clean up any existing codes for this user (by login email)
-      const existingCodes = await getDocs(
-        query(collection(db, '2fa_codes'), where('email', '==', loginEmail))
-      )
-      for (const docSnap of existingCodes.docs) {
-        await deleteDoc(doc(db, '2fa_codes', docSnap.id))
-      }
-
-      // Store new code (keyed by login email for verification lookup)
-      await addDoc(collection(db, '2fa_codes'), {
-        email: loginEmail,
+      // Store new code locally in state instead of Firestore
+      setExpected2FACode({
         code: code,
-        createdAt: new Date().toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        used: false,
+        expiresAt: expiresAt,
       })
 
       // Send via EmailJS to the admin-registered email in Firestore
@@ -237,35 +226,21 @@ export const AuthProvider = ({ children }) => {
         return false
       }
 
-      // Query Firestore for the code
-      const codesSnap = await getDocs(
-        query(
-          collection(db, '2fa_codes'),
-          where('email', '==', pending2FAEmail),
-          where('code', '==', inputCode.trim()),
-          where('used', '==', false)
-        )
-      )
-
-      if (codesSnap.empty) {
+      // Check local state for the code
+      if (!expected2FACode || expected2FACode.code !== inputCode.trim()) {
         setTwoFAError('Invalid verification code. Please check and try again.')
         return false
       }
 
       // Check expiration
-      const codeDoc = codesSnap.docs[0]
-      const codeData = codeDoc.data()
-      const expiresAt = new Date(codeData.expiresAt)
-
-      if (new Date() > expiresAt) {
-        // Mark as used and reject
-        await deleteDoc(doc(db, '2fa_codes', codeDoc.id))
+      if (new Date() > expected2FACode.expiresAt) {
+        setExpected2FACode(null) // clear
         setTwoFAError('Verification code has expired. Please request a new one.')
         return false
       }
 
-      // Code is valid — mark as used
-      await deleteDoc(doc(db, '2fa_codes', codeDoc.id))
+      // Code is valid — clear it
+      setExpected2FACode(null)
 
       // Complete login — set user from pending state
       if (pending2FAUser) {
@@ -280,7 +255,7 @@ export const AuthProvider = ({ children }) => {
 
         // Mark this session as 2FA-verified so page refresh keeps them logged in
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('2fa_verified', 'true')
+          localStorage.setItem(`2fa_verified_${pending2FAUser.uid}`, 'true')
         }
 
         setUser(pending2FAUser)
@@ -313,10 +288,10 @@ export const AuthProvider = ({ children }) => {
     setPending2FAEmail('')
     setPending2FARecipientEmail('')
     setTwoFAError(null)
+    setExpected2FACode(null)
     setUser(null)
     setUserRole(null)
     setUserData(null)
-    if (typeof window !== 'undefined') sessionStorage.removeItem('2fa_verified')
   }
 
   // Sign in function — now with 2FA
@@ -330,7 +305,7 @@ export const AuthProvider = ({ children }) => {
         const mockUser = { uid: 'hardcoded-admin-id', email: 'admin' };
         // Mark admin session as verified so refresh keeps them logged in
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('2fa_verified', 'true')
+          localStorage.setItem(`2fa_verified_${mockUser.uid}`, 'true')
         }
         setUser(mockUser);
         setUserRole('admin');
@@ -401,8 +376,7 @@ export const AuthProvider = ({ children }) => {
       setPending2FAUser(null)
       setPending2FAEmail('')
       setPending2FARecipientEmail('')
-      // Clear the 2FA verification flag so next login requires 2FA again
-      if (typeof window !== 'undefined') sessionStorage.removeItem('2fa_verified')
+      setExpected2FACode(null)
     } catch (err) {
       setError(err.message)
       throw err
