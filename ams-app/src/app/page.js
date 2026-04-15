@@ -255,8 +255,6 @@ export default function LandingPage() {
         <ul className="footer-links">
           <li><a href="#hero">Home</a></li>
           <li><a href="#features">Features</a></li>
-          <li><a href="#stats">About</a></li>
-
         </ul>
         <div className="footer-bottom">
           © 2026 AMS - Attendance Monitoring System. All rights reserved.
