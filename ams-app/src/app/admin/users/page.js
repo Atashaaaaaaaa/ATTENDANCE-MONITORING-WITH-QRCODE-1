@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { collection, getDocs, deleteDoc, doc, setDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc, setDoc, updateDoc, onSnapshot, query, where } from "firebase/firestore";
 
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
@@ -85,6 +85,9 @@ export default function AdminUsers() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
+  // Pending verifications state
+  const [pendingVerifications, setPendingVerifications] = useState([]);
+
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -117,6 +120,28 @@ export default function AdminUsers() {
       }
     };
     fetchUsers();
+  }, []);
+
+  // Real-time listener for pending verifications
+  useEffect(() => {
+    const q = query(collection(db, "pendingVerifications"), where("status", "==", "pending"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const pending = [];
+      snapshot.forEach((docSnap) => {
+        pending.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      // Sort by requestedAt (newest first)
+      pending.sort((a, b) => {
+        const aTime = a.requestedAt?.toDate?.() || new Date(0);
+        const bTime = b.requestedAt?.toDate?.() || new Date(0);
+        return bTime - aTime;
+      });
+      setPendingVerifications(pending);
+    }, (err) => {
+      console.error("Error listening to pending verifications:", err);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -329,6 +354,24 @@ export default function AdminUsers() {
       setEditError(err.message || "Failed to reset password. Please try again.");
     } finally {
       setResetSending(false);
+    }
+  };
+
+  // ── Verification Handlers ──
+  const handleApproveVerification = async (verificationId) => {
+    try {
+      await updateDoc(doc(db, "pendingVerifications", verificationId), { status: "approved" });
+    } catch (err) {
+      console.error("Error approving verification:", err);
+    }
+  };
+
+  const handleRejectVerification = async (verificationId) => {
+    if (!confirm("Are you sure you want to reject this verification request?")) return;
+    try {
+      await updateDoc(doc(db, "pendingVerifications", verificationId), { status: "rejected" });
+    } catch (err) {
+      console.error("Error rejecting verification:", err);
     }
   };
 
@@ -728,6 +771,39 @@ export default function AdminUsers() {
               </span>
             )}
           </button>
+          <button
+            onClick={() => setActiveTab("pending")}
+            style={{
+              padding: "14px 24px",
+              border: "none",
+              background: "none",
+              cursor: "pointer",
+              fontSize: "0.9rem",
+              fontWeight: activeTab === "pending" ? 700 : 500,
+              color: activeTab === "pending" ? "#C2410C" : "var(--text-muted)",
+              borderBottom: activeTab === "pending" ? "2.5px solid #C2410C" : "2.5px solid transparent",
+              marginBottom: "-2px",
+              transition: "var(--transition-fast)",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            Pending Verification
+            {pendingVerifications.length > 0 && (
+              <span style={{
+                background: activeTab === "pending" ? "#FFF7ED" : "var(--bg-body)",
+                color: activeTab === "pending" ? "#C2410C" : "var(--text-muted)",
+                padding: "2px 8px",
+                borderRadius: "var(--radius-full)",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                animation: "pulse 2s ease-in-out infinite",
+              }}>
+                {pendingVerifications.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* ── Existing Profiles Tab ── */}
@@ -1110,6 +1186,96 @@ export default function AdminUsers() {
               }}
             >
               {archivedUsers.length} archived account{archivedUsers.length !== 1 ? "s" : ""}
+            </div>
+          </>
+        )}
+
+        {/* ── Pending Verification Tab ── */}
+        {activeTab === "pending" && (
+          <>
+            <div style={{ padding: "20px 24px 12px" }}>
+              <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", margin: 0 }}>
+                Users awaiting admin verification will appear here. Approve to grant access on their browser.
+              </p>
+            </div>
+
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Requested At</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingVerifications.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                      No pending verification requests.
+                    </td>
+                  </tr>
+                ) : (
+                  pendingVerifications.map((v) => (
+                    <tr key={v.id}>
+                      <td style={{ fontWeight: 600 }}>{v.name || "—"}</td>
+                      <td style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{v.email}</td>
+                      <td>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "3px 10px",
+                            borderRadius: "var(--radius-full)",
+                            fontSize: "0.78rem",
+                            fontWeight: 600,
+                            background: v.role === "teacher" ? "var(--info-bg)" : "var(--accent-soft)",
+                            color: v.role === "teacher" ? "var(--info)" : "var(--primary)",
+                          }}
+                        >
+                          {displayRole(v.role)}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                        {v.requestedAt?.toDate ? v.requestedAt.toDate().toLocaleString() : "—"}
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            className="btn btn-green btn-sm"
+                            onClick={() => handleApproveVerification(v.id)}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="btn btn-sm"
+                            onClick={() => handleRejectVerification(v.id)}
+                            style={{
+                              background: "var(--danger-bg)",
+                              color: "var(--danger)",
+                              border: "1px solid var(--danger)",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            <div
+              style={{
+                padding: "12px 24px",
+                borderTop: "1px solid var(--border-light)",
+                fontSize: "0.82rem",
+                color: "var(--text-muted)",
+              }}
+            >
+              {pendingVerifications.length} pending request{pendingVerifications.length !== 1 ? "s" : ""}
             </div>
           </>
         )}
