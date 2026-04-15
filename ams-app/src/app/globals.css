@@ -79,6 +79,7 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 body {
@@ -87,6 +88,8 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   overflow-x: hidden;
+  min-height: 100vh;
+  width: 100%;
 }
 
 a {
@@ -97,6 +100,10 @@ a {
 img {
   max-width: 100%;
   height: auto;
+}
+
+video, iframe, embed, object, table, pre {
+  max-width: 100%;
 }
 
 /* --- Animations --- */
@@ -322,7 +329,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 60px;
+  padding: 0 clamp(16px, 4vw, 60px);
   z-index: 1000;
   transition: var(--transition-base);
   background: transparent;
@@ -482,7 +489,7 @@ img {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 80px 60px 40px;
+  padding: 80px clamp(20px, 5vw, 60px) 40px;
 }
 
 .hero::before {
