@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { auth, db } from '@/lib/firebase'
 import {
   createUserWithEmailAndPassword,
@@ -8,8 +8,7 @@ import {
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth'
-import { doc, getDoc, setDoc, onSnapshot, addDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore'
-import { send2FACode, generate6DigitCode } from '@/lib/emailService'
+import { doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 
 const AuthContext = createContext()
 
@@ -20,31 +19,29 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null)
   const [userData, setUserData] = useState(null)
 
-  // 2FA state
-  const [pending2FA, setPending2FA] = useState(false)
-  const [pending2FAUser, setPending2FAUser] = useState(null)
-  const [pending2FAEmail, setPending2FAEmail] = useState('')
-  const [pending2FARecipientEmail, setPending2FARecipientEmail] = useState('')
-  const [twoFAError, setTwoFAError] = useState(null)
-  const [expected2FACode, setExpected2FACode] = useState(null)
+  // Admin verification state (replaces old email 2FA)
+  const [pendingVerification, setPendingVerification] = useState(false)
+  const [pendingVerificationUser, setPendingVerificationUser] = useState(null)
+  const [pendingVerificationStatus, setPendingVerificationStatus] = useState(null) // 'pending' | 'approved' | 'rejected'
+  const [verificationError, setVerificationError] = useState(null)
+  const verificationListenerRef = useRef(null)
   
   // Monitor auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        // If we're in 2FA pending state, don't set user yet
-        if (pending2FA) {
+        // If we're in pending verification state, don't set user yet
+        if (pendingVerification) {
           setLoading(false)
           return
         }
 
-        // Check if this session has been verified via 2FA
-        // Using localStorage to remember verification per browser
-        const isVerifiedSession = typeof window !== 'undefined' && localStorage.getItem(`2fa_verified_${currentUser.uid}`) === 'true'
+        // Check if this browser is verified
+        const isVerifiedBrowser = typeof window !== 'undefined' && localStorage.getItem(`verified_browser_${currentUser.uid}`) === 'true'
 
-        if (!isVerifiedSession) {
-          // User has a Firebase session but hasn't completed 2FA in this browser session
-          // Sign them out to force re-authentication with 2FA
+        if (!isVerifiedBrowser) {
+          // User has a Firebase session but hasn't been verified by admin in this browser
+          // Sign them out to force re-authentication
           try {
             await signOut(auth)
           } catch (e) {
@@ -105,7 +102,7 @@ export const AuthProvider = ({ children }) => {
           setUser(currentUser)
         }
       } else {
-        if (!pending2FA) {
+        if (!pendingVerification) {
           setUser(null)
           setUserRole(null)
           setUserData(null)
@@ -115,7 +112,7 @@ export const AuthProvider = ({ children }) => {
     })
 
     return unsubscribe
-  }, [pending2FA])
+  }, [pendingVerification])
 
   // Real-time listener: auto sign-out if account gets archived while logged in
   useEffect(() => {
@@ -169,151 +166,162 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Generate and store 2FA code in Firestore, then send via email
-  // Uses the Firestore-registered email (from admin), NOT the Firebase Auth login email
-  const generate2FACode = async (loginEmail, uid) => {
-    try {
-      setTwoFAError(null)
-      const code = generate6DigitCode()
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes from now
-
-      // Look up the email registered by admin in Firestore
-      let recipientEmail = loginEmail
-      const resolvedUid = uid || (pending2FAUser ? pending2FAUser.uid : null)
-      if (resolvedUid) {
-        try {
-          const userDocRef = doc(db, 'users', resolvedUid)
-          const userDocSnap = await getDoc(userDocRef)
-          if (userDocSnap.exists()) {
-            const firestoreEmail = userDocSnap.data().email
-            if (firestoreEmail) {
-              recipientEmail = firestoreEmail
-            }
-          }
-        } catch (lookupErr) {
-          console.warn('Could not look up Firestore email, falling back to login email:', lookupErr)
-        }
-      }
-
-      // Clean up any existing codes for this user (by login email)
-      // Store new code locally in state instead of Firestore
-      setExpected2FACode({
-        code: code,
-        expiresAt: expiresAt,
-      })
-
-      // Send via EmailJS to the admin-registered email in Firestore
-      await send2FACode(recipientEmail, code)
-
-      // Store the recipient email so we can display it in the 2FA modal
-      setPending2FARecipientEmail(recipientEmail)
-
-      return true
-    } catch (err) {
-      console.error('Error generating 2FA code:', err)
-      setTwoFAError('Failed to generate verification code. Please try again.')
-      return false
+  // Start listening for admin approval on a pending verification document
+  const startVerificationListener = (verificationDocId, currentUser) => {
+    // Clean up any existing listener
+    if (verificationListenerRef.current) {
+      verificationListenerRef.current()
     }
-  }
 
-  // Verify 2FA code against Firestore
-  const verify2FACode = async (inputCode) => {
-    try {
-      setTwoFAError(null)
+    const verificationDocRef = doc(db, 'pendingVerifications', verificationDocId)
+    const unsubscribe = onSnapshot(verificationDocRef, async (snapshot) => {
+      if (!snapshot.exists()) return
 
-      if (!pending2FAEmail) {
-        setTwoFAError('No pending verification. Please login again.')
-        return false
-      }
+      const data = snapshot.data()
 
-      // Check local state for the code
-      if (!expected2FACode || expected2FACode.code !== inputCode.trim()) {
-        setTwoFAError('Invalid verification code. Please check and try again.')
-        return false
-      }
+      if (data.status === 'approved') {
+        // Admin approved — complete login
+        setPendingVerificationStatus('approved')
 
-      // Check expiration
-      if (new Date() > expected2FACode.expiresAt) {
-        setExpected2FACode(null) // clear
-        setTwoFAError('Verification code has expired. Please request a new one.')
-        return false
-      }
-
-      // Code is valid — clear it
-      setExpected2FACode(null)
-
-      // Complete login — set user from pending state
-      if (pending2FAUser) {
-        const userDocRef = doc(db, 'users', pending2FAUser.uid)
-        const userDocSnap = await getDoc(userDocRef)
-
-        if (userDocSnap.exists()) {
-          const data = userDocSnap.data()
-          setUserRole(data.role)
-          setUserData(data)
-        }
-
-        // Mark this session as 2FA-verified so page refresh keeps them logged in
+        // Mark this browser as verified
         if (typeof window !== 'undefined') {
-          localStorage.setItem(`2fa_verified_${pending2FAUser.uid}`, 'true')
+          localStorage.setItem(`verified_browser_${currentUser.uid}`, 'true')
         }
 
-        setUser(pending2FAUser)
+        // Fetch user data and complete login
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid)
+          const userDocSnap = await getDoc(userDocRef)
+
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data()
+            setUserRole(userData.role)
+            setUserData(userData)
+          }
+        } catch (err) {
+          console.error('Error fetching user data after approval:', err)
+        }
+
+        setUser(currentUser)
+
+        // Clean up verification state
+        setTimeout(() => {
+          setPendingVerification(false)
+          setPendingVerificationUser(null)
+          setPendingVerificationStatus(null)
+          setVerificationError(null)
+        }, 1500) // Brief delay so user sees "Approved" message
+
+        // Clean up the listener
+        if (verificationListenerRef.current) {
+          verificationListenerRef.current()
+          verificationListenerRef.current = null
+        }
+
+        // Delete the verification doc (cleanup)
+        try {
+          await deleteDoc(verificationDocRef)
+        } catch (e) {
+          // ignore cleanup errors
+        }
+      } else if (data.status === 'rejected') {
+        // Admin rejected
+        setPendingVerificationStatus('rejected')
+        setVerificationError('Your verification request was rejected by the administrator.')
+
+        // Sign out
+        try {
+          await signOut(auth)
+        } catch (e) {
+          // ignore
+        }
+
+        // Clean up after a moment
+        setTimeout(() => {
+          setPendingVerification(false)
+          setPendingVerificationUser(null)
+          setPendingVerificationStatus(null)
+          setUser(null)
+          setUserRole(null)
+          setUserData(null)
+        }, 3000)
+
+        // Clean up the listener
+        if (verificationListenerRef.current) {
+          verificationListenerRef.current()
+          verificationListenerRef.current = null
+        }
+
+        // Delete the verification doc (cleanup)
+        try {
+          await deleteDoc(verificationDocRef)
+        } catch (e) {
+          // ignore cleanup errors
+        }
       }
+    }, (error) => {
+      console.error('Verification listener error:', error)
+    })
 
-      // Clear 2FA state
-      setPending2FA(false)
-      setPending2FAUser(null)
-      setPending2FAEmail('')
-      setPending2FARecipientEmail('')
-      setTwoFAError(null)
-
-      return true
-    } catch (err) {
-      console.error('Error verifying 2FA code:', err)
-      setTwoFAError('Verification failed. Please try again.')
-      return false
-    }
+    verificationListenerRef.current = unsubscribe
   }
 
-  // Cancel 2FA and sign out the pending user
-  const cancel2FA = async () => {
+  // Cancel verification and sign out
+  const cancelVerification = async () => {
+    // Clean up listener
+    if (verificationListenerRef.current) {
+      verificationListenerRef.current()
+      verificationListenerRef.current = null
+    }
+
+    // Delete the pending verification doc if it exists
+    if (pendingVerificationUser) {
+      try {
+        const verificationsRef = collection(db, 'pendingVerifications')
+        const q = query(verificationsRef, where('uid', '==', pendingVerificationUser.uid), where('status', '==', 'pending'))
+        const snapshot = await getDocs(q)
+        snapshot.forEach(async (docSnap) => {
+          await deleteDoc(doc(db, 'pendingVerifications', docSnap.id))
+        })
+      } catch (e) {
+        // ignore cleanup errors
+      }
+    }
+
     try {
       await signOut(auth)
     } catch (e) {
       // ignore
     }
-    setPending2FA(false)
-    setPending2FAUser(null)
-    setPending2FAEmail('')
-    setPending2FARecipientEmail('')
-    setTwoFAError(null)
-    setExpected2FACode(null)
+    setPendingVerification(false)
+    setPendingVerificationUser(null)
+    setPendingVerificationStatus(null)
+    setVerificationError(null)
     setUser(null)
     setUserRole(null)
     setUserData(null)
   }
 
-  // Sign in function — now with 2FA
+  // Sign in function — with admin verification
   const signIn = async (email, password) => {
     try {
       setError(null)
-      setTwoFAError(null)
+      setVerificationError(null)
 
-      // Hardcoded admin bypass — skips 2FA
+      // Hardcoded admin bypass — skips verification
       if (email.trim().toLowerCase() === 'admin' && password === 'admin') {
         const mockUser = { uid: 'hardcoded-admin-id', email: 'admin' };
-        // Mark admin session as verified so refresh keeps them logged in
+        // Mark admin session as verified
         if (typeof window !== 'undefined') {
-          localStorage.setItem(`2fa_verified_${mockUser.uid}`, 'true')
+          localStorage.setItem(`verified_browser_${mockUser.uid}`, 'true')
         }
         setUser(mockUser);
         setUserRole('admin');
         return mockUser;
       }
 
-      // Set pending 2FA BEFORE Firebase auth to prevent onAuthStateChanged from completing login
-      setPending2FA(true)
+      // Set pending verification BEFORE Firebase auth to prevent onAuthStateChanged from completing login
+      setPendingVerification(true)
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const currentUser = userCredential.user
@@ -326,39 +334,88 @@ export const AuthProvider = ({ children }) => {
         const data = userDocSnap.data();
         if (data.status === 'archived') {
           await signOut(auth)
-          setPending2FA(false)
+          setPendingVerification(false)
           throw new Error('This account has been archived. Please contact an administrator.')
+        }
+
+        // Check forcePasswordChange BEFORE verification
+        if (data.forcePasswordChange === true) {
+          // Let the user through so ForcePasswordChange modal can show
+          // Mark browser as temporarily verified so onAuthStateChanged doesn't sign them out
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`verified_browser_${currentUser.uid}`, 'true')
+          }
+          setPendingVerification(false)
+          setUser(currentUser)
+          setUserRole(data.role)
+          setUserData(data)
+          return { requiresPasswordChange: true }
         }
       } else {
         // Fallback: check role-specific collections
         const teacherSnap = await getDoc(doc(db, 'teachers', currentUser.uid))
         if (teacherSnap.exists() && teacherSnap.data().status === 'archived') {
           await signOut(auth)
-          setPending2FA(false)
+          setPendingVerification(false)
           throw new Error('This account has been archived. Please contact an administrator.')
         }
         const studentSnap = await getDoc(doc(db, 'students', currentUser.uid))
         if (studentSnap.exists() && studentSnap.data().status === 'archived') {
           await signOut(auth)
-          setPending2FA(false)
+          setPendingVerification(false)
           throw new Error('This account has been archived. Please contact an administrator.')
         }
       }
 
-      // Store pending user and generate 2FA code
-      setPending2FAUser(currentUser)
-      setPending2FAEmail(email)
+      // Check if this browser is already verified
+      const isVerifiedBrowser = typeof window !== 'undefined' && localStorage.getItem(`verified_browser_${currentUser.uid}`) === 'true'
 
-      // Generate and send 2FA code to the admin-registered email (from Firestore)
-      await generate2FACode(email, currentUser.uid)
+      if (isVerifiedBrowser) {
+        // Browser already verified — complete login immediately
+        setPendingVerification(false)
+        if (userDocSnap.exists()) {
+          const data = userDocSnap.data()
+          setUserRole(data.role)
+          setUserData(data)
+        }
+        setUser(currentUser)
+        return currentUser
+      }
 
-      // Return a signal that 2FA is needed (don't complete login yet)
-      return { requires2FA: true, email: email }
+      // Browser not verified — create a pending verification request
+      setPendingVerificationUser(currentUser)
+      setPendingVerificationStatus('pending')
+
+      // Get user info for the verification request
+      const userData = userDocSnap.exists() ? userDocSnap.data() : {}
+      const verificationDocRef = doc(db, 'pendingVerifications', currentUser.uid)
+
+      // Check if there's already a pending request
+      const existingVerification = await getDoc(verificationDocRef)
+      if (existingVerification.exists() && existingVerification.data().status === 'pending') {
+        // Reuse existing pending request
+        startVerificationListener(currentUser.uid, currentUser)
+        return { requiresVerification: true }
+      }
+
+      // Create new pending verification request
+      await setDoc(verificationDocRef, {
+        uid: currentUser.uid,
+        email: userData.email || email,
+        name: userData.name || userData.fullName || email,
+        role: userData.role || 'unknown',
+        status: 'pending',
+        requestedAt: serverTimestamp(),
+      })
+
+      // Start listening for admin response
+      startVerificationListener(currentUser.uid, currentUser)
+
+      return { requiresVerification: true }
     } catch (err) {
-      setPending2FA(false)
-      setPending2FAUser(null)
-      setPending2FAEmail('')
-      setPending2FARecipientEmail('')
+      setPendingVerification(false)
+      setPendingVerificationUser(null)
+      setPendingVerificationStatus(null)
       setError(err.message)
       throw err
     }
@@ -368,20 +425,35 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       setError(null)
+
+      // Clean up verification listener
+      if (verificationListenerRef.current) {
+        verificationListenerRef.current()
+        verificationListenerRef.current = null
+      }
+
       await signOut(auth)
       setUser(null)
       setUserRole(null)
       setUserData(null)
-      setPending2FA(false)
-      setPending2FAUser(null)
-      setPending2FAEmail('')
-      setPending2FARecipientEmail('')
-      setExpected2FACode(null)
+      setPendingVerification(false)
+      setPendingVerificationUser(null)
+      setPendingVerificationStatus(null)
+      setVerificationError(null)
     } catch (err) {
       setError(err.message)
       throw err
     }
   }
+
+  // Clean up listener on unmount
+  useEffect(() => {
+    return () => {
+      if (verificationListenerRef.current) {
+        verificationListenerRef.current()
+      }
+    }
+  }, [])
 
   const value = {
     user,
@@ -394,14 +466,11 @@ export const AuthProvider = ({ children }) => {
     signIn,
     logout,
     isAuthenticated: !!user,
-    // 2FA
-    pending2FA,
-    pending2FAEmail,
-    pending2FARecipientEmail,
-    twoFAError,
-    verify2FACode,
-    generate2FACode,
-    cancel2FA,
+    // Admin verification
+    pendingVerification,
+    pendingVerificationStatus,
+    verificationError,
+    cancelVerification,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
