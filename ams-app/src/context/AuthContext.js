@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null)
   const [userData, setUserData] = useState(null)
 
-  // Admin verification state (replaces old email 2FA)
+  // Admin verification state
   const [pendingVerification, setPendingVerification] = useState(false)
   const [pendingVerificationUser, setPendingVerificationUser] = useState(null)
   const [pendingVerificationStatus, setPendingVerificationStatus] = useState(null) // 'pending' | 'approved' | 'rejected'
@@ -39,38 +39,30 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        // Read from ref (always current) instead of state (stale closure)
+        // If we're in the middle of a sign-in verification flow, don't interfere
         if (pendingVerificationRef.current) {
           setLoading(false)
           return
         }
 
-        // Check if this browser has an active verified session
-        const hasActiveSession = typeof window !== 'undefined' && sessionStorage.getItem(`active_session_${currentUser.uid}`) === 'true'
-
-        if (!hasActiveSession) {
-          // No active session — sign them out
-          try {
-            await signOut(auth)
-          } catch (e) {
-            // ignore sign-out errors
-          }
-          setUser(null)
-          setUserRole(null)
-          setUserData(null)
-          setLoading(false)
-          return
-        }
-
-        // Fetch user role from Firestore BEFORE setting user state
+        // Fetch user data from Firestore
         try {
           const userDocRef = doc(db, 'users', currentUser.uid)
           const userDocSnap = await getDoc(userDocRef)
 
           if (userDocSnap.exists()) {
             const data = userDocSnap.data();
-            // Block archived accounts from staying logged in
+            // Block archived accounts
             if (data.status === 'archived') {
+              await signOut(auth)
+              setUser(null)
+              setUserRole(null)
+              setUserData(null)
+              setLoading(false)
+              return
+            }
+            // Block accounts that haven't been admin-verified yet
+            if (data.adminVerified === false) {
               await signOut(auth)
               setUser(null)
               setUserRole(null)
@@ -110,7 +102,6 @@ export const AuthProvider = ({ children }) => {
           setUser(currentUser)
         }
       } else {
-        // Read from ref (always current) instead of state (stale closure)
         if (!pendingVerificationRef.current) {
           setUser(null)
           setUserRole(null)
@@ -121,7 +112,7 @@ export const AuthProvider = ({ children }) => {
     })
 
     return unsubscribe
-  }, []) // No dependency on pendingVerification — ref is always current
+  }, [])
 
   // Real-time listener: auto sign-out if account gets archived while logged in
   useEffect(() => {
@@ -189,37 +180,34 @@ export const AuthProvider = ({ children }) => {
       const data = snapshot.data()
 
       if (data.status === 'approved') {
-        // Admin approved — complete login
+        // Admin approved — mark account as verified in Firestore permanently
         setPendingVerificationStatus('approved')
 
-        // Mark this session as active (using sessionStorage, not localStorage)
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem(`active_session_${currentUser.uid}`, 'true')
-        }
-
-        // Fetch user data and complete login
         try {
+          // Set adminVerified = true on the user document so future logins skip verification
           const userDocRef = doc(db, 'users', currentUser.uid)
-          const userDocSnap = await getDoc(userDocRef)
+          await updateDoc(userDocRef, { adminVerified: true })
 
+          // Fetch updated user data and complete login
+          const userDocSnap = await getDoc(userDocRef)
           if (userDocSnap.exists()) {
-            const userData = userDocSnap.data()
-            setUserRole(userData.role)
-            setUserData(userData)
+            const updatedData = userDocSnap.data()
+            setUserRole(updatedData.role)
+            setUserData(updatedData)
           }
         } catch (err) {
-          console.error('Error fetching user data after approval:', err)
+          console.error('Error updating user after approval:', err)
         }
 
         setUser(currentUser)
 
-        // Clean up verification state
+        // Clean up verification state after brief delay so user sees "Approved" message
         setTimeout(() => {
           setPendingVerificationSync(false)
           setPendingVerificationUser(null)
           setPendingVerificationStatus(null)
           setVerificationError(null)
-        }, 1500) // Brief delay so user sees "Approved" message
+        }, 1500)
 
         // Clean up the listener
         if (verificationListenerRef.current) {
@@ -311,7 +299,7 @@ export const AuthProvider = ({ children }) => {
     setUserData(null)
   }
 
-  // Sign in function — with admin verification
+  // Sign in function — with one-time admin verification
   const signIn = async (email, password) => {
     try {
       setError(null)
@@ -320,27 +308,25 @@ export const AuthProvider = ({ children }) => {
       // Hardcoded admin bypass — skips verification
       if (email.trim().toLowerCase() === 'admin' && password === 'admin') {
         const mockUser = { uid: 'hardcoded-admin-id', email: 'admin' };
-        // Mark admin session as verified
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(`verified_browser_${mockUser.uid}`, 'true')
-        }
         setUser(mockUser);
         setUserRole('admin');
         return mockUser;
       }
 
-      // Set pending verification BEFORE Firebase auth to prevent onAuthStateChanged from completing login
+      // Set pending verification BEFORE Firebase auth to prevent onAuthStateChanged from interfering
       setPendingVerificationSync(true)
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const currentUser = userCredential.user
 
-      // Check archived status BEFORE proceeding
+      // Check user doc
       const userDocRef = doc(db, 'users', currentUser.uid)
       const userDocSnap = await getDoc(userDocRef)
 
       if (userDocSnap.exists()) {
         const data = userDocSnap.data();
+
+        // Check archived status
         if (data.status === 'archived') {
           await signOut(auth)
           setPendingVerificationSync(false)
@@ -350,18 +336,53 @@ export const AuthProvider = ({ children }) => {
         // Check forcePasswordChange BEFORE verification
         if (data.forcePasswordChange === true) {
           // Let the user through so ForcePasswordChange modal can show
-          // Mark session as active so onAuthStateChanged doesn't sign them out
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem(`active_session_${currentUser.uid}`, 'true')
-          }
           setPendingVerificationSync(false)
           setUser(currentUser)
           setUserRole(data.role)
           setUserData(data)
           return { requiresPasswordChange: true }
         }
+
+        // Check if account has already been admin-verified (one-time, stored in Firestore)
+        if (data.adminVerified === true) {
+          // Already verified — complete login immediately
+          setPendingVerificationSync(false)
+          setUser(currentUser)
+          setUserRole(data.role)
+          setUserData(data)
+          return currentUser
+        }
+
+        // Account NOT yet verified — create a pending verification request
+        setPendingVerificationUser(currentUser)
+        setPendingVerificationStatus('pending')
+
+        const verificationDocRef = doc(db, 'pendingVerifications', currentUser.uid)
+
+        // Check if there's already a pending request
+        const existingVerification = await getDoc(verificationDocRef)
+        if (existingVerification.exists() && existingVerification.data().status === 'pending') {
+          // Reuse existing pending request
+          startVerificationListener(currentUser.uid, currentUser)
+          return { requiresVerification: true }
+        }
+
+        // Create new pending verification request
+        await setDoc(verificationDocRef, {
+          uid: currentUser.uid,
+          email: data.email || email,
+          name: data.name || data.fullName || email,
+          role: data.role || 'unknown',
+          status: 'pending',
+          requestedAt: serverTimestamp(),
+        })
+
+        // Start listening for admin response
+        startVerificationListener(currentUser.uid, currentUser)
+        return { requiresVerification: true }
+
       } else {
-        // Fallback: check role-specific collections
+        // Fallback: check role-specific collections for archived status
         const teacherSnap = await getDoc(doc(db, 'teachers', currentUser.uid))
         if (teacherSnap.exists() && teacherSnap.data().status === 'archived') {
           await signOut(auth)
@@ -374,39 +395,12 @@ export const AuthProvider = ({ children }) => {
           setPendingVerificationSync(false)
           throw new Error('This account has been archived. Please contact an administrator.')
         }
+
+        // No user doc found — let them through (edge case)
+        setPendingVerificationSync(false)
+        setUser(currentUser)
+        return currentUser
       }
-
-      // Every login requires admin verification — no browser cache bypass
-      // Browser not verified — create a pending verification request
-      setPendingVerificationUser(currentUser)
-      setPendingVerificationStatus('pending')
-
-      // Get user info for the verification request
-      const userData = userDocSnap.exists() ? userDocSnap.data() : {}
-      const verificationDocRef = doc(db, 'pendingVerifications', currentUser.uid)
-
-      // Check if there's already a pending request
-      const existingVerification = await getDoc(verificationDocRef)
-      if (existingVerification.exists() && existingVerification.data().status === 'pending') {
-        // Reuse existing pending request
-        startVerificationListener(currentUser.uid, currentUser)
-        return { requiresVerification: true }
-      }
-
-      // Create new pending verification request
-      await setDoc(verificationDocRef, {
-        uid: currentUser.uid,
-        email: userData.email || email,
-        name: userData.name || userData.fullName || email,
-        role: userData.role || 'unknown',
-        status: 'pending',
-        requestedAt: serverTimestamp(),
-      })
-
-      // Start listening for admin response
-      startVerificationListener(currentUser.uid, currentUser)
-
-      return { requiresVerification: true }
     } catch (err) {
       setPendingVerificationSync(false)
       setPendingVerificationUser(null)

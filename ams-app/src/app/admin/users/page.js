@@ -170,6 +170,7 @@ export default function AdminUsers() {
         name: fullName,
         role: roleLower,
         status: "active",
+        adminVerified: false,
         forcePasswordChange: true,
         createdAt: new Date().toISOString(),
       };
