@@ -184,8 +184,8 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: "20px", alignItems: "flex-start", flexWrap: "wrap", width: "100%" }}>
-                  <div style={{ flex: "1 1 100%", minWidth: "0" }}>
+                <div style={{ display: "flex", gap: "24px", alignItems: "center", flexWrap: "wrap", width: "100%" }}>
+                  <div style={{ flex: "1 1 500px", minWidth: "0" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                       <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Attendance Insight</span>
                       <div style={{ display: "flex", gap: "6px" }}>
@@ -206,7 +206,7 @@ export default function LandingPage() {
                       ))}
                     </div>
                   </div>
-                  <div style={{ flex: "1 1 100%", textAlign: "right", paddingRight: "10px", minWidth: "0" }}>
+                  <div style={{ flex: "0 0 160px", textAlign: "right", paddingRight: "10px", minWidth: "0" }}>
                     <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginBottom: "4px" }}>Total Students</div>
                     <div style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.5px" }}>450</div>
                     <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginTop: "12px", marginBottom: "4px" }}>Active Today</div>
