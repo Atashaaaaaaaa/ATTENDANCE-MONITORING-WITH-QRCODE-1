@@ -24,11 +24,7 @@ export default function Navbar() {
   return (
     <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
       <Link href="/" className="navbar-logo">
-        <span className="navbar-logo-dots">
-          <span className="navbar-logo-dot"></span>
-          <span className="navbar-logo-dot"></span>
-          <span className="navbar-logo-dot"></span>
-        </span>
+        <img src="/ams-logo.png" alt="AMS Logo" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
         AMS
       </Link>
 
