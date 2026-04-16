@@ -4327,3 +4327,8 @@ img {
   }
 }
 
+@media (max-width: 550px) {
+  .sidebar-link-text {
+    display: none !important;
+  }
+}
