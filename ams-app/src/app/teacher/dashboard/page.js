@@ -889,7 +889,7 @@ export default function TeacherDashboard() {
 
                     return (
                       <tr key={sid}>
-                        <td className="face-col-cell">
+                        <td className="face-col-cell" data-label="Face">
                           <button
                             className="face-avatar-btn"
                             onClick={(e) => {
@@ -914,11 +914,11 @@ export default function TeacherDashboard() {
                             <span className={`face-registered-dot ${hasFace ? "registered" : "not-registered"}`}></span>
                           </button>
                         </td>
-                        <td>{idx + 1}</td>
-                        <td>
+                        <td data-label="#">{idx + 1}</td>
+                        <td data-label="Name">
                           <span className="spreadsheet-name">{name}</span>
                         </td>
-                        <td>
+                        <td data-label="Time In">
                           {editable && recordId && rawTime !== "—" ? (
                             <input
                               className="spreadsheet-time-value"
@@ -932,7 +932,7 @@ export default function TeacherDashboard() {
                             </span>
                           )}
                         </td>
-                        <td>
+                        <td data-label="Status">
                           <StatusPill
                             status={status}
                             studentId={sid}

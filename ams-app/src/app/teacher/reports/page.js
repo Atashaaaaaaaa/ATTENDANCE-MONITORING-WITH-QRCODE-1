@@ -423,11 +423,11 @@ export default function TeacherReports() {
             ) : (
               students.map((student, idx) => (
                 <tr key={student.id || idx}>
-                  <td style={{ fontWeight: 600 }}>{student.name}</td>
-                  <td>{student.present}</td>
-                  <td>{student.late}</td>
-                  <td>{student.absent}</td>
-                  <td>
+                  <td data-label="Student Name" style={{ fontWeight: 600 }}>{student.name}</td>
+                  <td data-label="Present">{student.present}</td>
+                  <td data-label="Late">{student.late}</td>
+                  <td data-label="Absent">{student.absent}</td>
+                  <td data-label="Rate">
                     <span style={{
                       fontWeight: 700,
                       color: student.rate >= 90 ? "var(--success)"

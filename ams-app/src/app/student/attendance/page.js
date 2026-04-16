@@ -1042,9 +1042,9 @@ export default function StudentAttendance() {
                   const isSessionActive = !!activeSessions[sessionKey];
                   return (
                     <tr key={subject.id}>
-                      <td style={{ fontWeight: 600 }}>{subject.name}</td>
-                      <td>{subject.section}</td>
-                      <td>
+                      <td data-label="Subject" style={{ fontWeight: 600 }}>{subject.name}</td>
+                      <td data-label="Section">{subject.section}</td>
+                      <td data-label="Session">
                         <span style={{
                           padding: "3px 8px", borderRadius: "12px",
                           background: isSessionActive ? "#ECFDF5" : "#F3F4F6",
@@ -1054,8 +1054,8 @@ export default function StudentAttendance() {
                           {isSessionActive ? "Active" : "Inactive"}
                         </span>
                       </td>
-                      <td>{result ? result.time : "—"}</td>
-                      <td>
+                      <td data-label="Time Marked">{result ? result.time : "—"}</td>
+                      <td data-label="Status">
                         {result ? (
                           <span style={{
                             padding: "3px 10px", borderRadius: "12px", fontWeight: 600, fontSize: "0.72rem",

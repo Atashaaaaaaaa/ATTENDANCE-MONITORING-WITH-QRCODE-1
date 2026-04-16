@@ -185,9 +185,9 @@ export default function StudentSchedule() {
             ) : (
               schedule.map((row, idx) => (
                 <tr key={idx}>
-                  <td style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{row.time}</td>
-                  {DAY_KEYS.map((day) => (
-                    <td key={day}>
+                  <td data-label="Time" style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{row.time}</td>
+                  {DAY_KEYS.map((day, dIdx) => (
+                    <td key={day} data-label={DAY_LABELS[dIdx]}>
                       {row[day] ? (
                         <div className="schedule-cell">
                           <strong>{row[day].subject}</strong>

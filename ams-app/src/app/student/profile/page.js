@@ -187,11 +187,11 @@ export default function StudentProfile() {
             <tbody>
               {enrolledSubjects.map((subj) => (
                 <tr key={subj.id}>
-                  <td style={{ fontWeight: 600 }}>{subj.subject}</td>
-                  <td>{subj.section}</td>
-                  <td style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{subj.teacher}</td>
-                  <td style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{subj.schedule}</td>
-                  <td>{subj.room}</td>
+                  <td data-label="Subject" style={{ fontWeight: 600 }}>{subj.subject}</td>
+                  <td data-label="Section">{subj.section}</td>
+                  <td data-label="Teacher" style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{subj.teacher}</td>
+                  <td data-label="Schedule" style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{subj.schedule}</td>
+                  <td data-label="Room">{subj.room}</td>
                 </tr>
               ))}
             </tbody>
