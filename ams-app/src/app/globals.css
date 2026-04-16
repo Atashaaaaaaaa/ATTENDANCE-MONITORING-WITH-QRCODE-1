@@ -4067,14 +4067,13 @@ img {
    FACE COLUMN — Avatar Button & Preview Modal
    ============================================ */
 
-/* Face avatar button in table */
+/* Face avatar button in table — image-based */
 .face-avatar-btn {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 2px solid var(--border-light);
-  background: var(--accent-soft);
-  color: var(--primary);
+  background: var(--bg-body);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4083,16 +4082,24 @@ img {
   padding: 0;
   position: relative;
   margin: 0 auto;
+  overflow: hidden;
 }
 .face-avatar-btn:hover {
   transform: scale(1.12);
   border-color: var(--primary);
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 14px rgba(74, 124, 89, 0.3);
+  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.15), 0 4px 14px rgba(74, 124, 89, 0.2);
 }
 .face-avatar-btn:active {
   transform: scale(1.04);
+}
+
+/* Avatar image inside button */
+.face-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
 }
 
 /* Registered indicator dot */
@@ -4104,6 +4111,7 @@ img {
   height: 10px;
   border-radius: 50%;
   border: 2px solid var(--bg-card);
+  z-index: 1;
 }
 .face-avatar-btn .face-registered-dot.registered {
   background: #10B981;
@@ -4180,10 +4188,10 @@ img {
   transform: scale(1.08);
 }
 
-/* Face icon display area */
+/* Face image display area */
 .face-preview-avatar {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
   margin: 8px auto 20px;
   display: flex;
@@ -4201,7 +4209,16 @@ img {
   border: 3px solid #FCA5A5;
 }
 
-/* Scan line animation inside avatar */
+/* Face image inside preview */
+.face-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Scan line animation over avatar image */
 .face-preview-avatar.registered::after {
   content: '';
   position: absolute;
@@ -4211,6 +4228,7 @@ img {
   height: 2px;
   background: linear-gradient(90deg, transparent, rgba(74, 124, 89, 0.6), transparent);
   animation: faceScanLine 3s ease-in-out infinite;
+  z-index: 1;
 }
 
 @keyframes faceScanLine {

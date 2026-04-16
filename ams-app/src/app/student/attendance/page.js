@@ -333,7 +333,7 @@ export default function StudentAttendance() {
       return;
     }
 
-    // Step 5: Face verified! Mark attendance
+    // Step 5: Face verified! Capture snapshot and mark attendance
     const subject = subjects.find((s) => s.id === activeSubject);
     const now = new Date();
     const today = now.toISOString().split("T")[0];
@@ -341,6 +341,14 @@ export default function StudentAttendance() {
     const session = activeSessions[sessionKey];
     const scheduleTime = session?.scheduleTime || subject?.scheduleTime;
     const status = determineStatus(now, scheduleTime);
+
+    // Capture face snapshot from canvas as compressed JPEG data URL
+    let faceSnapshot = "";
+    try {
+      faceSnapshot = canvas.toDataURL("image/jpeg", 0.6);
+    } catch (e) {
+      // snapshot capture failed — continue without it
+    }
 
     stopCamera();
     setActiveSubject(null);
@@ -366,6 +374,7 @@ export default function StudentAttendance() {
         status: status,
         method: "facial_recognition",
         faceMatchDistance: distance,
+        faceSnapshot: faceSnapshot,
       });
     } catch (e) {
       // Local mode — save result locally
