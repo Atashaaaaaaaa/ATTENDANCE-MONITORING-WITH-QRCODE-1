@@ -1475,6 +1475,9 @@ export default function AdminUsers() {
                     <button
                       onClick={handleCopyResetPassword}
                       style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         background: "rgba(255,255,255,0.2)",
                         border: "1px solid rgba(255,255,255,0.3)",
                         color: "#fff",

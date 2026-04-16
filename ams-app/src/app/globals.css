@@ -570,6 +570,43 @@ img {
   animation: blobMorph1 7s ease-in-out infinite alternate-reverse, blobDrift2 15s ease-in-out infinite;
 }
 
+/* Scattered glowing blobs */
+.hero-blob-5 {
+  width: 150px;
+  height: 150px;
+  top: 50%;
+  left: -20%;
+  background: #BAED91;
+  animation: blobMorph2 4s ease-in-out infinite alternate, blobDrift3 10s ease-in-out infinite alternate-reverse;
+}
+
+.hero-blob-6 {
+  width: 200px;
+  height: 200px;
+  top: 80%;
+  left: 40%;
+  background: #93C572;
+  animation: blobMorph3 5s ease-in-out infinite alternate, blobDrift1 12s ease-in-out infinite;
+}
+
+.hero-blob-7 {
+  width: 180px;
+  height: 180px;
+  top: -10%;
+  right: 20%;
+  background: rgba(208, 240, 192, 0.8);
+  animation: blobMorph1 4.5s ease-in-out infinite alternate, blobDrift2 11s ease-in-out infinite;
+}
+
+.hero-blob-8 {
+  width: 120px;
+  height: 120px;
+  bottom: 40%;
+  right: -30%;
+  background: #BAED91;
+  animation: blobMorph2 6s ease-in-out infinite alternate, blobDrift3 9s ease-in-out infinite alternate-reverse;
+}
+
 /* ---- Blob Morphing Keyframes ---- */
 @keyframes blobMorph1 {
   0% {
@@ -769,7 +806,7 @@ img {
   width: 100%;
   max-width: 950px;
   animation: fadeInUp 0.8s ease 0.3s both;
-  margin: 0 auto 100px;
+  margin: 0 auto 20px;
   scroll-margin-top: 80px;
 }
 
@@ -1054,7 +1091,7 @@ img {
    ============================================ */
 .stats-section {
   background: var(--bg-body);
-  padding: 80px 60px;
+  padding: 20px 60px 80px;
 }
 
 .stats-grid {

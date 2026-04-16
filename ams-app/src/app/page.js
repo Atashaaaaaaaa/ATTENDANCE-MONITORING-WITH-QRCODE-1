@@ -17,10 +17,14 @@ export default function LandingPage() {
         <div className="hero-blob-container left-blobs">
           <div className="hero-blob hero-blob-1"></div>
           <div className="hero-blob hero-blob-2"></div>
+          <div className="hero-blob hero-blob-5"></div>
+          <div className="hero-blob hero-blob-6"></div>
         </div>
         <div className="hero-blob-container right-blobs">
           <div className="hero-blob hero-blob-3"></div>
           <div className="hero-blob hero-blob-4"></div>
+          <div className="hero-blob hero-blob-7"></div>
+          <div className="hero-blob hero-blob-8"></div>
         </div>
 
         <div className="hero-content">

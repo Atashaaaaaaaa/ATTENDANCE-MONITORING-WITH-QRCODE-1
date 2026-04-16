@@ -64,9 +64,6 @@ export default function DashboardHeader({ onMenuToggle }) {
       </div>
 
       <div className="dashboard-header-right">
-        <button className="header-icon-btn" aria-label="Notifications">
-          <img src="/green-bell.png" alt="Notifications" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-        </button>
         <div className="header-avatar">
           <div className="header-avatar-circle">{avatarInitial}</div>
         </div>
