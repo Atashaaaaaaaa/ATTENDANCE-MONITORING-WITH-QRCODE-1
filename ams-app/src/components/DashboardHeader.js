@@ -1,6 +1,7 @@
 "use client";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 const pageTitles = {
   "/admin/overview": { title: "System Overview", breadcrumb: "Admin" },
@@ -22,10 +23,15 @@ export default function DashboardHeader({ onMenuToggle }) {
   const pathname = usePathname();
   const pageInfo = pageTitles[pathname] || { title: "Dashboard", breadcrumb: "" };
   const [searchOpen, setSearchOpen] = useState(false);
+  const { userData, userRole } = useAuth();
 
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good Morning" : now.getHours() < 17 ? "Good Afternoon" : "Good Evening";
   const dateStr = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+  // Get user's initial for avatar
+  const displayName = userData?.fullName || userData?.name || userData?.email || "";
+  const avatarInitial = displayName.charAt(0).toUpperCase() || (userRole === "admin" ? "A" : "U");
 
   return (
     <header className="dashboard-header">
@@ -60,10 +66,9 @@ export default function DashboardHeader({ onMenuToggle }) {
       <div className="dashboard-header-right">
         <button className="header-icon-btn" aria-label="Notifications">
           <img src="/green-bell.png" alt="Notifications" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-          <span className="header-badge">3</span>
         </button>
         <div className="header-avatar">
-          <div className="header-avatar-circle">G</div>
+          <div className="header-avatar-circle">{avatarInitial}</div>
         </div>
       </div>
     </header>
