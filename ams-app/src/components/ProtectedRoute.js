@@ -15,7 +15,7 @@ import ForcePasswordChange from '@/components/ForcePasswordChange'
 export const withProtectedRoute = (Component, requiredRole) => {
   return function ProtectedRoute(props) {
     const router = useRouter()
-    const { user, userRole, loading } = useAuth()
+    const { user, userRole, userData, loading } = useAuth()
 
     useEffect(() => {
       // If not loading, check authentication and authorization
@@ -49,7 +49,6 @@ export const withProtectedRoute = (Component, requiredRole) => {
     }
 
     // Check if user is forced to change password
-    const { userData } = useAuth()
     const isForcedToChangePassword = userData?.forcePasswordChange === true;
 
     // Render protected component, optionally wrapped or replaced by the forced password change

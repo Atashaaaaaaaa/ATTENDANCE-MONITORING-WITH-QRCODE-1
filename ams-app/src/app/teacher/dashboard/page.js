@@ -869,9 +869,9 @@ export default function TeacherDashboard() {
                 <strong>Rules:</strong>
                 <span>✅ Present = on time</span>
                 <span>•</span>
-                <span>⏰ Late = 1–15 min</span>
+                <span>Late = 1–15 min</span>
                 <span>•</span>
-                <span>❌ Absent = after 30 min</span>
+                <span>Absent = after 30 min</span>
               </div>
 
               {/* Tabs */}

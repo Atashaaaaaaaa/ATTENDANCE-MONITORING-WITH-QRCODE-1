@@ -277,9 +277,9 @@ export const AuthProvider = ({ children }) => {
         const verificationsRef = collection(db, 'pendingVerifications')
         const q = query(verificationsRef, where('uid', '==', pendingVerificationUser.uid), where('status', '==', 'pending'))
         const snapshot = await getDocs(q)
-        snapshot.forEach(async (docSnap) => {
+        for (const docSnap of snapshot.docs) {
           await deleteDoc(doc(db, 'pendingVerifications', docSnap.id))
-        })
+        }
       } catch (e) {
         // ignore cleanup errors
       }

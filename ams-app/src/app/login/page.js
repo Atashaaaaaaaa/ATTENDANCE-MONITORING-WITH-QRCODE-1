@@ -141,7 +141,7 @@ export default function LoginPage() {
 
               <div className="form-actions">
                 <label className="remember-me">
-                  <input type="radio" name="remember" /> <span>Remember me</span>
+                  <input type="checkbox" name="remember" /> <span>Remember me</span>
                 </label>
                 <span className="forgot-link" style={{ cursor: 'pointer' }} onClick={() => setShowForgotModal(true)}>Forgot your password?</span>
               </div>
