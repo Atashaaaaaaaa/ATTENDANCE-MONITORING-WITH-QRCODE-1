@@ -179,8 +179,11 @@ export default function Sidebar({ role, isOpen, onClose }) {
 
         {/* Footer */}
         <div className="sidebar-footer">
-          <button className="sidebar-logout" onClick={handleLogout} title={collapsed && !isMobile ? "Logout" : undefined}>
-            {(!collapsed || isMobile) && "Logout"}
+          <button className="sidebar-logout sidebar-link" onClick={handleLogout} title={collapsed && !isMobile ? "Logout" : undefined}>
+            <span className="sidebar-link-icon">
+              <img src="/green-logout.png" alt="logout" style={{width: "18px", height: "18px", objectFit: "contain"}} />
+            </span>
+            {(!collapsed || isMobile) && <span className="sidebar-link-text">Logout</span>}
           </button>
         </div>
       </aside>

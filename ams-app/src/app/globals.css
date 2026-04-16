@@ -4193,8 +4193,7 @@ img {
 
   /* Hide unnecessary sidebar items */
   .sidebar-header,
-  .sidebar-nav-label,
-  .sidebar-footer {
+  .sidebar-nav-label {
     display: none !important;
   }
 
@@ -4202,7 +4201,7 @@ img {
   .sidebar-nav {
     display: flex;
     flex-direction: row;
-    width: 100%;
+    flex: 1;
     align-items: center;
     padding: 0 4px;
     overflow-x: auto;
@@ -4215,6 +4214,29 @@ img {
   }
   .sidebar-nav::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Footer acts as an additional nav item on the far right */
+  .sidebar-footer {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    border-top: none;
+    border-left: 1px solid var(--border-light);
+    padding: 0 4px;
+    margin: 0;
+    background: transparent;
+  }
+  
+  .sidebar-logout {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-secondary) !important;
+  }
+
+  .sidebar-logout .sidebar-link-text {
+    color: var(--text-secondary);
   }
 
   /* Flatten nested divs from the component sections */
