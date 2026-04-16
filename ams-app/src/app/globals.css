@@ -79,6 +79,7 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 body {
@@ -3272,6 +3273,187 @@ img {
 
   .card-title {
     font-size: 0.95rem;
+  }
+
+  /* ── Responsive Schedule Table → Card Layout ── */
+  .card:has(.schedule-table) {
+    overflow-x: visible;
+    overflow: visible;
+  }
+
+  .schedule-table {
+    min-width: 0;
+    font-size: inherit;
+  }
+
+  .schedule-table thead {
+    display: none;
+  }
+
+  .schedule-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .schedule-table tbody tr {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 0;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .schedule-table tbody tr:has(td[colspan]) {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .schedule-table tbody td[colspan] {
+    border-radius: 0;
+    background: none;
+  }
+
+  .schedule-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 0.85rem;
+    text-align: left;
+    gap: 10px;
+  }
+
+  .schedule-table tbody td:first-child {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    font-weight: 700;
+    font-size: 0.82rem;
+    padding: 12px 16px;
+    white-space: normal;
+    border-bottom: none;
+  }
+
+  .schedule-table tbody td:last-child {
+    border-bottom: none;
+  }
+
+  /* Day labels from data-label */
+  .schedule-table tbody td[data-label]::before {
+    content: attr(data-label);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+    min-width: 75px;
+  }
+
+  .schedule-table tbody td:first-child::before {
+    display: none;
+  }
+
+  /* Hide empty day cells (showing —) on mobile for cleaner look */
+  .schedule-table tbody td:empty {
+    display: none;
+  }
+
+  .schedule-table .schedule-cell {
+    width: 100%;
+    text-align: left;
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+  }
+
+  .schedule-table .schedule-cell strong {
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .schedule-table .schedule-cell small {
+    display: block;
+    margin-top: 0;
+  }
+
+  /* ── Fix Overflow / Out-of-Border Issues ── */
+  .dashboard-layout {
+    overflow: hidden;
+  }
+
+  .dashboard-content {
+    overflow-x: hidden;
+  }
+
+  .dashboard-main {
+    overflow-x: hidden;
+  }
+
+  /* Clip blob backgrounds so they don't cause overflow */
+  .dashboard-layout::before,
+  .dashboard-content::before,
+  .dashboard-content::after,
+  .dashboard-main::before,
+  .dashboard-main::after {
+    overflow: hidden;
+    contain: strict;
+  }
+
+  /* Ensure cards don't break out of their container */
+  .card {
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  /* Fix cards that need visible overflow for specific children */
+  .card:has(.data-table),
+  .card:has(.schedule-table) {
+    overflow: visible;
+  }
+
+  /* Prevent stat cards from overflowing */
+  .stats-row {
+    overflow: hidden;
+  }
+
+  .stat-card {
+    overflow: hidden;
+  }
+
+  /* Fix profile card overflow */
+  .profile-card {
+    overflow: hidden;
+  }
+
+  .profile-name {
+    font-size: 1.2rem;
+    word-break: break-word;
+  }
+
+  /* Ensure form grids don't overflow */
+  .form-inline {
+    overflow: hidden;
+  }
+
+  /* Fix tab navigation overflow on mobile */
+  .card > div:first-child {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ensure info-grid doesn't overflow */
+  .info-grid {
+    overflow: hidden;
+  }
+
+  .info-item p {
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 }
 

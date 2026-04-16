@@ -154,10 +154,10 @@ export default function TeacherSchedule() {
                   <td style={{ fontWeight: 600, fontSize: "0.85rem", whiteSpace: "nowrap" }}>{row.time}</td>
                   {DAY_KEYS.map((day, dayIdx) => {
                     const cell = row[day];
-                    if (!cell) return <td key={day} style={{ textAlign: "center", color: "var(--text-muted)" }}>—</td>;
+                    if (!cell) return <td key={day} data-label={DAY_LABELS[dayIdx]} style={{ textAlign: "center", color: "var(--text-muted)" }}>—</td>;
                     const colorClass = cellColors[dayIdx % cellColors.length];
                     return (
-                      <td key={day}>
+                      <td key={day} data-label={DAY_LABELS[dayIdx]}>
                         <div className={`schedule-cell ${colorClass}`}>
                           <strong>{cell.section}</strong>
                           <small>{cell.subject}</small>
