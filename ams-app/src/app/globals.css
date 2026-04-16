@@ -3467,7 +3467,7 @@ img {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   padding: 28px 24px 24px;
-  max-width: 740px;
+  max-width: 960px;
   width: 94%;
   max-height: 88vh;
   display: flex;
@@ -3650,6 +3650,7 @@ img {
 }
 
 /* Column widths */
+.spreadsheet-table .col-face { width: 56px; }
 .spreadsheet-table .col-num { width: 44px; }
 .spreadsheet-table .col-name { width: auto; }
 .spreadsheet-table .col-time { width: 210px; }
@@ -4062,6 +4063,245 @@ img {
   box-shadow: var(--shadow-md);
 }
 
+/* ============================================
+   FACE COLUMN — Avatar Button & Preview Modal
+   ============================================ */
+
+/* Face avatar button in table */
+.face-avatar-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--border-light);
+  background: var(--accent-soft);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+  position: relative;
+  margin: 0 auto;
+}
+.face-avatar-btn:hover {
+  transform: scale(1.12);
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 14px rgba(74, 124, 89, 0.3);
+}
+.face-avatar-btn:active {
+  transform: scale(1.04);
+}
+
+/* Registered indicator dot */
+.face-avatar-btn .face-registered-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-card);
+}
+.face-avatar-btn .face-registered-dot.registered {
+  background: #10B981;
+}
+.face-avatar-btn .face-registered-dot.not-registered {
+  background: #EF4444;
+}
+
+/* Face preview modal overlay — sits on top of spreadsheet modal */
+.face-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  animation: facePreviewFadeIn 0.2s ease;
+}
+
+@keyframes facePreviewFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes facePreviewSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Face preview modal container */
+.face-preview-modal {
+  background: var(--bg-card);
+  border-radius: 20px;
+  padding: 28px;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.35);
+  animation: facePreviewSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  text-align: center;
+}
+
+/* Close button */
+.face-preview-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-body);
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  z-index: 2;
+}
+.face-preview-close:hover {
+  background: var(--border-light);
+  color: var(--text-primary);
+  transform: scale(1.08);
+}
+
+/* Face icon display area */
+.face-preview-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  margin: 8px auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.face-preview-avatar.registered {
+  background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+  border: 3px solid #A5D6A7;
+}
+.face-preview-avatar.not-registered {
+  background: linear-gradient(135deg, #FEF2F2, #FECACA);
+  border: 3px solid #FCA5A5;
+}
+
+/* Scan line animation inside avatar */
+.face-preview-avatar.registered::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(74, 124, 89, 0.6), transparent);
+  animation: faceScanLine 3s ease-in-out infinite;
+}
+
+@keyframes faceScanLine {
+  0%, 100% { top: 10%; opacity: 0; }
+  10% { opacity: 1; }
+  50% { top: 85%; opacity: 1; }
+  60% { opacity: 0; }
+}
+
+/* Student name in preview */
+.face-preview-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+/* Status badge in preview */
+.face-preview-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+.face-preview-status.registered {
+  background: #ECFDF5;
+  color: #047857;
+}
+.face-preview-status.not-registered {
+  background: #FEF2F2;
+  color: #991B1B;
+}
+
+/* Info rows */
+.face-preview-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.face-preview-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--bg-body);
+  font-size: 0.8rem;
+}
+.face-preview-info-row .label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.face-preview-info-row .value {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Close action button */
+.face-preview-action-btn {
+  width: 100%;
+  padding: 11px;
+  border: none;
+  border-radius: 12px;
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.face-preview-action-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Face column header alignment */
+.spreadsheet-table thead th.face-col-header {
+  text-align: center;
+}
+/* Face column cell alignment */
+.spreadsheet-table tbody td.face-col-cell {
+  text-align: center;
+  padding: 8px 6px;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 640px) {
   .spreadsheet-modal {
@@ -4070,6 +4310,7 @@ img {
     max-height: 92vh;
     border-radius: var(--radius-md);
   }
+  .spreadsheet-table .col-face { width: 44px; }
   .spreadsheet-table .col-num { width: 32px; }
   .spreadsheet-table .col-time { width: 140px; }
   .spreadsheet-table .col-status { width: 100px; }
