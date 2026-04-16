@@ -336,7 +336,6 @@ export default function TeacherReports() {
               value={filter.section}
               onChange={(e) => setFilter({ ...filter, section: e.target.value })}
             >
-              <option value="">— Select Section —</option>
               {sections.map((s) => (
                 <option key={s.id} value={s.id}>{s.label}</option>
               ))}

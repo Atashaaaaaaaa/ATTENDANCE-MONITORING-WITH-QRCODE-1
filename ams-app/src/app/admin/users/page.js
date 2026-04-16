@@ -485,7 +485,6 @@ export default function AdminUsers() {
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 required
               >
-                <option value="">— Select Role —</option>
                 <option value="Teacher">Teacher</option>
                 <option value="Student">Student</option>
               </select>

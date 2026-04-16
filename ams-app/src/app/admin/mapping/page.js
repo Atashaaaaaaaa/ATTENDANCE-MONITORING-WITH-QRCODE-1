@@ -156,7 +156,6 @@ export default function AdminMapping() {
                 onChange={handleTeacherSelect}
                 required
               >
-                <option value="">— Select Teacher —</option>
                 {teachers.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
