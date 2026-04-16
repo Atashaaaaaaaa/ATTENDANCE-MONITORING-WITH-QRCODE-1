@@ -1424,10 +1424,12 @@ img {
 .dashboard-content {
   margin-left: var(--sidebar-width);
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
 }
 
 .sidebar-collapsed~.dashboard-content {
@@ -1588,11 +1590,13 @@ img {
 /* ---- Main Content Area ---- */
 .dashboard-main {
   flex: 1;
+  min-width: 0;
   padding: 28px 32px;
   background: var(--bg-body);
   animation: fadeIn 0.3s ease;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Animated blob backgrounds — EXACT same colors as login page */
@@ -1759,6 +1763,9 @@ img {
 .page-header {
   margin-bottom: 28px;
   animation: fadeInDown 0.5s ease;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .page-header h1 {
@@ -1767,11 +1774,15 @@ img {
   color: var(--text-primary);
   letter-spacing: -0.5px;
   margin-bottom: 4px;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .page-header p {
   font-size: 0.9rem;
   color: var(--text-secondary);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 /* ============================================
@@ -1788,6 +1799,9 @@ img {
   margin-bottom: 24px;
   transition: var(--transition-base);
   animation: cardEntrance 0.5s ease both;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .card:nth-child(2) {
@@ -1960,9 +1974,17 @@ img {
 /* ============================================
    TABLES
    ============================================ */
+.data-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 500px;
 }
 
 .data-table thead th {
@@ -2203,12 +2225,16 @@ img {
 }
 
 .search-input::before {
-  content: '🔍';
+  content: '';
   position: absolute;
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 0.9rem;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
 }
 
 /* ============================================
@@ -2702,6 +2728,7 @@ img {
 
   .dashboard-main {
     padding: 20px 16px;
+    overflow-x: hidden;
   }
 
   .dashboard-header {
@@ -2722,6 +2749,20 @@ img {
 
   .form-grid .full-width {
     grid-column: span 1;
+  }
+
+  .form-inline {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .form-inline .form-group {
+    min-width: 100%;
+  }
+
+  .form-inline .btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .manual-entry {
@@ -2752,13 +2793,25 @@ img {
     flex-wrap: wrap;
   }
 
+  /* Make schedule table horizontally scrollable on mobile */
+  .card:has(.schedule-table),
+  .card:has(.data-table) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .schedule-table {
     font-size: 0.75rem;
+    min-width: 600px;
   }
 
   .schedule-table th,
   .schedule-table td {
     padding: 8px 6px;
+  }
+
+  .data-table {
+    min-width: 500px;
   }
 
   .today-classes {
@@ -2767,6 +2820,38 @@ img {
 
   .section-cards {
     grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .page-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .page-header p {
+    font-size: 0.82rem;
+  }
+
+  /* Fix face recognition card overflow */
+  .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Info card text wrapping */
+  .info-card p {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+
+  .stat-card-value {
+    font-size: 1.6rem;
+  }
+
+  .card-title {
+    font-size: 0.95rem;
   }
 }
 
@@ -3019,4 +3104,95 @@ img {
 
 .section-card .btn {
   margin-top: 12px;
+}
+
+/* ============================================
+   SMALL SCREEN MOBILE OVERRIDES
+   ============================================ */
+@media (max-width: 480px) {
+  /* Override any inline grid-template-columns with large minmax values */
+  .dashboard-main [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .page-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .page-header p {
+    font-size: 0.78rem;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .profile-name {
+    font-size: 1.2rem;
+  }
+
+  .stat-card {
+    padding: 18px;
+  }
+
+  .stat-card-value {
+    font-size: 1.4rem;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-inline {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .form-inline .form-group {
+    min-width: 100%;
+  }
+
+  .form-inline .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .scanner-card {
+    padding: 18px;
+  }
+
+  .section-card {
+    padding: 16px;
+  }
+
+  .info-card {
+    padding: 14px;
+  }
+
+  .info-card p {
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+}
+
+/* Face scan pulse animation */
+@keyframes faceScanPulse {
+  0%, 100% {
+    border-color: rgba(74, 124, 89, 0.8);
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3), 0 0 15px rgba(74, 124, 89, 0.3);
+  }
+  50% {
+    border-color: rgba(74, 124, 89, 0.4);
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3), 0 0 25px rgba(74, 124, 89, 0.6);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }

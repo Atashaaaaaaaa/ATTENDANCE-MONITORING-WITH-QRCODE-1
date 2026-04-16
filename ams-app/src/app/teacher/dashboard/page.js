@@ -794,11 +794,11 @@ export default function TeacherDashboard() {
                 fontSize: "0.7rem", color: "#15803D",
               }}>
                 <span style={{ fontWeight: 700 }}>Rules:</span>
-                <span>✅ Present = on time</span>
+                <span>Present = on time</span>
                 <span>•</span>
-                <span>⏰ Late = 1–15 min</span>
+                <span>Late = 1–15 min</span>
                 <span>•</span>
-                <span>❌ Absent = after 30 min</span>
+                <span>Absent = after 30 min</span>
               </div>
 
               {/* Tab switcher inside modal */}
