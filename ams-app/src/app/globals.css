@@ -483,6 +483,8 @@ img {
   justify-content: center;
   text-align: center;
   padding: 80px 60px 40px;
+  position: relative;
+  z-index: 2;
 }
 
 .hero::before {
@@ -495,6 +497,161 @@ img {
   background: radial-gradient(circle at 30% 50%, rgba(107, 158, 120, 0.15) 0%, transparent 50%),
     radial-gradient(circle at 70% 30%, rgba(143, 188, 143, 0.1) 0%, transparent 40%);
   pointer-events: none;
+  z-index: 0;
+}
+
+/* ---- Organic Blob Animation Container ---- */
+.hero-blob-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  width: 700px;
+  height: 700px;
+  z-index: 1;
+  pointer-events: none;
+  filter: blur(60px);
+  opacity: 0.55;
+}
+
+.hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+/* Blob 1 — Pastel Green (#BAED91) + Pistachio (#93C572) */
+.hero-blob-1 {
+  width: 420px;
+  height: 420px;
+  top: 10%;
+  left: 10%;
+  background: linear-gradient(135deg, #BAED91 0%, #93C572 50%, #D0F0C0 100%);
+  animation: blobMorph1 6s ease-in-out infinite alternate, blobDrift1 14s ease-in-out infinite;
+}
+
+/* Blob 2 — Pistachio (#93C572) + Tea Green (#D0F0C0) */
+.hero-blob-2 {
+  width: 350px;
+  height: 350px;
+  top: 25%;
+  right: 5%;
+  background: linear-gradient(225deg, #93C572 0%, #D0F0C0 40%, #BAED91 100%);
+  animation: blobMorph2 7s ease-in-out infinite alternate, blobDrift2 16s ease-in-out infinite;
+}
+
+/* Blob 3 — Tea Green (#D0F0C0) + Pastel Green (#BAED91) */
+.hero-blob-3 {
+  width: 300px;
+  height: 300px;
+  bottom: 10%;
+  left: 30%;
+  background: linear-gradient(45deg, #D0F0C0 0%, #BAED91 50%, #93C572 100%);
+  animation: blobMorph3 5s ease-in-out infinite alternate, blobDrift3 12s ease-in-out infinite;
+}
+
+/* ---- Blob Morphing Keyframes ---- */
+@keyframes blobMorph1 {
+  0% {
+    border-radius: 42% 58% 62% 38% / 45% 55% 45% 55%;
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    border-radius: 55% 45% 38% 62% / 52% 48% 52% 48%;
+  }
+  50% {
+    border-radius: 38% 62% 55% 45% / 58% 42% 58% 42%;
+    transform: rotate(60deg) scale(1.08);
+  }
+  75% {
+    border-radius: 62% 38% 45% 55% / 42% 58% 42% 58%;
+  }
+  100% {
+    border-radius: 48% 52% 58% 42% / 55% 45% 55% 45%;
+    transform: rotate(120deg) scale(1);
+  }
+}
+
+@keyframes blobMorph2 {
+  0% {
+    border-radius: 58% 42% 45% 55% / 38% 62% 38% 62%;
+    transform: rotate(0deg) scale(1);
+  }
+  33% {
+    border-radius: 42% 58% 55% 45% / 62% 38% 62% 38%;
+    transform: rotate(-40deg) scale(1.05);
+  }
+  66% {
+    border-radius: 55% 45% 62% 38% / 45% 55% 45% 55%;
+  }
+  100% {
+    border-radius: 45% 55% 38% 62% / 58% 42% 58% 42%;
+    transform: rotate(-90deg) scale(1);
+  }
+}
+
+@keyframes blobMorph3 {
+  0% {
+    border-radius: 52% 48% 42% 58% / 55% 45% 55% 45%;
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    border-radius: 38% 62% 58% 42% / 42% 58% 42% 58%;
+    transform: rotate(80deg) scale(1.1);
+  }
+  100% {
+    border-radius: 62% 38% 48% 52% / 48% 52% 48% 52%;
+    transform: rotate(160deg) scale(0.95);
+  }
+}
+
+/* ---- Blob Drifting / Floating Keyframes ---- */
+@keyframes blobDrift1 {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(30px, -20px);
+  }
+  50% {
+    transform: translate(-20px, 25px);
+  }
+  75% {
+    transform: translate(15px, 10px);
+  }
+}
+
+@keyframes blobDrift2 {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-25px, 15px);
+  }
+  50% {
+    transform: translate(20px, -30px);
+  }
+  75% {
+    transform: translate(-10px, -15px);
+  }
+}
+
+@keyframes blobDrift3 {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(20px, 20px);
+  }
+  50% {
+    transform: translate(-30px, -10px);
+  }
+  75% {
+    transform: translate(10px, -25px);
+  }
 }
 
 .hero-badge {
