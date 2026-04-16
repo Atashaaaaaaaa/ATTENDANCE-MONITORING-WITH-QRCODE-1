@@ -505,8 +505,9 @@ img {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 500px;
-  height: 800px;
+  width: 100vw;
+  height: 100vh;
+  left: 0;
   z-index: 1;
   pointer-events: none;
   filter: blur(60px);
@@ -514,11 +515,11 @@ img {
 }
 
 .hero-blob-container.left-blobs {
-  left: -150px;
+  left: 0;
 }
 
 .hero-blob-container.right-blobs {
-  right: -150px;
+  left: 0;
 }
 
 .hero-blob {
@@ -532,8 +533,8 @@ img {
 
 /* Blob 1 — Pastel Green (#BAED91) + Pistachio (#93C572) */
 .hero-blob-1 {
-  width: 420px;
-  height: 420px;
+  width: 800px;
+  height: 800px;
   top: 10%;
   left: 10%;
   background: linear-gradient(135deg, #BAED91 0%, #93C572 50%, #D0F0C0 100%);
@@ -542,8 +543,8 @@ img {
 
 /* Blob 2 — Pistachio (#93C572) + Tea Green (#D0F0C0) */
 .hero-blob-2 {
-  width: 350px;
-  height: 350px;
+  width: 700px;
+  height: 700px;
   bottom: 10%;
   right: -5%;
   background: linear-gradient(225deg, #93C572 0%, #D0F0C0 40%, #BAED91 100%);
@@ -552,8 +553,8 @@ img {
 
 /* Blob 3 — Tea Green (#D0F0C0) + Pastel Green (#BAED91) */
 .hero-blob-3 {
-  width: 400px;
-  height: 400px;
+  width: 850px;
+  height: 850px;
   top: 15%;
   right: 5%;
   background: linear-gradient(45deg, #D0F0C0 0%, #BAED91 50%, #93C572 100%);
@@ -562,8 +563,8 @@ img {
 
 /* Blob 4 — Pastel Green (#BAED91) + Tea Green (#D0F0C0) */
 .hero-blob-4 {
-  width: 320px;
-  height: 320px;
+  width: 750px;
+  height: 750px;
   bottom: 20%;
   left: 10%;
   background: linear-gradient(135deg, #BAED91 0%, #D0F0C0 50%, #93C572 100%);
@@ -665,46 +666,46 @@ img {
 /* ---- Blob Drifting / Floating Keyframes ---- */
 @keyframes blobDrift1 {
   0%, 100% {
-    transform: translate(0, 0);
+    translate: 0 0;
   }
   25% {
-    transform: translate(30px, -20px);
+    translate: 40vw -20vh;
   }
   50% {
-    transform: translate(-20px, 25px);
+    translate: 80vw 20vh;
   }
   75% {
-    transform: translate(15px, 10px);
+    translate: 30vw 40vh;
   }
 }
 
 @keyframes blobDrift2 {
   0%, 100% {
-    transform: translate(0, 0);
+    translate: 0 0;
   }
   25% {
-    transform: translate(-25px, 15px);
+    translate: -30vw 15vh;
   }
   50% {
-    transform: translate(20px, -30px);
+    translate: -70vw -20vh;
   }
   75% {
-    transform: translate(-10px, -15px);
+    translate: -40vw -40vh;
   }
 }
 
 @keyframes blobDrift3 {
   0%, 100% {
-    transform: translate(0, 0);
+    translate: 0 0;
   }
   25% {
-    transform: translate(20px, 20px);
+    translate: 30vw 40vh;
   }
   50% {
-    transform: translate(-30px, -10px);
+    translate: -60vw 10vh;
   }
   75% {
-    transform: translate(10px, -25px);
+    translate: 40vw -30vh;
   }
 }
 
