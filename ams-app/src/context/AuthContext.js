@@ -8,7 +8,7 @@ import {
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth'
-import { doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, updateDoc, serverTimestamp, addDoc, orderBy, limit } from 'firebase/firestore'
 
 const AuthContext = createContext()
 
@@ -215,6 +215,19 @@ export const AuthProvider = ({ children }) => {
           console.error('Error updating user after approval:', err)
         }
 
+        // Log first-time verified login
+        try {
+          await addDoc(collection(db, 'loginLogs'), {
+            userId: currentUser.uid,
+            email: currentUser.email || 'unknown',
+            name: data.name || data.email || 'Unknown',
+            role: data.role || 'unknown',
+            action: 'Login (Verified)',
+            status: 'Success',
+            timestamp: serverTimestamp(),
+          });
+        } catch (e) { /* silent */ }
+
         setUser(currentUser)
 
         // Clean up verification state after brief delay so user sees "Approved" message
@@ -326,6 +339,18 @@ export const AuthProvider = ({ children }) => {
         const mockUser = { uid: 'hardcoded-admin-id', email: 'admin' };
         setUser(mockUser);
         setUserRole('admin');
+        // Log admin login
+        try {
+          await addDoc(collection(db, 'loginLogs'), {
+            userId: 'hardcoded-admin-id',
+            email: 'admin',
+            name: 'System Admin',
+            role: 'admin',
+            action: 'Login',
+            status: 'Success',
+            timestamp: serverTimestamp(),
+          });
+        } catch (e) { /* silent */ }
         return mockUser;
       }
 
@@ -356,6 +381,18 @@ export const AuthProvider = ({ children }) => {
           setUser(currentUser)
           setUserRole(data.role)
           setUserData(data)
+          // Log login (first-time password change)
+          try {
+            await addDoc(collection(db, 'loginLogs'), {
+              userId: currentUser.uid,
+              email: data.email || email,
+              name: data.fullName || data.name || email,
+              role: data.role || 'unknown',
+              action: 'First Login (Password Change)',
+              status: 'Success',
+              timestamp: serverTimestamp(),
+            });
+          } catch (e) { /* silent */ }
           return { requiresPasswordChange: true }
         }
 
@@ -366,6 +403,18 @@ export const AuthProvider = ({ children }) => {
           setUser(currentUser)
           setUserRole(data.role)
           setUserData(data)
+          // Log successful login
+          try {
+            await addDoc(collection(db, 'loginLogs'), {
+              userId: currentUser.uid,
+              email: data.email || email,
+              name: data.fullName || data.name || email,
+              role: data.role || 'unknown',
+              action: 'Login',
+              status: 'Success',
+              timestamp: serverTimestamp(),
+            });
+          } catch (e) { /* silent */ }
           return currentUser
         }
 

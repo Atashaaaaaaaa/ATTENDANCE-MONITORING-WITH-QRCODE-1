@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function AdminOverview() {
@@ -10,6 +10,7 @@ export default function AdminOverview() {
     sections: 0,
   });
   const [logs, setLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -26,8 +27,63 @@ export default function AdminOverview() {
         // Will populate when database is connected
       }
     };
+
+    const fetchLogs = async () => {
+      try {
+        const logsQuery = query(
+          collection(db, "loginLogs"),
+          orderBy("timestamp", "desc"),
+          limit(20)
+        );
+        const logsSnap = await getDocs(logsQuery);
+        const fetchedLogs = logsSnap.docs.map((d) => {
+          const data = d.data();
+          // Format the timestamp
+          let timestampStr = "—";
+          if (data.timestamp) {
+            const date = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+            timestampStr = date.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+          }
+          return {
+            id: d.id,
+            timestamp: timestampStr,
+            name: data.name || data.email || "Unknown",
+            email: data.email || "—",
+            role: data.role || "—",
+            action: data.action || "Login",
+            status: data.status || "Success",
+          };
+        });
+        setLogs(fetchedLogs);
+      } catch (e) {
+        // loginLogs collection may not exist yet
+      } finally {
+        setLoadingLogs(false);
+      }
+    };
+
     fetchStats();
+    fetchLogs();
   }, []);
+
+  const getRoleBadgeStyle = (role) => {
+    switch (role) {
+      case "admin":
+        return { background: "#FFF7ED", color: "#C2410C" };
+      case "teacher":
+        return { background: "var(--info-bg)", color: "var(--info)" };
+      case "student":
+        return { background: "var(--accent-soft)", color: "var(--primary)" };
+      default:
+        return { background: "var(--bg-body)", color: "var(--text-muted)" };
+    }
+  };
 
   return (
     <>
@@ -59,31 +115,70 @@ export default function AdminOverview() {
       <div className="card">
         <div className="card-header">
           <div>
-            <div className="card-title">Recent System Logs</div>
-            <div className="card-subtitle">Latest changes made to the database.</div>
+            <div className="card-title">Recent Logins</div>
+            <div className="card-subtitle">User login activity across the system.</div>
           </div>
+          <span style={{
+            padding: "4px 12px",
+            borderRadius: "var(--radius-full)",
+            background: "var(--accent-soft)",
+            color: "var(--primary)",
+            fontSize: "0.8rem",
+            fontWeight: 600,
+          }}>
+            {logs.length} log{logs.length !== 1 ? "s" : ""}
+          </span>
         </div>
 
         <table className="data-table">
           <thead>
             <tr>
-              <th>Timestamp</th>
+              <th>User</th>
+              <th>Role</th>
               <th>Action</th>
+              <th>Time</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            {logs.length === 0 ? (
+            {loadingLogs ? (
               <tr>
-                <td colSpan="3" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
-                  No logs yet. Data will appear once the database is connected.
+                <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                  Loading recent logins...
+                </td>
+              </tr>
+            ) : logs.length === 0 ? (
+              <tr>
+                <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                  No login activity yet. Logs will appear once users sign in.
                 </td>
               </tr>
             ) : (
-              logs.map((log, idx) => (
-                <tr key={idx}>
-                  <td data-label="Timestamp">{log.timestamp}</td>
-                  <td data-label="Action">{log.action}</td>
+              logs.map((log) => (
+                <tr key={log.id}>
+                  <td data-label="User">
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{log.name}</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{log.email}</div>
+                    </div>
+                  </td>
+                  <td data-label="Role">
+                    <span style={{
+                      display: "inline-block",
+                      padding: "3px 10px",
+                      borderRadius: "var(--radius-full)",
+                      fontSize: "0.72rem",
+                      fontWeight: 600,
+                      textTransform: "capitalize",
+                      ...getRoleBadgeStyle(log.role),
+                    }}>
+                      {log.role}
+                    </span>
+                  </td>
+                  <td data-label="Action" style={{ fontSize: "0.85rem" }}>{log.action}</td>
+                  <td data-label="Time" style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                    {log.timestamp}
+                  </td>
                   <td data-label="Status">
                     <span className={`status-badge ${log.status === "Success" ? "active" : "pending"}`}>
                       <span className="status-dot"></span>
