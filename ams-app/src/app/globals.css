@@ -541,23 +541,23 @@ img {
   animation: blobMorph1 20s ease-in-out infinite alternate, blobDrift1 45s ease-in-out infinite;
 }
 
-/* Blob 2 */
+/* Blob 2 — Cream/Beige (Login Page Theme) */
 .hero-blob-2 {
   width: 700px;
   height: 700px;
   bottom: 10%;
   right: -5%;
-  background: linear-gradient(225deg, #6B9E78 0%, #A5D6B6 40%, #8ABF99 100%);
+  background: linear-gradient(225deg, #DDC8A4 0%, #FDF5E6 100%);
   animation: blobMorph2 22s ease-in-out infinite alternate, blobDrift2 50s ease-in-out infinite;
 }
 
-/* Blob 3 */
+/* Blob 3 — Sage Green / Dark Green (Login Page Theme) */
 .hero-blob-3 {
   width: 850px;
   height: 850px;
   top: 15%;
   right: 5%;
-  background: linear-gradient(45deg, #A5D6B6 0%, #8ABF99 50%, #6B9E78 100%);
+  background: linear-gradient(45deg, #93A675 0%, #4A7C59 100%);
   animation: blobMorph3 18s ease-in-out infinite alternate, blobDrift3 42s ease-in-out infinite;
 }
 
@@ -577,7 +577,7 @@ img {
   height: 150px;
   top: 50%;
   left: -20%;
-  background: #8ABF99;
+  background: #DDC8A4;
   animation: blobMorph2 15s ease-in-out infinite alternate, blobDrift3 35s ease-in-out infinite alternate-reverse;
 }
 
@@ -586,7 +586,7 @@ img {
   height: 200px;
   top: 80%;
   left: 40%;
-  background: #6B9E78;
+  background: #93A675;
   animation: blobMorph3 16s ease-in-out infinite alternate, blobDrift1 38s ease-in-out infinite;
 }
 
@@ -595,7 +595,7 @@ img {
   height: 180px;
   top: -10%;
   right: 20%;
-  background: rgba(165, 214, 182, 0.8);
+  background: rgba(253, 245, 230, 0.8); /* FDF5E6 */
   animation: blobMorph1 14s ease-in-out infinite alternate, blobDrift2 34s ease-in-out infinite;
 }
 
