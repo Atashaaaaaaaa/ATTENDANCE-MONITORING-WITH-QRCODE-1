@@ -1,6 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect, useRef } from "react";
-import { addDoc, collection, query, where, getDocs, updateDoc, doc, onSnapshot, Timestamp, getDoc } from "firebase/firestore";
+import { addDoc, collection, query, where, getDocs, updateDoc, deleteDoc, doc, onSnapshot, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -787,6 +787,18 @@ export default function TeacherDashboard() {
           }
         };
 
+        // Delete attendance record handler
+        const handleDeleteRecord = async (recordId, studentName) => {
+          if (!recordId) return;
+          if (!confirm(`Remove attendance record for ${studentName}?`)) return;
+          try {
+            await deleteDoc(doc(db, "attendance", recordId));
+          } catch (e) {
+            console.error("Error deleting record:", e);
+          }
+          setClassListModal((prev) => ({ ...prev, _refresh: Date.now() }));
+        };
+
         // Find attendance record id for a student
         const getRecordId = (studentId) => {
           const records = attendanceRecords[subject.sectionId] || [];
@@ -859,6 +871,7 @@ export default function TeacherDashboard() {
                 <col className="col-name" />
                 <col className="col-time" />
                 <col className="col-status" />
+                <col style={{ width: '50px' }} />
               </colgroup>
               <thead>
                 <tr>
@@ -867,12 +880,13 @@ export default function TeacherDashboard() {
                   <th>Name</th>
                   <th>Time In</th>
                   <th>Status</th>
+                  <th style={{ textAlign: 'center', width: '50px' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px" }}>
+                    <td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px" }}>
                       No students enrolled yet.
                     </td>
                   </tr>
@@ -940,6 +954,23 @@ export default function TeacherDashboard() {
                             editable={editable}
                           />
                         </td>
+                        <td style={{ textAlign: 'center' }}>
+                          {recordId && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteRecord(recordId, name); }}
+                              title="Remove record"
+                              style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                padding: '4px', borderRadius: '6px', color: '#9CA3AF',
+                                transition: 'all 0.15s ease', display: 'inline-flex',
+                              }}
+                              onMouseEnter={(e) => { e.target.style.color = '#EF4444'; e.target.style.background = '#FEF2F2'; }}
+                              onMouseLeave={(e) => { e.target.style.color = '#9CA3AF'; e.target.style.background = 'none'; }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })
@@ -995,15 +1026,6 @@ export default function TeacherDashboard() {
                 </div>
               </div>
 
-              {/* Rules */}
-              <div className="spreadsheet-rules">
-                <strong>Rules:</strong>
-                <span>✅ Present = on time</span>
-                <span>•</span>
-                <span>Late = 1–15 min</span>
-                <span>•</span>
-                <span>Absent = after 30 min</span>
-              </div>
 
               {/* Tabs */}
               {(isActive || hasPreviousSessions) && (

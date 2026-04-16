@@ -79,6 +79,8 @@ export default function StudentAttendance() {
   const [allTodayRecords, setAllTodayRecords] = useState([]);
   // Session tab state per subject: "current" or "previous"
   const [sessionTab, setSessionTab] = useState({});
+  // Previous records modal state: { subjectId, subjectCode, records[] } or null
+  const [previousModal, setPreviousModal] = useState(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const canvasRef = useRef(null);
@@ -806,38 +808,30 @@ export default function StudentAttendance() {
                     <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> {subject.room}</span>
                   </div>
 
-                  {/* Session Tabs */}
-                  {(isSessionActive || hasPreviousSessions) && (
-                    <div style={{
-                      display: "flex", gap: "4px", marginBottom: "16px",
-                      background: "var(--bg-body)", borderRadius: "10px", padding: "4px",
-                      border: "1px solid var(--border-light)",
-                    }}>
-                      <button
-                        onClick={() => setSessionTab((prev) => ({ ...prev, [subject.id]: "current" }))}
-                        style={{
-                          flex: 1, padding: "7px 10px", borderRadius: "8px", border: "none",
-                          background: activeTab === "current" ? "var(--primary)" : "transparent",
-                          color: activeTab === "current" ? "white" : "var(--text-secondary)",
-                          fontWeight: 600, fontSize: "0.72rem", cursor: "pointer",
-                          transition: "all 0.2s ease",
-                        }}
-                      >
-                        Current
-                      </button>
-                      <button
-                        onClick={() => setSessionTab((prev) => ({ ...prev, [subject.id]: "previous" }))}
-                        style={{
-                          flex: 1, padding: "7px 10px", borderRadius: "8px", border: "none",
-                          background: activeTab === "previous" ? "var(--primary)" : "transparent",
-                          color: activeTab === "previous" ? "white" : "var(--text-secondary)",
-                          fontWeight: 600, fontSize: "0.72rem", cursor: "pointer",
-                          transition: "all 0.2s ease",
-                        }}
-                      >
-                        Previous
-                      </button>
-                    </div>
+                  {/* Previous Sessions Button */}
+                  {hasPreviousSessions && (
+                    <button
+                      onClick={() => setPreviousModal({
+                        subjectId: subject.id,
+                        subjectCode: subject.code,
+                        section: subject.section,
+                        records: previousResults,
+                      })}
+                      style={{
+                        width: "100%", padding: "8px 12px", borderRadius: "8px",
+                        border: "1px solid var(--border-light)", background: "var(--bg-body)",
+                        color: "var(--text-secondary)", fontWeight: 600, fontSize: "0.72rem",
+                        cursor: "pointer", transition: "all 0.2s ease",
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="1 4 1 10 7 10"></polyline>
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                      </svg>
+                      View Previous Records ({previousResults.length})
+                    </button>
                   )}
 
                   {/* Camera feed — only for active scan */}
@@ -935,50 +929,7 @@ export default function StudentAttendance() {
                     </div>
                   )}
 
-                  {/* Previous Session Results */}
-                  {activeTab === "previous" && !isActive && (
-                    <div style={{ marginBottom: "12px" }}>
-                      {previousResults.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: "20px", color: "var(--text-muted)", fontSize: "0.82rem" }}>
-                          No previous sessions today.
-                        </div>
-                      ) : (
-                        previousResults.map((r, idx) => (
-                          <div key={r.id || idx} style={{
-                            display: "flex", alignItems: "center", gap: "12px",
-                            padding: "10px 12px", borderRadius: "8px",
-                            background: r.status === "Present" ? "rgba(236, 253, 245, 0.5)"
-                              : r.status === "Late" ? "rgba(255, 251, 235, 0.5)"
-                                : "rgba(254, 242, 242, 0.5)",
-                            marginBottom: "8px",
-                            border: "1px solid var(--border-light)",
-                          }}>
-                            <div style={{
-                              width: "28px", height: "28px", borderRadius: "50%",
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              background: r.status === "Present" ? "#ECFDF5"
-                                : r.status === "Late" ? "#FFFBEB" : "#FEF2F2",
-                            }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                stroke={r.status === "Present" ? "#10B981" : r.status === "Late" ? "#F59E0B" : "#EF4444"}
-                                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                              </svg>
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                                {r.status} — {r.time || "—"}
-                              </div>
-                            </div>
-                            <span style={{
-                              fontSize: "0.65rem", padding: "2px 8px", borderRadius: "10px",
-                              background: "#F3F4F6", color: "#9CA3AF", fontWeight: 600,
-                            }}>Past</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
+
 
                   {/* Action Button */}
                   {!isActive && activeTab === "current" && (
@@ -1140,6 +1091,123 @@ export default function StudentAttendance() {
             </div>
           )}
         </>
+      )}
+
+      {/* Previous Records Modal */}
+      {previousModal && (
+        <div
+          style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+            background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 9999, padding: "16px",
+            animation: "fadeIn 0.2s ease",
+          }}
+          onClick={() => setPreviousModal(null)}
+        >
+          <div
+            style={{
+              background: "var(--bg-card)", borderRadius: "16px",
+              width: "100%", maxWidth: "420px", maxHeight: "80vh",
+              overflow: "hidden", display: "flex", flexDirection: "column",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+              animation: "slideUp 0.3s ease",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              padding: "20px 20px 16px", borderBottom: "1px solid var(--border-light)",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <div>
+                <div style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                  Previous Records
+                </div>
+                <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                  {previousModal.subjectCode} — {previousModal.section}
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviousModal(null)}
+                style={{
+                  width: "32px", height: "32px", borderRadius: "8px",
+                  border: "none", background: "var(--bg-body)",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "var(--text-muted)", transition: "all 0.15s ease",
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            {/* Records List */}
+            <div style={{ padding: "16px 20px", overflowY: "auto", flex: 1 }}>
+              {previousModal.records.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "30px 0", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                  No previous records found.
+                </div>
+              ) : (
+                previousModal.records.map((r, idx) => (
+                  <div key={r.id || idx} style={{
+                    display: "flex", alignItems: "center", gap: "12px",
+                    padding: "12px 14px", borderRadius: "10px",
+                    background: r.status === "Present" ? "rgba(236, 253, 245, 0.6)"
+                      : r.status === "Late" ? "rgba(255, 251, 235, 0.6)"
+                        : "rgba(254, 242, 242, 0.6)",
+                    marginBottom: "8px",
+                    border: "1px solid var(--border-light)",
+                  }}>
+                    <div style={{
+                      width: "36px", height: "36px", borderRadius: "50%",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      background: r.status === "Present" ? "#ECFDF5"
+                        : r.status === "Late" ? "#FFFBEB" : "#FEF2F2",
+                      border: `2px solid ${r.status === "Present" ? "#A7F3D0" : r.status === "Late" ? "#FDE68A" : "#FECACA"}`,
+                      flexShrink: 0,
+                    }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke={r.status === "Present" ? "#10B981" : r.status === "Late" ? "#F59E0B" : "#EF4444"}
+                        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                        {r.status}
+                      </div>
+                      <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                        {r.time || "—"} {r.date ? `• ${r.date}` : ""}
+                      </div>
+                    </div>
+                    <span style={{
+                      fontSize: "0.68rem", padding: "3px 10px", borderRadius: "10px",
+                      background: r.status === "Present" ? "#ECFDF5" : r.status === "Late" ? "#FFFBEB" : "#FEF2F2",
+                      color: r.status === "Present" ? "#047857" : r.status === "Late" ? "#B45309" : "#991B1B",
+                      fontWeight: 700, fontSize: "0.68rem",
+                    }}>{r.status === "Present" ? "On Time" : r.status}</span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Close */}
+            <div style={{ padding: "12px 20px", borderTop: "1px solid var(--border-light)" }}>
+              <button
+                onClick={() => setPreviousModal(null)}
+                style={{
+                  width: "100%", padding: "10px", borderRadius: "10px",
+                  border: "none", background: "var(--primary)", color: "white",
+                  fontWeight: 700, fontSize: "0.85rem", cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >Close</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Hidden canvas */}

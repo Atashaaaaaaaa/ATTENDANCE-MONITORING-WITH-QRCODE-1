@@ -200,8 +200,10 @@ export default function TeacherReports() {
       return;
     }
 
-    const { default: jsPDF } = await import('jspdf');
-    await import('jspdf-autotable');
+    const jsPDFModule = await import('jspdf');
+    const jsPDF = jsPDFModule.default || jsPDFModule.jsPDF;
+    const autoTableModule = await import('jspdf-autotable');
+    // jspdf-autotable attaches itself to jsPDF prototype automatically
 
     const doc = new jsPDF();
     const selectedSection = sections.find((s) => s.id === filter.section);
@@ -336,6 +338,7 @@ export default function TeacherReports() {
               value={filter.section}
               onChange={(e) => setFilter({ ...filter, section: e.target.value })}
             >
+              <option value="" disabled hidden>Select Section</option>
               {sections.map((s) => (
                 <option key={s.id} value={s.id}>{s.label}</option>
               ))}
