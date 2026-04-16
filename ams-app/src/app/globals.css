@@ -531,44 +531,44 @@ img {
   animation-direction: alternate;
 }
 
-/* Blob 1 — Pastel Green (#BAED91) + Pistachio (#93C572) */
+/* Blob 1 — Darker Green Gradients */
 .hero-blob-1 {
   width: 800px;
   height: 800px;
   top: 10%;
   left: 10%;
-  background: linear-gradient(135deg, #BAED91 0%, #93C572 50%, #D0F0C0 100%);
-  animation: blobMorph1 6s ease-in-out infinite alternate, blobDrift1 14s ease-in-out infinite;
+  background: linear-gradient(135deg, #8ABF99 0%, #6B9E78 50%, #A5D6B6 100%);
+  animation: blobMorph1 20s ease-in-out infinite alternate, blobDrift1 45s ease-in-out infinite;
 }
 
-/* Blob 2 — Pistachio (#93C572) + Tea Green (#D0F0C0) */
+/* Blob 2 */
 .hero-blob-2 {
   width: 700px;
   height: 700px;
   bottom: 10%;
   right: -5%;
-  background: linear-gradient(225deg, #93C572 0%, #D0F0C0 40%, #BAED91 100%);
-  animation: blobMorph2 7s ease-in-out infinite alternate, blobDrift2 16s ease-in-out infinite;
+  background: linear-gradient(225deg, #6B9E78 0%, #A5D6B6 40%, #8ABF99 100%);
+  animation: blobMorph2 22s ease-in-out infinite alternate, blobDrift2 50s ease-in-out infinite;
 }
 
-/* Blob 3 — Tea Green (#D0F0C0) + Pastel Green (#BAED91) */
+/* Blob 3 */
 .hero-blob-3 {
   width: 850px;
   height: 850px;
   top: 15%;
   right: 5%;
-  background: linear-gradient(45deg, #D0F0C0 0%, #BAED91 50%, #93C572 100%);
-  animation: blobMorph3 5s ease-in-out infinite alternate, blobDrift3 12s ease-in-out infinite;
+  background: linear-gradient(45deg, #A5D6B6 0%, #8ABF99 50%, #6B9E78 100%);
+  animation: blobMorph3 18s ease-in-out infinite alternate, blobDrift3 42s ease-in-out infinite;
 }
 
-/* Blob 4 — Pastel Green (#BAED91) + Tea Green (#D0F0C0) */
+/* Blob 4 */
 .hero-blob-4 {
   width: 750px;
   height: 750px;
   bottom: 20%;
   left: 10%;
-  background: linear-gradient(135deg, #BAED91 0%, #D0F0C0 50%, #93C572 100%);
-  animation: blobMorph1 7s ease-in-out infinite alternate-reverse, blobDrift2 15s ease-in-out infinite;
+  background: linear-gradient(135deg, #8ABF99 0%, #A5D6B6 50%, #6B9E78 100%);
+  animation: blobMorph1 24s ease-in-out infinite alternate-reverse, blobDrift2 48s ease-in-out infinite;
 }
 
 /* Scattered glowing blobs */
@@ -577,8 +577,8 @@ img {
   height: 150px;
   top: 50%;
   left: -20%;
-  background: #BAED91;
-  animation: blobMorph2 4s ease-in-out infinite alternate, blobDrift3 10s ease-in-out infinite alternate-reverse;
+  background: #8ABF99;
+  animation: blobMorph2 15s ease-in-out infinite alternate, blobDrift3 35s ease-in-out infinite alternate-reverse;
 }
 
 .hero-blob-6 {
@@ -586,8 +586,8 @@ img {
   height: 200px;
   top: 80%;
   left: 40%;
-  background: #93C572;
-  animation: blobMorph3 5s ease-in-out infinite alternate, blobDrift1 12s ease-in-out infinite;
+  background: #6B9E78;
+  animation: blobMorph3 16s ease-in-out infinite alternate, blobDrift1 38s ease-in-out infinite;
 }
 
 .hero-blob-7 {
@@ -595,8 +595,8 @@ img {
   height: 180px;
   top: -10%;
   right: 20%;
-  background: rgba(208, 240, 192, 0.8);
-  animation: blobMorph1 4.5s ease-in-out infinite alternate, blobDrift2 11s ease-in-out infinite;
+  background: rgba(165, 214, 182, 0.8);
+  animation: blobMorph1 14s ease-in-out infinite alternate, blobDrift2 34s ease-in-out infinite;
 }
 
 .hero-blob-8 {
@@ -604,8 +604,8 @@ img {
   height: 120px;
   bottom: 40%;
   right: -30%;
-  background: #BAED91;
-  animation: blobMorph2 6s ease-in-out infinite alternate, blobDrift3 9s ease-in-out infinite alternate-reverse;
+  background: #8ABF99;
+  animation: blobMorph2 17s ease-in-out infinite alternate, blobDrift3 30s ease-in-out infinite alternate-reverse;
 }
 
 /* ---- Blob Morphing Keyframes ---- */
