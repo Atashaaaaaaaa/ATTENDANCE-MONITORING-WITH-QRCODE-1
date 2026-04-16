@@ -1666,8 +1666,9 @@ img {
 
 .dashboard-header-left {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  gap: 16px;
+  align-items: center;
 }
 
 .dashboard-breadcrumb {
@@ -4115,3 +4116,96 @@ img {
     gap: 20px;
   }
 }
+
+/* ============================================
+   RESPONSIVE DASHBOARD & SIDEBAR STYLES
+   ============================================ */
+
+/* Menu toggle button hidden on desktop */
+.mobile-menu-btn {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.mobile-menu-btn span {
+  width: 24px;
+  height: 2px;
+  background: var(--text-primary);
+  transition: var(--transition-fast);
+  border-radius: 2px;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 95;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.3s ease;
+}
+
+.sidebar-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 5px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
+  /* Hide sidebar off-screen by default */
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: none;
+    z-index: 100;
+  }
+
+  /* Slide in when open */
+  .sidebar.sidebar-mobile-open {
+    transform: translateX(0);
+    box-shadow: 20px 0 40px rgba(0, 0, 0, 0.15);
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .dashboard-main {
+    padding: 16px;
+    padding-top: 20px;
+  }
+
+  .dashboard-header {
+    padding: 0 16px;
+  }
+
+  .header-search-input {
+    width: 140px;
+  }
+
+  .dashboard-breadcrumb {
+    font-size: 0.65rem;
+  }
+
+  .dashboard-header-greeting {
+    font-size: 0.8rem;
+  }
+
+  .header-date {
+    display: none; /* Hide date on small screens */
+  }
+}
+
