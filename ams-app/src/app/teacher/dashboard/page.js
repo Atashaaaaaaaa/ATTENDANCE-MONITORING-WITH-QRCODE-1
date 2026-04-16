@@ -1,6 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect, useRef } from "react";
-import { addDoc, collection, query, where, getDocs, updateDoc, doc, onSnapshot, Timestamp } from "firebase/firestore";
+import { addDoc, collection, query, where, getDocs, updateDoc, doc, onSnapshot, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -58,6 +58,10 @@ export default function TeacherDashboard() {
   const [sessionTab, setSessionTab] = useState({});
   // Track which student's status dropdown is open in class list modal
   const [editingStatus, setEditingStatus] = useState(null);
+  // Accordion: which previous session is expanded (sessionId or null)
+  const [expandedSession, setExpandedSession] = useState(null);
+  // Session metadata cache: { sessionId: { date, startTime, createdAt, ... } }
+  const [sessionMeta, setSessionMeta] = useState({});
 
   // Fetch teacher's assigned sections from Firestore
   useEffect(() => {
@@ -389,6 +393,71 @@ export default function TeacherDashboard() {
     return grouped;
   };
 
+  // Fetch session metadata for previous sessions
+  const fetchSessionMeta = useCallback(async (sessionIds) => {
+    const newMeta = {};
+    const toFetch = sessionIds.filter((id) => !sessionMeta[id]);
+    if (toFetch.length === 0) return;
+
+    for (const sid of toFetch) {
+      try {
+        const snap = await getDoc(doc(db, "sessions", sid));
+        if (snap.exists()) {
+          newMeta[sid] = snap.data();
+        }
+      } catch (e) {
+        // silent
+      }
+    }
+    if (Object.keys(newMeta).length > 0) {
+      setSessionMeta((prev) => ({ ...prev, ...newMeta }));
+    }
+  }, [sessionMeta]);
+
+  // Format session date/time for display
+  const formatSessionHeader = (sessId) => {
+    const meta = sessionMeta[sessId];
+    if (!meta) return { label: "Loading...", sub: "" };
+
+    try {
+      const dateStr = meta.createdAt || meta.date;
+      const d = dateStr ? new Date(dateStr) : null;
+      if (d && !isNaN(d.getTime())) {
+        const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const monthNames = ["January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"];
+        const dayName = dayNames[d.getDay()];
+        const monthName = monthNames[d.getMonth()];
+        const dayNum = d.getDate();
+        const year = d.getFullYear();
+        const time = meta.startTime || d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        return {
+          label: `${monthName} ${dayNum}, ${dayName}, ${time}`,
+          sub: `${year}`,
+        };
+      }
+    } catch (e) { /* fallback */ }
+
+    return { label: meta.startTime ? `Session — ${meta.startTime}` : "Session", sub: meta.date || "" };
+  };
+
+  // Format a timestamp into full date+time display
+  const formatFullDateTime = (timeStr, dateStr) => {
+    if (!timeStr || timeStr === "—") return "—";
+    // Try to build a full date+time string
+    if (dateStr) {
+      try {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          const monthNames = ["January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"];
+          return `${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} – ${timeStr}`;
+        }
+      } catch (e) { /* fallback */ }
+    }
+    return timeStr;
+  };
+
   // Count statuses for a subject
   const getStatusCounts = (subject, filterSessionId) => {
     const classList = getClassList(subject, filterSessionId);
@@ -665,6 +734,18 @@ export default function TeacherDashboard() {
         const hasPreviousSessions = Object.keys(previousGroups).length > 0;
         const modalCounts = getStatusCounts(subject, tab === "current" ? liveSessionDocId : null);
 
+        // Fetch metadata for previous sessions if not already cached
+        const prevSessionIds = Object.keys(previousGroups);
+        if (prevSessionIds.length > 0) {
+          const uncached = prevSessionIds.filter((id) => !sessionMeta[id]);
+          if (uncached.length > 0) {
+            fetchSessionMeta(uncached);
+          }
+        }
+
+        // Get current session date for Time In formatting
+        const currentSessionDate = activeSessions[sessionKey]?.date || new Date().toISOString().split("T")[0];
+
         // Inline status update handler
         const handleStatusChange = async (studentRecordId, newStatus) => {
           if (!studentRecordId) return;
@@ -749,7 +830,7 @@ export default function TeacherDashboard() {
         };
 
         // Spreadsheet table renderer
-        const renderTable = (rows, editable = true) => (
+        const renderTable = (rows, editable = true, sessionDate = null) => (
           <div className="spreadsheet-table-wrap">
             <table className="spreadsheet-table">
               <colgroup>
@@ -777,7 +858,8 @@ export default function TeacherDashboard() {
                   rows.map((student, idx) => {
                     const recordId = editable ? getRecordId(student.id || student.studentId) : student.id;
                     const name = student.name;
-                    const time = student.time || "—";
+                    const rawTime = student.time || "—";
+                    const displayTime = formatFullDateTime(rawTime, sessionDate);
                     const status = student.status || "No Record";
                     const sid = student.id || student.studentId || idx;
 
@@ -788,16 +870,16 @@ export default function TeacherDashboard() {
                           <span className="spreadsheet-name">{name}</span>
                         </td>
                         <td>
-                          {editable && recordId && time !== "—" ? (
+                          {editable && recordId && rawTime !== "—" ? (
                             <input
                               className="spreadsheet-time-value"
-                              defaultValue={time}
+                              defaultValue={displayTime}
                               onBlur={(e) => handleTimeChange(recordId, e.target.value)}
                               onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
                             />
                           ) : (
-                            <span className={time === "—" ? "spreadsheet-time-dash" : "spreadsheet-time-display"}>
-                              {time}
+                            <span className={rawTime === "—" ? "spreadsheet-time-dash" : "spreadsheet-time-display"}>
+                              {displayTime}
                             </span>
                           )}
                         </td>
@@ -915,12 +997,12 @@ export default function TeacherDashboard() {
                         No active session. Start a session to see the current class list.
                       </div>
                     ) : (
-                      renderTable(modalClassList, true)
+                      renderTable(modalClassList, true, currentSessionDate)
                     )}
                   </>
                 )}
 
-                {/* Previous Sessions */}
+                {/* Previous Sessions — Accordion */}
                 {tab === "previous" && (
                   <>
                     {!hasPreviousSessions ? (
@@ -931,22 +1013,57 @@ export default function TeacherDashboard() {
                             <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
                           </svg>
                         </div>
-                        No previous sessions today.
+                        No previous sessions found.
                       </div>
                     ) : (
-                      Object.entries(previousGroups).map(([sessId, sessRecords], idx) => (
-                        <div key={sessId} className="spreadsheet-session-group">
-                          <div className="spreadsheet-session-header">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="12" cy="12" r="10"></circle>
-                              <polyline points="12 6 12 12 16 14"></polyline>
-                            </svg>
-                            <span className="spreadsheet-session-label">Session {idx + 1}</span>
-                            <span className="spreadsheet-session-count">• {sessRecords.length} record(s)</span>
-                          </div>
-                          {renderTable(sessRecords, false)}
-                        </div>
-                      ))
+                      <div className="session-accordion">
+                        {Object.entries(previousGroups).map(([sessId, sessRecords], idx) => {
+                          const isExpanded = expandedSession === sessId;
+                          const headerInfo = formatSessionHeader(sessId);
+                          const sessMeta = sessionMeta[sessId];
+                          const sessDate = sessMeta?.date || sessMeta?.createdAt || null;
+                          // Count statuses for this session
+                          const pCount = sessRecords.filter((r) => r.status === "Present").length;
+                          const lCount = sessRecords.filter((r) => r.status === "Late").length;
+                          const aCount = sessRecords.filter((r) => r.status === "Absent").length;
+
+                          return (
+                            <div key={sessId} className={`session-accordion-item ${isExpanded ? "expanded" : ""}`}>
+                              <button
+                                className="session-accordion-trigger"
+                                onClick={() => setExpandedSession(isExpanded ? null : sessId)}
+                              >
+                                <div className="session-accordion-left">
+                                  <svg className="session-accordion-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                  </svg>
+                                  <div className="session-accordion-info">
+                                    <span className="session-accordion-label">{headerInfo.label}</span>
+                                    {headerInfo.sub && <span className="session-accordion-sub">{headerInfo.sub}</span>}
+                                  </div>
+                                </div>
+                                <div className="session-accordion-right">
+                                  <div className="session-accordion-badges">
+                                    {pCount > 0 && <span className="session-mini-badge present">{pCount}</span>}
+                                    {lCount > 0 && <span className="session-mini-badge late">{lCount}</span>}
+                                    {aCount > 0 && <span className="session-mini-badge absent">{aCount}</span>}
+                                  </div>
+                                  <span className="session-accordion-count">{sessRecords.length} student{sessRecords.length !== 1 ? "s" : ""}</span>
+                                  <svg className={`session-accordion-chevron ${isExpanded ? "rotated" : ""}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                  </svg>
+                                </div>
+                              </button>
+                              <div className={`session-accordion-content ${isExpanded ? "open" : ""}`}>
+                                <div className="session-accordion-body">
+                                  {renderTable(sessRecords, false, sessDate)}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </>
                 )}
