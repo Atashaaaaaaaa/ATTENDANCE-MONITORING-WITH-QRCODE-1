@@ -60,6 +60,8 @@ export default function StudentAttendance() {
   const streamRef = useRef(null);
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
+  // Track previous session IDs to detect session changes
+  const prevSessionIdsRef = useRef({});
 
   // Face recognition state
   const [modelsReady, setModelsReady] = useState(false);
@@ -194,8 +196,11 @@ export default function StudentAttendance() {
         };
         allRecords.push(record);
         if (data.subjectId) {
-          // For scanResults, keep the latest record per subject (for current session detection)
-          if (!results[data.subjectId] || (data.sessionId && !results[data.subjectId].sessionId)) {
+          // Only populate scanResults with records from the CURRENT active session
+          // This prevents old session data from showing as "present" in the new session
+          const sessionKey = data.subjectId + "_" + (data.sectionId || data.subjectId);
+          const activeSession = activeSessions[sessionKey];
+          if (activeSession?.docId && data.sessionId === activeSession.docId) {
             results[data.subjectId] = record;
           }
         }
@@ -207,7 +212,39 @@ export default function StudentAttendance() {
     });
 
     return () => unsubscribe();
-  }, [user?.uid]);
+  }, [user?.uid, activeSessions]);
+
+  // Clear stale scanResults when active sessions change (new session started)
+  useEffect(() => {
+    const currentIds = {};
+    for (const key in activeSessions) {
+      currentIds[key] = activeSessions[key]?.docId || null;
+    }
+
+    const prevIds = prevSessionIdsRef.current;
+    let sessionChanged = false;
+
+    for (const key in currentIds) {
+      if (prevIds[key] && prevIds[key] !== currentIds[key]) {
+        sessionChanged = true;
+        break;
+      }
+    }
+    // Also check if a session was removed (ended)
+    for (const key in prevIds) {
+      if (prevIds[key] && !currentIds[key]) {
+        sessionChanged = true;
+        break;
+      }
+    }
+
+    if (sessionChanged) {
+      // Clear scanResults so old session data doesn't persist
+      setScanResults({});
+    }
+
+    prevSessionIdsRef.current = currentIds;
+  }, [activeSessions]);
 
   // Load attendance history for summary chart
   useEffect(() => {
@@ -882,7 +919,8 @@ export default function StudentAttendance() {
               <tbody>
                 {subjects.map((subject) => {
                   const sessionKey = subject.id + "_" + subject.sectionId;
-                  const result = scanResults[subject.id];
+                  const currentResult = getCurrentSessionResult(subject);
+                  const result = currentResult || scanResults[subject.id];
                   const isSessionActive = !!activeSessions[sessionKey];
                   return (
                     <tr key={subject.id}>
