@@ -296,12 +296,25 @@ export default function AdminUsers() {
     setEditSuccess("");
 
     try {
-      const userDocRef = doc(db, "users", editingUser.id);
-      await updateDoc(userDocRef, {
+      const updateData = {
         name: editFormData.name,
         fullName: editFormData.name,
         section: editFormData.section,
-      });
+      };
+
+      // Update users collection
+      const userDocRef = doc(db, "users", editingUser.id);
+      await updateDoc(userDocRef, updateData);
+
+      // Also update role-specific collection (teachers or students)
+      const roleCollection = editingUser.role === "teacher" ? "teachers" : "students";
+      try {
+        const roleDocRef = doc(db, roleCollection, editingUser.id);
+        await updateDoc(roleDocRef, updateData);
+      } catch (e) {
+        // Role-specific doc might not exist — that's okay
+        console.warn("Could not update role collection:", e);
+      }
 
       // Update local state
       setUsers((prev) =>
@@ -472,7 +485,7 @@ export default function AdminUsers() {
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 required
               >
-                <option value="" disabled>Select User Role</option>
+                <option value="">— Select Role —</option>
                 <option value="Teacher">Teacher</option>
                 <option value="Student">Student</option>
               </select>
