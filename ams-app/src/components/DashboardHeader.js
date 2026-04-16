@@ -11,12 +11,14 @@ const pageTitles = {
   "/teacher/schedule": { title: "Class Schedule", breadcrumb: "Teacher" },
   "/teacher/reports": { title: "Reports", breadcrumb: "Teacher" },
   "/teacher/profile": { title: "Profile", breadcrumb: "Teacher" },
+  "/teacher/mapping": { title: "Section Mapping", breadcrumb: "Teacher" },
+  "/teacher/students": { title: "My Students", breadcrumb: "Teacher" },
   "/student/attendance": { title: "My Attendance", breadcrumb: "Student" },
   "/student/schedule": { title: "Schedule", breadcrumb: "Student" },
   "/student/profile": { title: "Profile", breadcrumb: "Student" },
 };
 
-export default function DashboardHeader() {
+export default function DashboardHeader({ onMenuToggle }) {
   const pathname = usePathname();
   const pageInfo = pageTitles[pathname] || { title: "Dashboard", breadcrumb: "" };
   const [searchOpen, setSearchOpen] = useState(false);
@@ -28,16 +30,30 @@ export default function DashboardHeader() {
   return (
     <header className="dashboard-header">
       <div className="dashboard-header-left">
-        <div className="dashboard-breadcrumb">
-          <span className="breadcrumb-home"><img src="/green-house.png" alt="Home" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /></span>
-          <span className="breadcrumb-sep">/</span>
-          <span className="breadcrumb-parent">{pageInfo.breadcrumb}</span>
-          <span className="breadcrumb-sep">/</span>
-          <span className="breadcrumb-current">{pageInfo.title}</span>
-        </div>
-        <div className="dashboard-header-greeting">
-          {greeting}!
-          <span className="header-date">{dateStr}</span>
+        {/* Mobile hamburger button */}
+        {onMenuToggle && (
+          <button
+            className="mobile-menu-btn"
+            onClick={onMenuToggle}
+            aria-label="Open menu"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        )}
+        <div>
+          <div className="dashboard-breadcrumb">
+            <span className="breadcrumb-home"><img src="/green-house.png" alt="Home" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /></span>
+            <span className="breadcrumb-sep">/</span>
+            <span className="breadcrumb-parent">{pageInfo.breadcrumb}</span>
+            <span className="breadcrumb-sep">/</span>
+            <span className="breadcrumb-current">{pageInfo.title}</span>
+          </div>
+          <div className="dashboard-header-greeting">
+            {greeting}!
+            <span className="header-date">{dateStr}</span>
+          </div>
         </div>
       </div>
 

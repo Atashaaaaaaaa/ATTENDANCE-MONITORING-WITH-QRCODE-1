@@ -27,7 +27,7 @@
   align-items: flex-start;
   justify-content: space-between;
   background-color: var(--foreground);
-  padding: 120px 60px;
+  padding: clamp(48px, 8vw, 120px) clamp(20px, 5vw, 60px);
 }
 
 .intro {

@@ -72,7 +72,7 @@ export default function LoginPage() {
         {/* LEFT SIDE */}
         <div className="login-left">
           <Link href="/" className="login-header-logo" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div className="logo-icon"></div>
+            <img src="/ams-logo.png" alt="AMS Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             <span>AMS</span>
           </Link>
 
@@ -288,7 +288,7 @@ export default function LoginPage() {
                 </h3>
 
                 <p style={{ margin: "0 0 24px", fontSize: "0.88rem", color: "#64748B", lineHeight: "1.6" }}>
-                  Your account is awaiting verification by an administrator. This is a one-time process for this browser.
+                  Your account is awaiting verification by an administrator. Please wait for approval to continue.
                 </p>
 
                 {/* Animated waiting indicator */}

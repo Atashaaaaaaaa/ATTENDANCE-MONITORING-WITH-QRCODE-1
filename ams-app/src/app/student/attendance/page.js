@@ -1,8 +1,9 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { addDoc, collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
+import { addDoc, collection, query, where, onSnapshot, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
+import { loadModels, getDescriptor, compareDescriptors, areModelsLoaded } from "@/lib/faceService";
 
 // Parse schedule time string like "7:30 AM - 9:00 AM" into { startMinutes, endMinutes }
 function parseScheduleTime(timeStr) {
@@ -59,6 +60,45 @@ export default function StudentAttendance() {
   const streamRef = useRef(null);
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
+
+  // Face recognition state
+  const [modelsReady, setModelsReady] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState(null); // { type: 'success'|'error'|'warning', text: string }
+  const [registeredDescriptor, setRegisteredDescriptor] = useState(null);
+
+  // Load face-api models on mount
+  useEffect(() => {
+    if (areModelsLoaded()) {
+      setModelsReady(true);
+      return;
+    }
+    loadModels()
+      .then(() => setModelsReady(true))
+      .catch((err) => console.error('Failed to load face models:', err));
+  }, []);
+
+  // Fetch this student's registered face descriptor
+  useEffect(() => {
+    if (!user?.uid) return;
+    const fetchDescriptor = async () => {
+      try {
+        // Try users collection first, then students
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists() && userDoc.data().faceDescriptor) {
+          setRegisteredDescriptor(userDoc.data().faceDescriptor);
+          return;
+        }
+        const studentDoc = await getDoc(doc(db, 'students', user.uid));
+        if (studentDoc.exists() && studentDoc.data().faceDescriptor) {
+          setRegisteredDescriptor(studentDoc.data().faceDescriptor);
+        }
+      } catch (e) {
+        console.error('Error fetching face descriptor:', e);
+      }
+    };
+    fetchDescriptor();
+  }, [user?.uid]);
 
   // Fetch sections where student is enrolled
   useEffect(() => {
@@ -238,9 +278,12 @@ export default function StudentAttendance() {
     setCameraError(null);
   }, [stopCamera]);
 
-  // Capture face & mark attendance
+  // Capture face, verify identity, & mark attendance
   const captureFace = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || !activeSubject) return;
+
+    setVerifying(true);
+    setVerificationMessage(null);
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -249,12 +292,51 @@ export default function StudentAttendance() {
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
 
-    const faceImageData = canvas.toDataURL("image/jpeg", 0.8);
+    // Step 1: Check if student has registered their face
+    if (!registeredDescriptor || registeredDescriptor.length === 0) {
+      setVerifying(false);
+      setVerificationMessage({ type: 'warning', text: 'You have not registered your face yet. Please go to your Profile page to register.' });
+      return;
+    }
+
+    // Step 2: Check if face-api models are loaded
+    if (!modelsReady) {
+      setVerifying(false);
+      setVerificationMessage({ type: 'error', text: 'Face recognition models are still loading. Please wait a moment.' });
+      return;
+    }
+
+    // Step 3: Detect face and extract descriptor from the captured frame
+    let capturedDescriptor;
+    try {
+      capturedDescriptor = await getDescriptor(canvas);
+    } catch (err) {
+      console.error('Face detection error:', err);
+      setVerifying(false);
+      setVerificationMessage({ type: 'error', text: 'Face detection failed. Please try again.' });
+      return;
+    }
+
+    if (!capturedDescriptor) {
+      setVerifying(false);
+      setVerificationMessage({ type: 'error', text: 'No face detected in the frame. Please position your face clearly and try again.' });
+      return;
+    }
+
+    // Step 4: Compare captured descriptor with registered descriptor
+    const distance = compareDescriptors(capturedDescriptor, registeredDescriptor);
+    const MATCH_THRESHOLD = 0.6; // lower = stricter
+
+    if (distance > MATCH_THRESHOLD) {
+      setVerifying(false);
+      setVerificationMessage({ type: 'error', text: `Face does not match your registered profile (confidence: ${Math.round((1 - distance) * 100)}%). Please try again or re-register your face.` });
+      return;
+    }
+
+    // Step 5: Face verified! Mark attendance
     const subject = subjects.find((s) => s.id === activeSubject);
     const now = new Date();
     const today = now.toISOString().split("T")[0];
-
-    // Use the schedule time from the active session if available, otherwise from section
     const sessionKey = subject?.id + "_" + subject?.sectionId;
     const session = activeSessions[sessionKey];
     const scheduleTime = session?.scheduleTime || subject?.scheduleTime;
@@ -263,6 +345,11 @@ export default function StudentAttendance() {
     stopCamera();
     setActiveSubject(null);
     setScanning(false);
+    setVerifying(false);
+    setVerificationMessage({ type: 'success', text: `Face verified! (confidence: ${Math.round((1 - distance) * 100)}%) — Marked as ${status}` });
+
+    // Clear the message after a few seconds
+    setTimeout(() => setVerificationMessage(null), 5000);
 
     try {
       await addDoc(collection(db, "attendance"), {
@@ -278,6 +365,7 @@ export default function StudentAttendance() {
         timeMarked: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         status: status,
         method: "facial_recognition",
+        faceMatchDistance: distance,
       });
     } catch (e) {
       // Local mode — save result locally
@@ -291,7 +379,7 @@ export default function StudentAttendance() {
         },
       }));
     }
-  }, [activeSubject, subjects, stopCamera, user?.uid, userData, activeSessions]);
+  }, [activeSubject, subjects, stopCamera, user?.uid, userData, activeSessions, registeredDescriptor, modelsReady]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -392,6 +480,52 @@ export default function StudentAttendance() {
         <h1>My Attendance</h1>
         <p>Scan your face per subject to mark attendance. Scanning is only available when your teacher starts a session.</p>
       </div>
+
+      {/* Face Recognition Model Loading */}
+      {!modelsReady && (
+        <div className="card" style={{
+          background: "#F0FDF4", border: "1px solid #BBF7D0",
+          color: "#15803D", fontWeight: 600, fontSize: "0.85rem",
+          display: "flex", alignItems: "center", gap: "10px",
+        }}>
+          <div style={{
+            width: "18px", height: "18px", border: "2.5px solid #BBF7D0",
+            borderTopColor: "#15803D", borderRadius: "50%",
+            animation: "spin 1s linear infinite", flexShrink: 0,
+          }}></div>
+          Loading face recognition models...
+        </div>
+      )}
+
+      {/* Face not registered warning */}
+      {modelsReady && !registeredDescriptor && (
+        <div className="card" style={{
+          background: "#FFF7ED", border: "1px solid #FED7AA",
+          color: "#C2410C", fontWeight: 600, fontSize: "0.85rem",
+          display: "flex", alignItems: "center", gap: "10px",
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C2410C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          Face not registered. Go to your Profile to register your face before taking attendance.
+        </div>
+      )}
+
+      {/* Verification feedback */}
+      {verificationMessage && (
+        <div className="card" style={{
+          background: verificationMessage.type === 'success' ? '#ECFDF5' : verificationMessage.type === 'warning' ? '#FFF7ED' : '#FEF2F2',
+          border: `1px solid ${verificationMessage.type === 'success' ? '#A7F3D0' : verificationMessage.type === 'warning' ? '#FED7AA' : '#FECACA'}`,
+          color: verificationMessage.type === 'success' ? '#047857' : verificationMessage.type === 'warning' ? '#C2410C' : '#991B1B',
+          fontWeight: 600, fontSize: "0.85rem",
+          display: "flex", alignItems: "center", gap: "10px",
+        }}>
+          {verificationMessage.type === 'success' ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          )}
+          {verificationMessage.text}
+        </div>
+      )}
 
       {/* Camera Error */}
       {cameraError && (
@@ -576,13 +710,20 @@ export default function StudentAttendance() {
                           fontWeight: 600, fontSize: "0.85rem", cursor: "pointer",
                           backdropFilter: "blur(4px)",
                         }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Cancel</button>
-                        <button onClick={captureFace} disabled={!scanning} style={{
+                        <button onClick={captureFace} disabled={!scanning || verifying} style={{
                           padding: "10px 24px", borderRadius: "10px", border: "none",
-                          background: scanning ? "linear-gradient(135deg, #4A7C59, #6B9E78)" : "#666",
+                          background: (scanning && !verifying) ? "linear-gradient(135deg, #4A7C59, #6B9E78)" : "#666",
                           color: "white", fontWeight: 700, fontSize: "0.85rem",
-                          cursor: scanning ? "pointer" : "not-allowed",
-                          boxShadow: scanning ? "0 4px 15px rgba(74, 124, 89, 0.4)" : "none",
-                        }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Capture &amp; Mark</button>
+                          cursor: (scanning && !verifying) ? "pointer" : "not-allowed",
+                          boxShadow: (scanning && !verifying) ? "0 4px 15px rgba(74, 124, 89, 0.4)" : "none",
+                          display: "flex", alignItems: "center", gap: "6px",
+                        }}>
+                          {verifying ? (
+                            <><div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div> Verifying...</>
+                          ) : (
+                            <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle'}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Verify &amp; Mark</>
+                          )}
+                        </button>
                       </div>
                     </div>
                   )}
