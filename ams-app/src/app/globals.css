@@ -504,14 +504,21 @@ img {
 .hero-blob-container {
   position: absolute;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -55%);
-  width: 700px;
-  height: 700px;
+  transform: translateY(-50%);
+  width: 500px;
+  height: 800px;
   z-index: 1;
   pointer-events: none;
   filter: blur(60px);
-  opacity: 0.55;
+  opacity: 0.65;
+}
+
+.hero-blob-container.left-blobs {
+  left: -150px;
+}
+
+.hero-blob-container.right-blobs {
+  right: -150px;
 }
 
 .hero-blob {
@@ -537,20 +544,30 @@ img {
 .hero-blob-2 {
   width: 350px;
   height: 350px;
-  top: 25%;
-  right: 5%;
+  bottom: 10%;
+  right: -5%;
   background: linear-gradient(225deg, #93C572 0%, #D0F0C0 40%, #BAED91 100%);
   animation: blobMorph2 7s ease-in-out infinite alternate, blobDrift2 16s ease-in-out infinite;
 }
 
 /* Blob 3 — Tea Green (#D0F0C0) + Pastel Green (#BAED91) */
 .hero-blob-3 {
-  width: 300px;
-  height: 300px;
-  bottom: 10%;
-  left: 30%;
+  width: 400px;
+  height: 400px;
+  top: 15%;
+  right: 5%;
   background: linear-gradient(45deg, #D0F0C0 0%, #BAED91 50%, #93C572 100%);
   animation: blobMorph3 5s ease-in-out infinite alternate, blobDrift3 12s ease-in-out infinite;
+}
+
+/* Blob 4 — Pastel Green (#BAED91) + Tea Green (#D0F0C0) */
+.hero-blob-4 {
+  width: 320px;
+  height: 320px;
+  bottom: 20%;
+  left: 10%;
+  background: linear-gradient(135deg, #BAED91 0%, #D0F0C0 50%, #93C572 100%);
+  animation: blobMorph1 7s ease-in-out infinite alternate-reverse, blobDrift2 15s ease-in-out infinite;
 }
 
 /* ---- Blob Morphing Keyframes ---- */

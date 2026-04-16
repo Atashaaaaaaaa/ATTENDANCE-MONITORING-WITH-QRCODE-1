@@ -13,11 +13,14 @@ export default function LandingPage() {
 
       {/* HERO SECTION */}
       <section className="hero" id="hero">
-        {/* Organic blob animation container */}
-        <div className="hero-blob-container">
+        {/* Organic blob animation containers */}
+        <div className="hero-blob-container left-blobs">
           <div className="hero-blob hero-blob-1"></div>
           <div className="hero-blob hero-blob-2"></div>
+        </div>
+        <div className="hero-blob-container right-blobs">
           <div className="hero-blob hero-blob-3"></div>
+          <div className="hero-blob hero-blob-4"></div>
         </div>
 
         <div className="hero-content">
