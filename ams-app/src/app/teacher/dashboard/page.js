@@ -56,6 +56,8 @@ export default function TeacherDashboard() {
   const [classListModal, setClassListModal] = useState(null); // { subject, tab: 'current'|'previous' }
   // Tab state per subject: "current" or "previous"
   const [sessionTab, setSessionTab] = useState({});
+  // Track which student's status dropdown is open in class list modal
+  const [editingStatus, setEditingStatus] = useState(null);
 
   // Fetch teacher's assigned sections from Firestore
   useEffect(() => {
@@ -652,7 +654,7 @@ export default function TeacherDashboard() {
         </div>
       )}
 
-      {/* ── Class List Modal ── */}
+      {/* ── Class List Modal (Spreadsheet) ── */}
       {classListModal && (() => {
         const { subject, tab, currentSessionDocId } = classListModal;
         const sessionKey = subject.id + "_" + subject.sectionId;
@@ -663,324 +665,295 @@ export default function TeacherDashboard() {
         const hasPreviousSessions = Object.keys(previousGroups).length > 0;
         const modalCounts = getStatusCounts(subject, tab === "current" ? liveSessionDocId : null);
 
+        // Inline status update handler
+        const handleStatusChange = async (studentRecordId, newStatus) => {
+          if (!studentRecordId) return;
+          try {
+            await updateDoc(doc(db, "attendance", studentRecordId), { status: newStatus });
+          } catch (e) {
+            // silent
+          }
+          setClassListModal((prev) => ({ ...prev, _refresh: Date.now() }));
+        };
+
+        // Inline time update handler
+        const handleTimeChange = async (studentRecordId, newTime) => {
+          if (!studentRecordId) return;
+          try {
+            await updateDoc(doc(db, "attendance", studentRecordId), { timeMarked: newTime });
+          } catch (e) {
+            // silent
+          }
+        };
+
+        // Find attendance record id for a student
+        const getRecordId = (studentId) => {
+          const records = attendanceRecords[subject.sectionId] || [];
+          const filtered = tab === "current" && liveSessionDocId
+            ? records.filter((r) => r.sessionId === liveSessionDocId)
+            : records;
+          const match = filtered.find((r) => r.studentId === studentId);
+          return match?.id || null;
+        };
+
+        // Status pill component
+        const StatusPill = ({ status, studentId, recordId, editable = true }) => {
+          const pillClass = status === "Present" ? "present"
+            : status === "Late" ? "late"
+            : status === "Absent" ? "absent"
+            : "no-record";
+          const isOpen = editingStatus === studentId;
+
+          return (
+            <div className="spreadsheet-status-cell">
+              <button
+                className={`spreadsheet-status-pill ${pillClass}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (editable && recordId) {
+                    setEditingStatus(isOpen ? null : studentId);
+                  }
+                }}
+                title={editable && recordId ? "Click to change status" : ""}
+              >
+                <span className="dot"></span>
+                {status}
+                {editable && recordId && <span className="chevron">▼</span>}
+              </button>
+
+              {isOpen && recordId && (
+                <div className="spreadsheet-status-dropdown" onClick={(e) => e.stopPropagation()}>
+                  {["Present", "Late", "Absent"].map((opt) => (
+                    <button
+                      key={opt}
+                      className={`spreadsheet-status-option ${opt === status ? "selected" : ""}`}
+                      onClick={() => {
+                        handleStatusChange(recordId, opt);
+                        setEditingStatus(null);
+                      }}
+                    >
+                      <span
+                        className="dot"
+                        style={{
+                          background: opt === "Present" ? "#10B981"
+                            : opt === "Late" ? "#F59E0B" : "#EF4444",
+                        }}
+                      ></span>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        // Spreadsheet table renderer
+        const renderTable = (rows, editable = true) => (
+          <div className="spreadsheet-table-wrap">
+            <table className="spreadsheet-table">
+              <colgroup>
+                <col className="col-num" />
+                <col className="col-name" />
+                <col className="col-time" />
+                <col className="col-status" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Time In</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px" }}>
+                      No students enrolled yet.
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((student, idx) => {
+                    const recordId = editable ? getRecordId(student.id || student.studentId) : student.id;
+                    const name = student.name;
+                    const time = student.time || "—";
+                    const status = student.status || "No Record";
+                    const sid = student.id || student.studentId || idx;
+
+                    return (
+                      <tr key={sid}>
+                        <td>{idx + 1}</td>
+                        <td>
+                          <span className="spreadsheet-name">{name}</span>
+                        </td>
+                        <td>
+                          {editable && recordId && time !== "—" ? (
+                            <input
+                              className="spreadsheet-time-value"
+                              defaultValue={time}
+                              onBlur={(e) => handleTimeChange(recordId, e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
+                            />
+                          ) : (
+                            <span className={time === "—" ? "spreadsheet-time-dash" : "spreadsheet-time-display"}>
+                              {time}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <StatusPill
+                            status={status}
+                            studentId={sid}
+                            recordId={recordId}
+                            editable={editable}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        );
+
         return (
           <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.45)",
-              backdropFilter: "blur(4px)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 9999,
-              animation: "fadeIn 0.25s ease",
-            }}
-            onClick={() => setClassListModal(null)}
+            className="spreadsheet-modal-overlay"
+            onClick={() => { setClassListModal(null); setEditingStatus(null); }}
           >
-            <div
-              style={{
-                background: "var(--bg-card)",
-                borderRadius: "var(--radius-xl, 16px)",
-                padding: "32px 28px",
-                maxWidth: "600px",
-                width: "92%",
-                maxHeight: "85vh",
-                overflowY: "auto",
-                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
-                animation: "fadeInUp 0.35s ease",
-                position: "relative",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close button */}
-              <button
-                onClick={() => setClassListModal(null)}
-                style={{
-                  position: "absolute",
-                  top: "16px",
-                  right: "16px",
-                  background: "none",
-                  border: "none",
-                  fontSize: "1.2rem",
-                  cursor: "pointer",
-                  color: "var(--text-muted)",
-                  lineHeight: 1,
-                  padding: "4px",
-                }}
-              >
+            <div className="spreadsheet-modal" onClick={(e) => { e.stopPropagation(); setEditingStatus(null); }}>
+              {/* Close */}
+              <button className="spreadsheet-modal-close" onClick={() => setClassListModal(null)}>
                 ✕
               </button>
 
-              {/* Header Icon */}
-              <div
-                style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "50%",
-                  background: "var(--accent-soft)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 12px",
-                }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
+              {/* Header */}
+              <div className="spreadsheet-header">
+                <div className="spreadsheet-header-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                </div>
+                <h3>Class List</h3>
+                <div className="spreadsheet-header-sub">{subject.name} — {subject.section}</div>
+                <div className="spreadsheet-header-meta">{subject.schedule} • {subject.room}</div>
               </div>
 
-              <h3 style={{
-                textAlign: "center",
-                fontSize: "1.15rem",
-                fontWeight: 700,
-                marginBottom: "4px",
-                color: "var(--text-primary)",
-              }}>
-                Class List
-              </h3>
-              <p style={{
-                textAlign: "center",
-                fontSize: "0.82rem",
-                color: "var(--text-secondary)",
-                marginBottom: "6px",
-              }}>
-                {subject.name} — {subject.section}
-              </p>
-              <p style={{
-                textAlign: "center",
-                fontSize: "0.75rem",
-                color: "var(--text-muted)",
-                marginBottom: "16px",
-              }}>
-                {subject.schedule} • {subject.room}
-              </p>
-
-              {/* Status summary inside modal */}
-              <div style={{
-                display: "flex", gap: "8px", marginBottom: "16px",
-                padding: "10px", borderRadius: "10px",
-                background: "var(--bg-body)", border: "1px solid var(--border-light)",
-              }}>
-                <div style={{ flex: 1, textAlign: "center" }}>
-                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--primary)" }}>{modalCounts.total}</div>
-                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600 }}>Enrolled</div>
+              {/* Summary Bar */}
+              <div className="spreadsheet-summary">
+                <div className="spreadsheet-stat">
+                  <div className="spreadsheet-stat-value" style={{ color: "var(--primary)" }}>{modalCounts.total}</div>
+                  <div className="spreadsheet-stat-label">Enrolled</div>
                 </div>
-                <div style={{ width: "1px", background: "var(--border-color)" }}></div>
-                <div style={{ flex: 1, textAlign: "center" }}>
-                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#10B981" }}>{modalCounts.present}</div>
-                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600 }}>Present</div>
+                <div className="spreadsheet-stat">
+                  <div className="spreadsheet-stat-value" style={{ color: "#10B981" }}>{modalCounts.present}</div>
+                  <div className="spreadsheet-stat-label">Present</div>
                 </div>
-                <div style={{ width: "1px", background: "var(--border-color)" }}></div>
-                <div style={{ flex: 1, textAlign: "center" }}>
-                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#F59E0B" }}>{modalCounts.late}</div>
-                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600 }}>Late</div>
+                <div className="spreadsheet-stat">
+                  <div className="spreadsheet-stat-value" style={{ color: "#F59E0B" }}>{modalCounts.late}</div>
+                  <div className="spreadsheet-stat-label">Late</div>
                 </div>
-                <div style={{ width: "1px", background: "var(--border-color)" }}></div>
-                <div style={{ flex: 1, textAlign: "center" }}>
-                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#EF4444" }}>{modalCounts.absent}</div>
-                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600 }}>Absent</div>
+                <div className="spreadsheet-stat">
+                  <div className="spreadsheet-stat-value" style={{ color: "#EF4444" }}>{modalCounts.absent}</div>
+                  <div className="spreadsheet-stat-label">Absent</div>
                 </div>
               </div>
 
-              {/* Attendance Rules Info */}
-              <div style={{
-                display: "flex", gap: "6px", marginBottom: "16px", flexWrap: "wrap",
-                padding: "10px 12px", borderRadius: "8px",
-                background: "#F0FDF4", border: "1px solid #BBF7D0",
-                fontSize: "0.7rem", color: "#15803D",
-              }}>
-                <span style={{ fontWeight: 700 }}>Rules:</span>
-                <span>Present = on time</span>
+              {/* Rules */}
+              <div className="spreadsheet-rules">
+                <strong>Rules:</strong>
+                <span>✅ Present = on time</span>
                 <span>•</span>
                 <span>Late = 1–15 min</span>
                 <span>•</span>
                 <span>Absent = after 30 min</span>
               </div>
 
-              {/* Tab switcher inside modal */}
+              {/* Tabs */}
               {(isActive || hasPreviousSessions) && (
-                <div style={{
-                  display: "flex", gap: "4px", marginBottom: "16px",
-                  background: "var(--bg-body)", borderRadius: "10px", padding: "4px",
-                  border: "1px solid var(--border-light)",
-                }}>
+                <div className="spreadsheet-tabs">
                   <button
+                    className={`spreadsheet-tab ${tab === "current" ? "active" : ""}`}
                     onClick={() => setClassListModal((prev) => ({ ...prev, tab: "current" }))}
-                    style={{
-                      flex: 1, padding: "8px 12px", borderRadius: "8px", border: "none",
-                      background: tab === "current" ? "var(--primary)" : "transparent",
-                      color: tab === "current" ? "white" : "var(--text-secondary)",
-                      fontWeight: 600, fontSize: "0.78rem", cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
                   >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle", marginRight: "5px" }}>
+                      <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
                     Current Session
                   </button>
                   <button
+                    className={`spreadsheet-tab ${tab === "previous" ? "active" : ""}`}
                     onClick={() => setClassListModal((prev) => ({ ...prev, tab: "previous" }))}
-                    style={{
-                      flex: 1, padding: "8px 12px", borderRadius: "8px", border: "none",
-                      background: tab === "previous" ? "var(--primary)" : "transparent",
-                      color: tab === "previous" ? "white" : "var(--text-secondary)",
-                      fontWeight: 600, fontSize: "0.78rem", cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
                   >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle", marginRight: "5px" }}>
+                      <polyline points="1 4 1 10 7 10"></polyline>
+                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                    </svg>
                     Previous Sessions
                   </button>
                 </div>
               )}
 
-              {/* Current Session Tab Content */}
-              {tab === "current" && (
-                <div>
-                  {!isActive && !liveSessionDocId ? (
-                    <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                      No active session. Start a session to see the current class list.
-                    </div>
-                  ) : (
-                    <table className="data-table" style={{ fontSize: "0.82rem" }}>
-                      <thead>
-                        <tr>
-                          <th>Student Name</th>
-                          <th>Time-In</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {modalClassList.length === 0 ? (
-                          <tr>
-                            <td colSpan="3" style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px" }}>
-                              No students enrolled yet.
-                            </td>
-                          </tr>
-                        ) : (
-                          modalClassList.map((student) => (
-                            <tr key={student.id}>
-                              <td style={{ fontWeight: 600 }}>{student.name}</td>
-                              <td style={{ color: "var(--text-muted)" }}>{student.time}</td>
-                              <td>
-                                <span
-                                  style={{
-                                    fontSize: "0.7rem",
-                                    background: student.status === "Present" ? "#ECFDF5"
-                                      : student.status === "Late" ? "#FFFBEB"
-                                        : student.status === "Absent" ? "#FEF2F2"
-                                          : "#F3F4F6",
-                                    color: student.status === "Present" ? "#047857"
-                                      : student.status === "Late" ? "#B45309"
-                                        : student.status === "Absent" ? "#991B1B"
-                                          : "#9CA3AF",
-                                    padding: "3px 10px",
-                                    borderRadius: "12px",
-                                    fontWeight: 600,
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                  }}
-                                >
-                                  <span style={{
-                                    width: "6px", height: "6px", borderRadius: "50%", display: "inline-block",
-                                    background: student.status === "Present" ? "#10B981"
-                                      : student.status === "Late" ? "#F59E0B"
-                                        : student.status === "Absent" ? "#EF4444"
-                                          : "#9CA3AF",
-                                  }}></span>
-                                  {student.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              )}
-
-              {/* Previous Sessions Tab Content */}
-              {tab === "previous" && (
-                <div>
-                  {!hasPreviousSessions ? (
-                    <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                      No previous sessions today.
-                    </div>
-                  ) : (
-                    Object.entries(previousGroups).map(([sessId, sessRecords], idx) => (
-                      <div key={sessId} style={{ marginBottom: "16px" }}>
-                        <div style={{
-                          display: "flex", alignItems: "center", gap: "8px",
-                          marginBottom: "8px", padding: "8px 12px",
-                          background: "var(--bg-body)", borderRadius: "8px",
-                          border: "1px solid var(--border-light)",
-                        }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                          <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)" }}>
-                            Session {idx + 1}
-                          </span>
-                          <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                            • {sessRecords.length} record(s)
-                          </span>
+              {/* Scrollable body */}
+              <div className="spreadsheet-body">
+                {/* Current Session */}
+                {tab === "current" && (
+                  <>
+                    {!isActive && !liveSessionDocId ? (
+                      <div className="spreadsheet-empty">
+                        <div className="spreadsheet-empty-icon">
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                          </svg>
                         </div>
-                        <table className="data-table" style={{ fontSize: "0.82rem" }}>
-                          <thead>
-                            <tr>
-                              <th>Student Name</th>
-                              <th>Time-In</th>
-                              <th>Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {sessRecords.map((r) => (
-                              <tr key={r.id}>
-                                <td style={{ fontWeight: 600 }}>{r.name}</td>
-                                <td style={{ color: "var(--text-muted)" }}>{r.time}</td>
-                                <td>
-                                  <span style={{
-                                    fontSize: "0.7rem",
-                                    background: r.status === "Present" ? "#ECFDF5"
-                                      : r.status === "Late" ? "#FFFBEB"
-                                        : r.status === "Absent" ? "#FEF2F2" : "#F3F4F6",
-                                    color: r.status === "Present" ? "#047857"
-                                      : r.status === "Late" ? "#B45309"
-                                        : r.status === "Absent" ? "#991B1B" : "#9CA3AF",
-                                    padding: "3px 10px", borderRadius: "12px", fontWeight: 600,
-                                    display: "inline-flex", alignItems: "center", gap: "4px",
-                                  }}>
-                                    <span style={{
-                                      width: "6px", height: "6px", borderRadius: "50%",
-                                      display: "inline-block",
-                                      background: r.status === "Present" ? "#10B981"
-                                        : r.status === "Late" ? "#F59E0B"
-                                          : r.status === "Absent" ? "#EF4444" : "#9CA3AF",
-                                    }}></span>
-                                    {r.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        No active session. Start a session to see the current class list.
                       </div>
-                    ))
-                  )}
-                </div>
-              )}
+                    ) : (
+                      renderTable(modalClassList, true)
+                    )}
+                  </>
+                )}
 
-              {/* Close button at bottom */}
-              <button
-                onClick={() => setClassListModal(null)}
-                className="btn btn-purple"
-                style={{
-                  width: "100%",
-                  justifyContent: "center",
-                  marginTop: "20px",
-                }}
-              >
+                {/* Previous Sessions */}
+                {tab === "previous" && (
+                  <>
+                    {!hasPreviousSessions ? (
+                      <div className="spreadsheet-empty">
+                        <div className="spreadsheet-empty-icon">
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="1 4 1 10 7 10"></polyline>
+                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                          </svg>
+                        </div>
+                        No previous sessions today.
+                      </div>
+                    ) : (
+                      Object.entries(previousGroups).map(([sessId, sessRecords], idx) => (
+                        <div key={sessId} className="spreadsheet-session-group">
+                          <div className="spreadsheet-session-header">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10"></circle>
+                              <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span className="spreadsheet-session-label">Session {idx + 1}</span>
+                            <span className="spreadsheet-session-count">• {sessRecords.length} record(s)</span>
+                          </div>
+                          {renderTable(sessRecords, false)}
+                        </div>
+                      ))
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Close button */}
+              <button className="spreadsheet-close-btn" onClick={() => setClassListModal(null)}>
                 Close
               </button>
             </div>
