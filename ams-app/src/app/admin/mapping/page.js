@@ -15,7 +15,8 @@ export default function AdminMapping() {
     section: "",
     subject: "",
     days: [],
-    time: "",
+    timeStart: "",
+    timeEnd: "",
     room: "",
   });
 
@@ -64,6 +65,15 @@ export default function AdminMapping() {
     }));
   };
 
+  // Format 24h time ("09:30") to 12h ("9:30 AM")
+  const formatTimeTo12h = (time24) => {
+    if (!time24) return "";
+    const [h, m] = time24.split(":").map(Number);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${h12}:${m.toString().padStart(2, "0")} ${ampm}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -72,6 +82,14 @@ export default function AdminMapping() {
       return;
     }
 
+    if (!formData.timeStart || !formData.timeEnd) {
+      alert("Please set both start and end time for the schedule.");
+      return;
+    }
+
+    // Format time as "HH:MM AM - HH:MM PM" for consistent storage
+    const formattedTime = `${formatTimeTo12h(formData.timeStart)} - ${formatTimeTo12h(formData.timeEnd)}`;
+
     const newMapping = {
       teacherId: formData.teacherId,
       teacher: formData.teacherName,
@@ -79,7 +97,7 @@ export default function AdminMapping() {
       subject: formData.subject,
       schedule: {
         days: formData.days,
-        time: formData.time,
+        time: formattedTime,
       },
       room: formData.room,
       students: [],
@@ -93,7 +111,7 @@ export default function AdminMapping() {
       setMappings([...mappings, { id: `local-${Date.now()}`, ...newMapping }]);
     }
 
-    setFormData({ teacherId: "", teacherName: "", section: "", subject: "", days: [], time: "", room: "" });
+    setFormData({ teacherId: "", teacherName: "", section: "", subject: "", days: [], timeStart: "", timeEnd: "", room: "" });
     alert("Mapping Successful: Teacher has been assigned to the section!");
   };
 
@@ -195,13 +213,23 @@ export default function AdminMapping() {
             </div>
 
             <div className="form-group">
-              <label>Time</label>
+              <label>Start Time</label>
               <input
-                type="text"
+                type="time"
                 className="form-control"
-                placeholder="e.g. 7:30 AM - 9:00 AM"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                value={formData.timeStart}
+                onChange={(e) => setFormData({ ...formData, timeStart: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>End Time</label>
+              <input
+                type="time"
+                className="form-control"
+                value={formData.timeEnd}
+                onChange={(e) => setFormData({ ...formData, timeEnd: e.target.value })}
                 required
               />
             </div>

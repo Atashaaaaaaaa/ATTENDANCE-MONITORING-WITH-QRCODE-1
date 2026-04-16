@@ -5,41 +5,64 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { loadModels, getDescriptor, compareDescriptors, areModelsLoaded } from "@/lib/faceService";
 
+// Parse a single time string into minutes since midnight
+// Supports: "7:30 AM", "9:00 PM", "07:30", "14:30", "7:30AM"
+function parseSingleTime(t) {
+  if (!t) return null;
+  t = t.trim();
+  
+  // Try 12-hour format: "7:30 AM", "7:30AM", "7:30 am"
+  const match12 = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (match12) {
+    let h = parseInt(match12[1]);
+    const m = parseInt(match12[2]);
+    const ampm = match12[3].toUpperCase();
+    if (ampm === "PM" && h !== 12) h += 12;
+    if (ampm === "AM" && h === 12) h = 0;
+    return h * 60 + m;
+  }
+  
+  // Try 24-hour format: "07:30", "14:30"
+  const match24 = t.match(/^(\d{1,2}):(\d{2})$/);
+  if (match24) {
+    const h = parseInt(match24[1]);
+    const m = parseInt(match24[2]);
+    if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+      return h * 60 + m;
+    }
+  }
+  
+  return null;
+}
+
 // Parse schedule time string like "7:30 AM - 9:00 AM" into { startMinutes, endMinutes }
 function parseScheduleTime(timeStr) {
   if (!timeStr) return null;
   const parts = timeStr.split("-").map((s) => s.trim());
   if (parts.length < 2) return null;
 
-  const parseTime = (t) => {
-    const match = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-    if (!match) return null;
-    let h = parseInt(match[1]);
-    const m = parseInt(match[2]);
-    const ampm = match[3].toUpperCase();
-    if (ampm === "PM" && h !== 12) h += 12;
-    if (ampm === "AM" && h === 12) h = 0;
-    return h * 60 + m;
-  };
-
-  const start = parseTime(parts[0]);
-  const end = parseTime(parts[1]);
+  const start = parseSingleTime(parts[0]);
+  const end = parseSingleTime(parts[1]);
   if (start === null || end === null) return null;
   return { startMinutes: start, endMinutes: end };
 }
 
 // Determine attendance status based on scan time and schedule
+// Present: scanned before or within 15 min grace period after start
+// Late: scanned after grace period but before class end
+// Absent: scanned after class end time
 function determineStatus(scanDate, scheduleTime) {
   if (!scheduleTime) return "Present";
   const parsed = parseScheduleTime(scheduleTime);
   if (!parsed) return "Present";
 
   const scanMinutes = scanDate.getHours() * 60 + scanDate.getMinutes();
-  const lateThreshold = parsed.startMinutes + 15; // 15 min grace period
+  const graceMinutes = 15; // configurable grace period
+  const lateThreshold = parsed.startMinutes + graceMinutes;
 
   if (scanMinutes <= lateThreshold) return "Present";
   if (scanMinutes <= parsed.endMinutes) return "Late";
-  return "Absent"; // If scanned after class end time, mark as Absent
+  return "Absent";
 }
 
 export default function StudentAttendance() {
@@ -315,7 +338,7 @@ export default function StudentAttendance() {
     setCameraError(null);
   }, [stopCamera]);
 
-  // Capture face, verify identity, & mark attendance
+  // Capture face, verify identity with liveness detection, & mark attendance
   const captureFace = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || !activeSubject) return;
 
@@ -324,10 +347,6 @@ export default function StudentAttendance() {
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
 
     // Step 1: Check if student has registered their face
     if (!registeredDescriptor || registeredDescriptor.length === 0) {
@@ -343,26 +362,125 @@ export default function StudentAttendance() {
       return;
     }
 
-    // Step 3: Detect face and extract descriptor from the captured frame
-    let capturedDescriptor;
-    try {
-      capturedDescriptor = await getDescriptor(canvas);
-    } catch (err) {
-      console.error('Face detection error:', err);
+    // Step 3: Liveness detection — capture multiple frames to verify it's a live person
+    setVerificationMessage({ type: 'info', text: 'Verifying liveness... Please hold still and look at the camera.' });
+
+    const LIVENESS_FRAMES = 3;
+    const FRAME_DELAY = 600; // ms between frames
+    const frames = [];
+
+    for (let i = 0; i < LIVENESS_FRAMES; i++) {
+      if (i > 0) await new Promise((r) => setTimeout(r, FRAME_DELAY));
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = video.videoWidth;
+      tempCanvas.height = video.videoHeight;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(video, 0, 0);
+
+      try {
+        const faceapi = (await import('face-api.js')).default || await import('face-api.js');
+        const detection = await faceapi
+          .detectSingleFace(tempCanvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 }))
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+
+        if (!detection) {
+          setVerifying(false);
+          setVerificationMessage({ type: 'error', text: `No face detected in frame ${i + 1}. Please position your face clearly and try again.` });
+          return;
+        }
+
+        frames.push({
+          descriptor: detection.descriptor,
+          landmarks: detection.landmarks,
+          detection: detection.detection,
+          canvas: tempCanvas,
+        });
+      } catch (err) {
+        console.error('Liveness frame detection error:', err);
+        setVerifying(false);
+        setVerificationMessage({ type: 'error', text: 'Face detection failed. Please try again.' });
+        return;
+      }
+    }
+
+    // Step 4: Analyze liveness — check for natural micro-movements between frames
+    let livenessScore = 0;
+    const landmarkPositions = frames.map((f) => {
+      const nose = f.landmarks.getNose();
+      const leftEye = f.landmarks.getLeftEye();
+      const rightEye = f.landmarks.getRightEye();
+      return {
+        noseX: nose[3]?.x || 0, noseY: nose[3]?.y || 0,
+        leftEyeX: leftEye[0]?.x || 0, leftEyeY: leftEye[0]?.y || 0,
+        rightEyeX: rightEye[3]?.x || 0, rightEyeY: rightEye[3]?.y || 0,
+      };
+    });
+
+    // 4a: Check landmark movement between frames (natural head micro-movements)
+    let totalMovement = 0;
+    for (let i = 1; i < landmarkPositions.length; i++) {
+      const prev = landmarkPositions[i - 1];
+      const curr = landmarkPositions[i];
+      const noseMove = Math.sqrt(Math.pow(curr.noseX - prev.noseX, 2) + Math.pow(curr.noseY - prev.noseY, 2));
+      const eyeMove = Math.sqrt(Math.pow(curr.leftEyeX - prev.leftEyeX, 2) + Math.pow(curr.leftEyeY - prev.leftEyeY, 2));
+      totalMovement += noseMove + eyeMove;
+    }
+    // Live faces have tiny natural movements (0.5-20px range); photos have ~0 movement
+    if (totalMovement > 0.3) livenessScore += 40;
+    if (totalMovement > 1.0) livenessScore += 20;
+
+    // 4b: Check face region texture variance (photos/screens have less variance)
+    const analyzeTexture = (cvs) => {
+      const ctx = cvs.getContext('2d');
+      const box = frames[0].detection.box;
+      const x = Math.max(0, Math.round(box.x));
+      const y = Math.max(0, Math.round(box.y));
+      const w = Math.min(Math.round(box.width), cvs.width - x);
+      const h = Math.min(Math.round(box.height), cvs.height - y);
+      if (w <= 0 || h <= 0) return 0;
+      const imageData = ctx.getImageData(x, y, w, h);
+      const pixels = imageData.data;
+      let sum = 0, sumSq = 0, count = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        const gray = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+        sum += gray;
+        sumSq += gray * gray;
+        count++;
+      }
+      const mean = sum / count;
+      return Math.sqrt(sumSq / count - mean * mean);
+    };
+
+    const textureVar = analyzeTexture(frames[0].canvas);
+    // Real faces typically have texture variance > 30; flat screens/photos often < 25
+    if (textureVar > 25) livenessScore += 20;
+    if (textureVar > 35) livenessScore += 10;
+
+    // 4c: Cross-frame descriptor consistency (all frames should be the same person)
+    let descriptorsConsistent = true;
+    for (let i = 1; i < frames.length; i++) {
+      const dist = compareDescriptors(frames[0].descriptor, frames[i].descriptor);
+      if (dist > 0.35) { // Very tight — should be essentially the same face across frames
+        descriptorsConsistent = false;
+        break;
+      }
+    }
+    if (descriptorsConsistent) livenessScore += 10;
+
+    // Liveness threshold: must score at least 40 out of 100
+    const LIVENESS_THRESHOLD = 40;
+    if (livenessScore < LIVENESS_THRESHOLD) {
       setVerifying(false);
-      setVerificationMessage({ type: 'error', text: 'Face detection failed. Please try again.' });
+      setVerificationMessage({ type: 'error', text: 'Liveness check failed. Please make sure you are using a live camera (not a photo or screen). Try moving your head slightly.' });
       return;
     }
 
-    if (!capturedDescriptor) {
-      setVerifying(false);
-      setVerificationMessage({ type: 'error', text: 'No face detected in the frame. Please position your face clearly and try again.' });
-      return;
-    }
-
-    // Step 4: Compare captured descriptor with registered descriptor
+    // Step 5: Compare the best frame descriptor with registered descriptor
+    const capturedDescriptor = frames[0].descriptor;
     const distance = compareDescriptors(capturedDescriptor, registeredDescriptor);
-    const MATCH_THRESHOLD = 0.6; // lower = stricter
+    const MATCH_THRESHOLD = 0.5; // tighter than default 0.6
 
     if (distance > MATCH_THRESHOLD) {
       setVerifying(false);
@@ -370,7 +488,7 @@ export default function StudentAttendance() {
       return;
     }
 
-    // Step 5: Face verified! Capture snapshot and mark attendance
+    // Step 6: Face verified! Capture snapshot and mark attendance
     const subject = subjects.find((s) => s.id === activeSubject);
     const now = new Date();
     const today = now.toISOString().split("T")[0];
@@ -379,10 +497,10 @@ export default function StudentAttendance() {
     const scheduleTime = session?.scheduleTime || subject?.scheduleTime;
     const status = determineStatus(now, scheduleTime);
 
-    // Capture face snapshot from canvas as compressed JPEG data URL
+    // Capture face snapshot from the liveness frame as compressed JPEG
     let faceSnapshot = "";
     try {
-      faceSnapshot = canvas.toDataURL("image/jpeg", 0.6);
+      faceSnapshot = frames[0].canvas.toDataURL("image/jpeg", 0.6);
     } catch (e) {
       // snapshot capture failed — continue without it
     }
