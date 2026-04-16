@@ -149,6 +149,18 @@ export default function AdminUsers() {
     setFormError("");
     setSubmitting(true);
 
+    const nameRegex = /^[A-Za-z\s'\-]+$/;
+    if (!nameRegex.test(formData.firstName.trim())) {
+      setFormError("First name can only contain letters, spaces.");
+      setSubmitting(false);
+      return;
+    }
+    if (!nameRegex.test(formData.lastName.trim())) {
+      setFormError("Last name can only contain letters, spaces.");
+      setSubmitting(false);
+      return;
+    }
+
     const defaultPassword = generatePassword();
     // Store role as lowercase to match login routing ("teacher", "student")
     const roleLower = formData.role.toLowerCase();
@@ -485,6 +497,7 @@ export default function AdminUsers() {
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 required
               >
+                <option value="" disabled hidden>Select Role</option>
                 <option value="Teacher">Teacher</option>
                 <option value="Student">Student</option>
               </select>
@@ -542,7 +555,7 @@ export default function AdminUsers() {
                     fontWeight: 500,
                   }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> {formError}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '5px' }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> {formError}
                 </div>
               )}
               <button type="submit" className="btn btn-purple" disabled={submitting}>
@@ -663,7 +676,7 @@ export default function AdminUsers() {
               }}
             >
               <div style={{ fontSize: "0.75rem", opacity: 0.8, marginBottom: "6px" }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Default Password
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Default Password
               </div>
               <div
                 style={{
@@ -698,7 +711,7 @@ export default function AdminUsers() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {copied ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!</> : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg> Copy</>}
+                  {copied ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!</> : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg> Copy</>}
                 </button>
               </div>
             </div>
@@ -822,259 +835,259 @@ export default function AdminUsers() {
         {/* ── Existing Profiles Tab ── */}
         {activeTab === "existing" && (
           <>
-        <div className="card-header" style={{ flexWrap: "wrap", gap: "12px", borderTop: "none" }}>
-          <div className="card-title" style={{ fontSize: "0" }}></div>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
-            {/* Role filter */}
-            <select
-              className="form-select"
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              style={{
-                width: "150px",
-                padding: "8px 12px",
-                fontSize: "0.85rem",
-                borderRadius: "var(--radius-sm)",
-              }}
-            >
-              <option value="All">All Roles</option>
-              {uniqueRoles.map((r) => (
-                <option key={r} value={r}>
-                  {displayRole(r)}
-                </option>
-              ))}
-            </select>
-
-            {/* Section filter */}
-            <select
-              className="form-select"
-              value={sectionFilter}
-              onChange={(e) => setSectionFilter(e.target.value)}
-              style={{
-                width: "160px",
-                padding: "8px 12px",
-                fontSize: "0.85rem",
-                borderRadius: "var(--radius-sm)",
-              }}
-            >
-              <option value="All">All Sections</option>
-              {uniqueSections.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-
-            {/* Search */}
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search by name, email or ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ width: "260px" }}
-            />
-          </div>
-        </div>
-
-        {/* Active filter chips */}
-        {(roleFilter !== "All" || sectionFilter !== "All") && (
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              padding: "0 24px 16px",
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Filters:</span>
-            {roleFilter !== "All" && (
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "4px 12px",
-                  background: "var(--accent-soft)",
-                  color: "var(--primary-dark)",
-                  borderRadius: "var(--radius-full)",
-                  fontSize: "0.8rem",
-                  fontWeight: 600,
-                }}
-              >
-                Role: {displayRole(roleFilter)}
-                <button
-                  onClick={() => setRoleFilter("All")}
+            <div className="card-header" style={{ flexWrap: "wrap", gap: "12px", borderTop: "none" }}>
+              <div className="card-title" style={{ fontSize: "0" }}></div>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+                {/* Role filter */}
+                <select
+                  className="form-select"
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
                   style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
+                    width: "150px",
+                    padding: "8px 12px",
                     fontSize: "0.85rem",
-                    color: "var(--primary-dark)",
-                    padding: 0,
-                    lineHeight: 1,
+                    borderRadius: "var(--radius-sm)",
                   }}
                 >
-                  ✕
-                </button>
-              </span>
-            )}
-            {sectionFilter !== "All" && (
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "4px 12px",
-                  background: "var(--info-bg)",
-                  color: "var(--info)",
-                  borderRadius: "var(--radius-full)",
-                  fontSize: "0.8rem",
-                  fontWeight: 600,
-                }}
-              >
-                Section: {sectionFilter}
-                <button
-                  onClick={() => setSectionFilter("All")}
+                  <option value="All">All Roles</option>
+                  {uniqueRoles.map((r) => (
+                    <option key={r} value={r}>
+                      {displayRole(r)}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Section filter */}
+                <select
+                  className="form-select"
+                  value={sectionFilter}
+                  onChange={(e) => setSectionFilter(e.target.value)}
                   style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
+                    width: "160px",
+                    padding: "8px 12px",
                     fontSize: "0.85rem",
-                    color: "var(--info)",
-                    padding: 0,
-                    lineHeight: 1,
+                    borderRadius: "var(--radius-sm)",
                   }}
                 >
-                  ✕
-                </button>
-              </span>
-            )}
-            <button
-              onClick={() => {
-                setRoleFilter("All");
-                setSectionFilter("All");
-              }}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "0.8rem",
-                color: "var(--danger)",
-                fontWeight: 600,
-                padding: "4px 8px",
-              }}
-            >
-              Clear all
-            </button>
-          </div>
-        )}
+                  <option value="All">All Sections</option>
+                  {uniqueSections.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
 
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>User ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Section</th>
-              <th>Department</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.length === 0 ? (
-              <tr>
-                <td colSpan="8" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
-                  {users.length === 0
-                    ? "No users registered yet. Add users using the form above."
-                    : "No users match the current filters."}
-                </td>
-              </tr>
-            ) : (
-              filteredUsers.map((user) => (
-                <tr key={user.id}>
-                  <td style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
-                    {user.id.length > 10 ? user.id.slice(0, 10) + "…" : user.id}
-                  </td>
-                  <td style={{ fontWeight: 600 }}>{user.name || user.fullName}</td>
-                  <td style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{user.email}</td>
-                  <td>
-                    <span
+                {/* Search */}
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search by name, email or ID..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ width: "260px" }}
+                />
+              </div>
+            </div>
+
+            {/* Active filter chips */}
+            {(roleFilter !== "All" || sectionFilter !== "All") && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "8px",
+                  padding: "0 24px 16px",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Filters:</span>
+                {roleFilter !== "All" && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "4px 12px",
+                      background: "var(--accent-soft)",
+                      color: "var(--primary-dark)",
+                      borderRadius: "var(--radius-full)",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Role: {displayRole(roleFilter)}
+                    <button
+                      onClick={() => setRoleFilter("All")}
                       style={{
-                        display: "inline-block",
-                        padding: "3px 10px",
-                        borderRadius: "var(--radius-full)",
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        background:
-                          user.role === "teacher" || user.role === "Teacher"
-                            ? "var(--info-bg)"
-                            : user.role === "student" || user.role === "Student"
-                            ? "var(--accent-soft)"
-                            : "var(--warning-bg)",
-                        color:
-                          user.role === "teacher" || user.role === "Teacher"
-                            ? "var(--info)"
-                            : user.role === "student" || user.role === "Student"
-                            ? "var(--primary)"
-                            : "var(--warning)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        color: "var(--primary-dark)",
+                        padding: 0,
+                        lineHeight: 1,
                       }}
                     >
-                      {displayRole(user.role)}
-                    </span>
-                  </td>
-                  <td>{user.section || "—"}</td>
-                  <td>{user.department || "—"}</td>
-                  <td>
-                    <span className={`status-badge ${user.status || "active"}`}>
-                      <span className="status-dot"></span>
-                      {(user.status || "active").charAt(0).toUpperCase() + (user.status || "active").slice(1)}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <button className="btn btn-green btn-sm" onClick={() => handleEdit(user)}>Edit</button>
-                      <button
-                        className="btn btn-sm"
-                        onClick={() => handleArchive(user.id)}
-                        style={{
-                          background: "var(--warning-bg)",
-                          color: "var(--warning)",
-                          border: "1px solid var(--warning)",
-                          fontWeight: 600,
-                        }}
-                      >
-                        Archive
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                      ✕
+                    </button>
+                  </span>
+                )}
+                {sectionFilter !== "All" && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "4px 12px",
+                      background: "var(--info-bg)",
+                      color: "var(--info)",
+                      borderRadius: "var(--radius-full)",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Section: {sectionFilter}
+                    <button
+                      onClick={() => setSectionFilter("All")}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        color: "var(--info)",
+                        padding: 0,
+                        lineHeight: 1,
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    setRoleFilter("All");
+                    setSectionFilter("All");
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "0.8rem",
+                    color: "var(--danger)",
+                    fontWeight: 600,
+                    padding: "4px 8px",
+                  }}
+                >
+                  Clear all
+                </button>
+              </div>
             )}
-          </tbody>
-        </table>
 
-        {/* Results count */}
-        <div
-          style={{
-            padding: "12px 24px",
-            borderTop: "1px solid var(--border-light)",
-            fontSize: "0.82rem",
-            color: "var(--text-muted)",
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <span>
-            Showing {filteredUsers.length} of {activeUsers.length} active user{activeUsers.length !== 1 ? "s" : ""}
-          </span>
-          {(roleFilter !== "All" || sectionFilter !== "All" || searchQuery) && (
-            <span style={{ color: "var(--primary)", fontWeight: 600 }}>Filtered</span>
-          )}
-        </div>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>User ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Section</th>
+                  <th>Department</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                      {users.length === 0
+                        ? "No users registered yet. Add users using the form above."
+                        : "No users match the current filters."}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
+                        {user.id.length > 10 ? user.id.slice(0, 10) + "…" : user.id}
+                      </td>
+                      <td style={{ fontWeight: 600 }}>{user.name || user.fullName}</td>
+                      <td style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{user.email}</td>
+                      <td>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "3px 10px",
+                            borderRadius: "var(--radius-full)",
+                            fontSize: "0.78rem",
+                            fontWeight: 600,
+                            background:
+                              user.role === "teacher" || user.role === "Teacher"
+                                ? "var(--info-bg)"
+                                : user.role === "student" || user.role === "Student"
+                                  ? "var(--accent-soft)"
+                                  : "var(--warning-bg)",
+                            color:
+                              user.role === "teacher" || user.role === "Teacher"
+                                ? "var(--info)"
+                                : user.role === "student" || user.role === "Student"
+                                  ? "var(--primary)"
+                                  : "var(--warning)",
+                          }}
+                        >
+                          {displayRole(user.role)}
+                        </span>
+                      </td>
+                      <td>{user.section || "—"}</td>
+                      <td>{user.department || "—"}</td>
+                      <td>
+                        <span className={`status-badge ${user.status || "active"}`}>
+                          <span className="status-dot"></span>
+                          {(user.status || "active").charAt(0).toUpperCase() + (user.status || "active").slice(1)}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button className="btn btn-green btn-sm" onClick={() => handleEdit(user)}>Edit</button>
+                          <button
+                            className="btn btn-sm"
+                            onClick={() => handleArchive(user.id)}
+                            style={{
+                              background: "var(--warning-bg)",
+                              color: "var(--warning)",
+                              border: "1px solid var(--warning)",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Archive
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            {/* Results count */}
+            <div
+              style={{
+                padding: "12px 24px",
+                borderTop: "1px solid var(--border-light)",
+                fontSize: "0.82rem",
+                color: "var(--text-muted)",
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              <span>
+                Showing {filteredUsers.length} of {activeUsers.length} active user{activeUsers.length !== 1 ? "s" : ""}
+              </span>
+              {(roleFilter !== "All" || sectionFilter !== "All" || searchQuery) && (
+                <span style={{ color: "var(--primary)", fontWeight: 600 }}>Filtered</span>
+              )}
+            </div>
           </>
         )}
 
@@ -1393,7 +1406,7 @@ export default function AdminUsers() {
                   fontWeight: 500,
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> {editError}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '5px' }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> {editError}
               </div>
             )}
             {editSuccess && (
@@ -1409,7 +1422,7 @@ export default function AdminUsers() {
                   fontWeight: 500,
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '5px'}}><polyline points="20 6 9 17 4 12"></polyline></svg> {editSuccess}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '5px' }}><polyline points="20 6 9 17 4 12"></polyline></svg> {editSuccess}
               </div>
             )}
 
@@ -1449,7 +1462,7 @@ export default function AdminUsers() {
                   marginBottom: "8px",
                 }}
               >
-                {resetSending ? "Generating..." : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A5D6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '5px'}}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Generate New Password</>}
+                {resetSending ? "Generating..." : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A5D6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Generate New Password</>}
               </button>
 
               {/* Show generated password */}
@@ -1464,7 +1477,7 @@ export default function AdminUsers() {
                   }}
                 >
                   <div style={{ fontSize: "0.75rem", opacity: 0.8, marginBottom: "6px" }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A5D6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> New Password
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A5D6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> New Password
                   </div>
                   <div
                     style={{
@@ -1502,7 +1515,7 @@ export default function AdminUsers() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {resetCopied ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A5D6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!</> : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A5D6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg> Copy</>}
+                      {resetCopied ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A5D6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!</> : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A5D6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg> Copy</>}
                     </button>
                   </div>
                   <p

@@ -72,7 +72,23 @@ export const AuthProvider = ({ children }) => {
             }
             setUser(currentUser)
             setUserRole(data.role)
-            setUserData(data)
+
+            // Merge data from role-specific collection to get section/department/faceDescriptor
+            let mergedData = { ...data }
+            try {
+              const roleCol = data.role === 'teacher' ? 'teachers' : 'students'
+              const roleSnap = await getDoc(doc(db, roleCol, currentUser.uid))
+              if (roleSnap.exists()) {
+                const roleData = roleSnap.data()
+                // Merge missing fields from role collection
+                if (!mergedData.section && roleData.section) mergedData.section = roleData.section
+                if (!mergedData.department && roleData.department) mergedData.department = roleData.department
+                if (!mergedData.faceDescriptor && roleData.faceDescriptor) mergedData.faceDescriptor = roleData.faceDescriptor
+              }
+            } catch (e) {
+              // silent — role doc might not exist
+            }
+            setUserData(mergedData)
           } else {
             // Also check role-specific collections as fallback
             let isArchived = false
