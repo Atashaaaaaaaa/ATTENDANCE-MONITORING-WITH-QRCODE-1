@@ -62,6 +62,8 @@ export default function TeacherDashboard() {
   const [expandedSession, setExpandedSession] = useState(null);
   // Session metadata cache: { sessionId: { date, startTime, createdAt, ... } }
   const [sessionMeta, setSessionMeta] = useState({});
+  // Face preview modal state: { studentId, name, hasFace, status, email }
+  const [facePreviewStudent, setFacePreviewStudent] = useState(null);
 
   // Fetch teacher's assigned sections from Firestore
   useEffect(() => {
@@ -115,6 +117,7 @@ export default function TeacherDashboard() {
                 name: data.fullName || data.name || data.email || "Unknown",
                 email: data.email || "",
                 section: data.section || "",
+                hasFace: !!(data.faceDescriptor && data.faceDescriptor.length > 0),
               };
             }
           });
@@ -128,6 +131,7 @@ export default function TeacherDashboard() {
                 name: data.fullName || data.name || data.email || "Unknown",
                 email: data.email || "",
                 section: data.section || "",
+                hasFace: !!(data.faceDescriptor && data.faceDescriptor.length > 0),
               };
             }
           });
@@ -371,6 +375,7 @@ export default function TeacherDashboard() {
         id: sid,
         name: student?.name || sid,
         email: student?.email || "",
+        hasFace: student?.hasFace || false,
         status: record?.status || "No Record",
         time: record?.time || "—",
       };
@@ -834,6 +839,7 @@ export default function TeacherDashboard() {
           <div className="spreadsheet-table-wrap">
             <table className="spreadsheet-table">
               <colgroup>
+                <col className="col-face" />
                 <col className="col-num" />
                 <col className="col-name" />
                 <col className="col-time" />
@@ -841,6 +847,7 @@ export default function TeacherDashboard() {
               </colgroup>
               <thead>
                 <tr>
+                  <th className="face-col-header">Face</th>
                   <th>#</th>
                   <th>Name</th>
                   <th>Time In</th>
@@ -850,7 +857,7 @@ export default function TeacherDashboard() {
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px" }}>
+                    <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "24px" }}>
                       No students enrolled yet.
                     </td>
                   </tr>
@@ -862,9 +869,32 @@ export default function TeacherDashboard() {
                     const displayTime = formatFullDateTime(rawTime, sessionDate);
                     const status = student.status || "No Record";
                     const sid = student.id || student.studentId || idx;
+                    const hasFace = student.hasFace || (enrolledStudents[sid]?.hasFace) || false;
 
                     return (
                       <tr key={sid}>
+                        <td className="face-col-cell">
+                          <button
+                            className="face-avatar-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFacePreviewStudent({
+                                studentId: sid,
+                                name: name,
+                                hasFace: hasFace,
+                                status: status,
+                                email: student.email || enrolledStudents[sid]?.email || "",
+                              });
+                            }}
+                            title={hasFace ? "Face registered — Click to view" : "No face registered"}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                              <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span className={`face-registered-dot ${hasFace ? "registered" : "not-registered"}`}></span>
+                          </button>
+                        </td>
                         <td>{idx + 1}</td>
                         <td>
                           <span className="spreadsheet-name">{name}</span>
@@ -1077,6 +1107,78 @@ export default function TeacherDashboard() {
           </div>
         );
       })()}
+      {/* ── Face Preview Modal ── */}
+      {facePreviewStudent && (
+        <div
+          className="face-preview-overlay"
+          onClick={() => setFacePreviewStudent(null)}
+        >
+          <div className="face-preview-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Close button */}
+            <button className="face-preview-close" onClick={() => setFacePreviewStudent(null)}>
+              ✕
+            </button>
+
+            {/* Avatar area */}
+            <div className={`face-preview-avatar ${facePreviewStudent.hasFace ? "registered" : "not-registered"}`}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                stroke={facePreviewStudent.hasFace ? "#4A7C59" : "#EF4444"}
+                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+
+            {/* Student name */}
+            <div className="face-preview-name">{facePreviewStudent.name}</div>
+
+            {/* Registration status badge */}
+            <div className={`face-preview-status ${facePreviewStudent.hasFace ? "registered" : "not-registered"}`}>
+              <span style={{
+                width: "7px", height: "7px", borderRadius: "50%",
+                background: facePreviewStudent.hasFace ? "#10B981" : "#EF4444",
+                display: "inline-block",
+              }}></span>
+              {facePreviewStudent.hasFace ? "Face Registered" : "Not Registered"}
+            </div>
+
+            {/* Info rows */}
+            <div className="face-preview-info">
+              {facePreviewStudent.email && (
+                <div className="face-preview-info-row">
+                  <span className="label">Email</span>
+                  <span className="value">{facePreviewStudent.email}</span>
+                </div>
+              )}
+              <div className="face-preview-info-row">
+                <span className="label">Attendance</span>
+                <span className="value" style={{
+                  color: facePreviewStudent.status === "Present" ? "#047857"
+                    : facePreviewStudent.status === "Late" ? "#B45309"
+                    : facePreviewStudent.status === "Absent" ? "#991B1B"
+                    : "var(--text-muted)",
+                }}>
+                  {facePreviewStudent.status}
+                </span>
+              </div>
+              <div className="face-preview-info-row">
+                <span className="label">Face Recognition</span>
+                <span className="value" style={{
+                  color: facePreviewStudent.hasFace ? "#047857" : "#991B1B",
+                }}>
+                  {facePreviewStudent.hasFace ? "✓ Active" : "✗ Inactive"}
+                </span>
+              </div>
+            </div>
+
+            {/* Action button */}
+            <button className="face-preview-action-btn" onClick={() => setFacePreviewStudent(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
