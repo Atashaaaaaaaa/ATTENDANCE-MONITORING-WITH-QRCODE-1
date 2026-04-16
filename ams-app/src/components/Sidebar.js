@@ -3,6 +3,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, updateDoc, doc, addDoc } from "firebase/firestore";
 
 const navConfigs = {
   admin: {
@@ -83,7 +85,7 @@ export default function Sidebar({ role, isOpen, onClose }) {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  const { logout } = useAuth();
+  const { logout, user, userRole } = useAuth();
 
   // Track screen size for mobile behavior
   useEffect(() => {
@@ -95,6 +97,77 @@ export default function Sidebar({ role, isOpen, onClose }) {
 
   const handleLogout = async () => {
     try {
+      // If teacher, end all active sessions before logout
+      if (userRole === 'teacher' && user?.uid) {
+        try {
+          const sessionsQuery = query(
+            collection(db, 'sessions'),
+            where('teacherId', '==', user.uid),
+            where('active', '==', true)
+          );
+          const sessionsSnap = await getDocs(sessionsQuery);
+          const now = new Date();
+          const today = now.toISOString().split('T')[0];
+
+          for (const sessionDoc of sessionsSnap.docs) {
+            const sessionData = sessionDoc.data();
+
+            // Mark session as inactive
+            await updateDoc(doc(db, 'sessions', sessionDoc.id), {
+              active: false,
+              endTime: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              endedAt: now.toISOString(),
+            });
+
+            // Mark absent students who didn't attend this session
+            const sectionId = sessionData.sectionId;
+            if (sectionId) {
+              // Get attendance records for this session
+              const attendanceQuery = query(
+                collection(db, 'attendance'),
+                where('sessionId', '==', sessionDoc.id),
+                where('date', '==', today)
+              );
+              const attendanceSnap = await getDocs(attendanceQuery);
+              const presentStudentIds = new Set();
+              attendanceSnap.forEach((d) => presentStudentIds.add(d.data().studentId));
+
+              // Get enrolled students for this section
+              const sectionDocSnap = await getDocs(query(
+                collection(db, 'sections'),
+                where('__name__', '==', sectionId)
+              ));
+              // Fallback: try direct doc get
+              let enrolledStudents = [];
+              if (!sectionDocSnap.empty) {
+                enrolledStudents = sectionDocSnap.docs[0].data().students || [];
+              }
+
+              for (const studentId of enrolledStudents) {
+                if (!presentStudentIds.has(studentId)) {
+                  await addDoc(collection(db, 'attendance'), {
+                    studentId: studentId,
+                    studentName: studentId,
+                    subjectId: sessionData.subjectId || '',
+                    subjectCode: sessionData.subjectCode || '',
+                    sectionId: sectionId,
+                    sessionId: sessionDoc.id,
+                    date: today,
+                    timestamp: now.toISOString(),
+                    timeMarked: '—',
+                    status: 'Absent',
+                    method: 'auto',
+                  });
+                }
+              }
+            }
+          }
+        } catch (sessionErr) {
+          console.error('Error ending sessions on logout:', sessionErr);
+          // Continue with logout even if session cleanup fails
+        }
+      }
+
       await logout();
     } catch (e) {
       // Ignore errors
