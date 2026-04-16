@@ -1009,12 +1009,12 @@ export default function AdminUsers() {
                 ) : (
                   filteredUsers.map((user) => (
                     <tr key={user.id}>
-                      <td style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
+                      <td data-label="User ID" style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
                         {user.id.length > 10 ? user.id.slice(0, 10) + "…" : user.id}
                       </td>
-                      <td style={{ fontWeight: 600 }}>{user.name || user.fullName}</td>
-                      <td style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{user.email}</td>
-                      <td>
+                      <td data-label="Name" style={{ fontWeight: 600 }}>{user.name || user.fullName}</td>
+                      <td data-label="Email" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{user.email}</td>
+                      <td data-label="Role">
                         <span
                           style={{
                             display: "inline-block",
@@ -1039,15 +1039,15 @@ export default function AdminUsers() {
                           {displayRole(user.role)}
                         </span>
                       </td>
-                      <td>{user.section || "—"}</td>
-                      <td>{user.department || "—"}</td>
-                      <td>
+                      <td data-label="Section">{user.section || "—"}</td>
+                      <td data-label="Department">{user.department || "—"}</td>
+                      <td data-label="Status">
                         <span className={`status-badge ${user.status || "active"}`}>
                           <span className="status-dot"></span>
                           {(user.status || "active").charAt(0).toUpperCase() + (user.status || "active").slice(1)}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Action">
                         <div style={{ display: "flex", gap: "8px" }}>
                           <button className="btn btn-green btn-sm" onClick={() => handleEdit(user)}>Edit</button>
                           <button
@@ -1130,12 +1130,12 @@ export default function AdminUsers() {
                 ) : (
                   filteredArchivedUsers.map((user) => (
                     <tr key={user.id} style={{ opacity: 0.85 }}>
-                      <td style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
+                      <td data-label="User ID" style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
                         {user.id.length > 10 ? user.id.slice(0, 10) + "…" : user.id}
                       </td>
-                      <td style={{ fontWeight: 600 }}>{user.name || user.fullName}</td>
-                      <td style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{user.email}</td>
-                      <td>
+                      <td data-label="Name" style={{ fontWeight: 600 }}>{user.name || user.fullName}</td>
+                      <td data-label="Email" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{user.email}</td>
+                      <td data-label="Role">
                         <span
                           style={{
                             display: "inline-block",
@@ -1150,9 +1150,9 @@ export default function AdminUsers() {
                           {displayRole(user.role)}
                         </span>
                       </td>
-                      <td>{user.section || "—"}</td>
-                      <td>{user.department || "—"}</td>
-                      <td>
+                      <td data-label="Section">{user.section || "—"}</td>
+                      <td data-label="Department">{user.department || "—"}</td>
+                      <td data-label="Status">
                         <span
                           style={{
                             display: "inline-flex",
@@ -1175,7 +1175,7 @@ export default function AdminUsers() {
                           Archived
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Action">
                         <div style={{ display: "flex", gap: "8px" }}>
                           <button
                             className="btn btn-sm"
@@ -1245,9 +1245,9 @@ export default function AdminUsers() {
                 ) : (
                   pendingVerifications.map((v) => (
                     <tr key={v.id}>
-                      <td style={{ fontWeight: 600 }}>{v.name || "—"}</td>
-                      <td style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{v.email}</td>
-                      <td>
+                      <td data-label="Name" style={{ fontWeight: 600 }}>{v.name || "—"}</td>
+                      <td data-label="Email" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{v.email}</td>
+                      <td data-label="Role">
                         <span
                           style={{
                             display: "inline-block",
@@ -1262,10 +1262,10 @@ export default function AdminUsers() {
                           {displayRole(v.role)}
                         </span>
                       </td>
-                      <td style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                      <td data-label="Requested" style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
                         {v.requestedAt?.toDate ? v.requestedAt.toDate().toLocaleString() : "—"}
                       </td>
-                      <td>
+                      <td data-label="Action">
                         <div style={{ display: "flex", gap: "8px" }}>
                           <button
                             className="btn btn-green btn-sm"

@@ -82,9 +82,9 @@ export default function AdminOverview() {
             ) : (
               logs.map((log, idx) => (
                 <tr key={idx}>
-                  <td>{log.timestamp}</td>
-                  <td>{log.action}</td>
-                  <td>
+                  <td data-label="Timestamp">{log.timestamp}</td>
+                  <td data-label="Action">{log.action}</td>
+                  <td data-label="Status">
                     <span className={`status-badge ${log.status === "Success" ? "active" : "pending"}`}>
                       <span className="status-dot"></span>
                       {log.status}

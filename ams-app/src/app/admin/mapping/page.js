@@ -280,13 +280,13 @@ export default function AdminMapping() {
             ) : (
               mappings.map((map) => (
                 <tr key={map.id}>
-                  <td style={{ fontWeight: 600 }}>{map.teacher}</td>
-                  <td>{map.section}</td>
-                  <td>{map.subject}</td>
-                  <td>{formatSchedule(map.schedule)}</td>
-                  <td>{map.room || "—"}</td>
-                  <td>{(map.students || []).length}</td>
-                  <td>
+                  <td data-label="Teacher" style={{ fontWeight: 600 }}>{map.teacher}</td>
+                  <td data-label="Section">{map.section}</td>
+                  <td data-label="Subject">{map.subject}</td>
+                  <td data-label="Schedule">{formatSchedule(map.schedule)}</td>
+                  <td data-label="Room">{map.room || "—"}</td>
+                  <td data-label="Students">{(map.students || []).length}</td>
+                  <td data-label="Action">
                     <button className="btn btn-red btn-sm" onClick={() => handleUnassign(map.id)}>
                       Unassign
                     </button>

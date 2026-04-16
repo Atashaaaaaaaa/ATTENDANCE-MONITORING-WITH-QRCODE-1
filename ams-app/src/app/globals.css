@@ -3112,11 +3112,14 @@ img {
     flex-wrap: wrap;
   }
 
-  /* Make schedule table horizontally scrollable on mobile */
-  .card:has(.schedule-table),
-  .card:has(.data-table) {
+  /* ── Responsive Card Layout for Data Tables ── */
+  .card:has(.schedule-table) {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .card:has(.data-table) {
+    overflow-x: visible;
   }
 
   .schedule-table {
@@ -3129,8 +3132,106 @@ img {
     padding: 8px 6px;
   }
 
+  /* Convert data-table to stacked card layout */
   .data-table {
-    min-width: 500px;
+    min-width: 0;
+  }
+
+  .data-table thead {
+    display: none;
+  }
+
+  .data-table tbody tr {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    animation: none;
+  }
+
+  .data-table tbody tr:hover {
+    background: var(--bg-card);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-green);
+  }
+
+  .data-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .data-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 0.85rem;
+    gap: 12px;
+    text-align: right;
+    min-height: 36px;
+  }
+
+  .data-table tbody td:last-child {
+    border-bottom: none;
+    padding-bottom: 4px;
+  }
+
+  .data-table tbody td:first-child {
+    padding-top: 4px;
+  }
+
+  /* Label on the left from data-label attribute */
+  .data-table tbody td[data-label]::before {
+    content: attr(data-label);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    text-align: left;
+    flex-shrink: 0;
+    min-width: 90px;
+  }
+
+  /* Cells without data-label just show content full-width */
+  .data-table tbody td:not([data-label]) {
+    justify-content: flex-end;
+  }
+
+  /* Empty state row spanning full width */
+  .data-table tbody tr:has(td[colspan]) {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .data-table tbody td[colspan] {
+    display: block;
+    text-align: center;
+    border: none;
+  }
+
+  .data-table tbody td[colspan]::before {
+    display: none;
+  }
+
+  /* Action button row - center on mobile */
+  .data-table tbody td:last-child > .btn,
+  .data-table tbody td:last-child > div {
+    width: 100%;
+  }
+
+  .data-table tbody td:last-child > div {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
 
   .today-classes {

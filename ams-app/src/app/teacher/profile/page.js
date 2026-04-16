@@ -169,11 +169,11 @@ export default function TeacherProfile() {
             <tbody>
               {sections.map((sec) => (
                 <tr key={sec.id}>
-                  <td style={{ fontWeight: 600 }}>{sec.section}</td>
-                  <td>{sec.subject}</td>
-                  <td style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{sec.schedule}</td>
-                  <td>{sec.room}</td>
-                  <td>
+                  <td data-label="Section" style={{ fontWeight: 600 }}>{sec.section}</td>
+                  <td data-label="Subject">{sec.subject}</td>
+                  <td data-label="Schedule" style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{sec.schedule}</td>
+                  <td data-label="Room">{sec.room}</td>
+                  <td data-label="Students">
                     <span style={{
                       padding: "3px 8px", borderRadius: "12px",
                       background: "var(--accent-soft)", color: "var(--primary)",

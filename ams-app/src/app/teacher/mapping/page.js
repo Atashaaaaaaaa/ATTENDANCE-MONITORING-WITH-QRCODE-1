@@ -75,15 +75,15 @@ export default function TeacherMapping() {
             ) : (
               mappings.map((map) => (
                 <tr key={map.id}>
-                  <td style={{ fontWeight: 600 }}>{map.section}</td>
-                  <td>{map.subject}</td>
-                  <td>
+                  <td data-label="Section" style={{ fontWeight: 600 }}>{map.section}</td>
+                  <td data-label="Subject">{map.subject}</td>
+                  <td data-label="Schedule">
                     {map.schedule && typeof map.schedule === "object"
                       ? `${(map.schedule.days || []).join(", ")} • ${map.schedule.time || "TBD"}`
                       : map.schedule || "TBD"}
                   </td>
-                  <td>{map.room || "—"}</td>
-                  <td>
+                  <td data-label="Room">{map.room || "—"}</td>
+                  <td data-label="Students">
                     <span style={{
                       padding: "3px 10px",
                       borderRadius: "var(--radius-full)",

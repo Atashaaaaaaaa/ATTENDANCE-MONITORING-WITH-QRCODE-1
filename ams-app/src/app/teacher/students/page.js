@@ -193,10 +193,10 @@ export default function TeacherStudents() {
                   ) : (
                     enrolledStudents.map((student) => (
                       <tr key={student.id}>
-                        <td style={{ fontWeight: 600 }}>{student.name || student.fullName}</td>
-                        <td style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{student.email}</td>
-                        <td>{student.section || "—"}</td>
-                        <td>
+                        <td data-label="Name" style={{ fontWeight: 600 }}>{student.name || student.fullName}</td>
+                        <td data-label="Email" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{student.email}</td>
+                        <td data-label="Section">{student.section || "—"}</td>
+                        <td data-label="Action">
                           <button
                             className="btn btn-red btn-sm"
                             onClick={() => handleRemoveStudent(student.id)}
