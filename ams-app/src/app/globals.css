@@ -4166,26 +4166,122 @@ img {
     flex-direction: column;
   }
 
-  /* Hide sidebar off-screen by default */
+  /* Make sidebar a fixed bottom navigation bar */
   .sidebar {
-    transform: translateX(-100%);
-    box-shadow: none;
-    z-index: 100;
+    width: 100%;
+    height: 70px;
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    flex-direction: row;
+    transform: none;
+    z-index: 1000;
+    border-right: none;
+    border-top: 1px solid var(--border-light);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    background: var(--bg-card);
+    padding: 0;
+    overflow: visible;
   }
 
-  /* Slide in when open */
-  .sidebar.sidebar-mobile-open {
-    transform: translateX(0);
-    box-shadow: 20px 0 40px rgba(0, 0, 0, 0.15);
-  }
-
+  /* No custom overlay or toggling needed anymore */
+  .sidebar-overlay,
   .mobile-menu-btn {
-    display: flex;
+    display: none !important;
   }
 
+  /* Hide unnecessary sidebar items */
+  .sidebar-header,
+  .sidebar-nav-label,
+  .sidebar-footer {
+    display: none !important;
+  }
+
+  /* Horizontal layout for nav inside the bar */
+  .sidebar-nav {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: center;
+    padding: 0 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 4px;
+    scroll-behavior: smooth;
+    /* hide scrollbar */
+    -ms-overflow-style: none;  
+    scrollbar-width: none;  
+  }
+  .sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Flatten nested divs from the component sections */
+  .sidebar-nav > div {
+    display: contents;
+  }
+
+  /* Convert links to bottom-nav-style vertical items */
+  .sidebar-link {
+    flex-direction: column;
+    padding: 8px 12px;
+    margin: 0;
+    gap: 6px;
+    border-radius: 12px;
+    justify-content: center;
+    align-items: center;
+    min-width: 65px;
+    flex: 1;
+    background: transparent !important; /* disable hover background blocks */
+  }
+
+  /* Ensure icons are the primary focus */
+  .sidebar-link-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+  }
+
+  .sidebar-link-icon img {
+    width: 22px !important;
+    height: 22px !important;
+    filter: invert(0) !important;
+  }
+
+  /* Scale active icon a bit */
+  .sidebar-link.active .sidebar-link-icon {
+    transform: scale(1.15);
+    transition: transform 0.2s ease;
+  }
+
+  .sidebar-link-text {
+    font-size: 0.65rem;
+    font-weight: 600;
+  }
+
+  .sidebar-link.active .sidebar-link-text {
+    color: var(--primary);
+  }
+
+  /* Display active indicator as a top border instead of left border */
+  .sidebar-active-indicator {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 3px;
+    border-radius: 0 0 4px 4px;
+  }
+
+  /* Add padding to bottom of main layout to clear the fixed bottom nav */
   .dashboard-main {
     padding: 16px;
     padding-top: 20px;
+    padding-bottom: 90px !important; /* Leave space for bottom nav */
   }
 
   .dashboard-header {
