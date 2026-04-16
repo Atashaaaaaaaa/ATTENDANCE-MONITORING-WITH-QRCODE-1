@@ -65,6 +65,19 @@ export default function TeacherDashboard() {
   // Face preview modal state: { studentId, name, hasFace, status, email }
   const [facePreviewStudent, setFacePreviewStudent] = useState(null);
 
+  // Generate avatar image URL — uses placeholder initials for now.
+  // Replace with real face image URL from Firestore when available.
+  const getAvatarUrl = (name, size = 128) => {
+    const initials = (name || "?")
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+    // Generates a clean initials-based avatar image
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=E8F5E9&color=4A7C59&bold=true&size=${size}&font-size=0.4`;
+  };
+
   // Fetch teacher's assigned sections from Firestore
   useEffect(() => {
     if (!user?.uid) return;
@@ -197,6 +210,7 @@ export default function TeacherDashboard() {
             status: data.status || "Present",
             method: data.method || "manual",
             sessionId: data.sessionId || null,
+            faceSnapshot: data.faceSnapshot || "",
           });
         }
       });
@@ -378,6 +392,7 @@ export default function TeacherDashboard() {
         hasFace: student?.hasFace || false,
         status: record?.status || "No Record",
         time: record?.time || "—",
+        faceSnapshot: record?.faceSnapshot || "",
       };
     });
   };
@@ -870,6 +885,7 @@ export default function TeacherDashboard() {
                     const status = student.status || "No Record";
                     const sid = student.id || student.studentId || idx;
                     const hasFace = student.hasFace || (enrolledStudents[sid]?.hasFace) || false;
+                    const faceImg = student.faceSnapshot || "";
 
                     return (
                       <tr key={sid}>
@@ -884,14 +900,17 @@ export default function TeacherDashboard() {
                                 hasFace: hasFace,
                                 status: status,
                                 email: student.email || enrolledStudents[sid]?.email || "",
+                                faceSnapshot: faceImg,
                               });
                             }}
                             title={hasFace ? "Face registered — Click to view" : "No face registered"}
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                              <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
+                            <img
+                              className="face-avatar-img"
+                              src={faceImg || getAvatarUrl(name, 64)}
+                              alt={name}
+                              draggable={false}
+                            />
                             <span className={`face-registered-dot ${hasFace ? "registered" : "not-registered"}`}></span>
                           </button>
                         </td>
@@ -1119,15 +1138,14 @@ export default function TeacherDashboard() {
               ✕
             </button>
 
-            {/* Avatar area */}
+            {/* Face image area */}
             <div className={`face-preview-avatar ${facePreviewStudent.hasFace ? "registered" : "not-registered"}`}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
-                stroke={facePreviewStudent.hasFace ? "#4A7C59" : "#EF4444"}
-                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+              <img
+                className="face-preview-img"
+                src={facePreviewStudent.faceSnapshot || getAvatarUrl(facePreviewStudent.name, 256)}
+                alt={facePreviewStudent.name}
+                draggable={false}
+              />
             </div>
 
             {/* Student name */}
