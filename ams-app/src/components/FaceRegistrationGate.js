@@ -31,7 +31,8 @@ export default function FaceRegistrationGate() {
         maxWidth: '480px',
         width: '92%',
         maxHeight: '90vh',
-        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
         boxShadow: 'var(--shadow-xl)',
         animation: 'fadeInUp 0.4s ease',
         overflow: 'hidden',
@@ -42,7 +43,7 @@ export default function FaceRegistrationGate() {
           background: 'linear-gradient(90deg, var(--primary), var(--primary-light), var(--success))',
         }} />
 
-        <div style={{ padding: '32px 28px 28px' }}>
+        <div style={{ padding: '32px 28px 28px', overflowY: 'auto', flex: 1 }}>
           {/* Icon */}
           <div style={{
             width: '60px',
