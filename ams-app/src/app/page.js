@@ -103,34 +103,34 @@ export default function LandingPage() {
               <span style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>This Semester</span>
             </div>
 
-            <div style={{ marginBottom: "24px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Overall Rate</span>
-                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#10B981" }}>92%</span>
+            <div style={{ marginBottom: "14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                <span style={{ fontSize: "0.82rem", fontWeight: 600 }}>Overall Rate</span>
+                <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#10B981" }}>92%</span>
               </div>
               <div className="feature-progress-bar">
                 <div className="feature-progress-fill" style={{ width: "92%" }}></div>
               </div>
             </div>
 
-            <div style={{ marginBottom: "24px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>On-time Rate</span>
-                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#4A7C59" }}>87%</span>
+            <div style={{ marginBottom: "14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                <span style={{ fontSize: "0.82rem", fontWeight: 600 }}>On-time Rate</span>
+                <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#4A7C59" }}>87%</span>
               </div>
               <div className="feature-progress-bar">
                 <div className="feature-progress-fill" style={{ width: "87%" }}></div>
               </div>
             </div>
 
-            <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "20px" }}>
+            <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: "12px" }}>
               <div className="feature-balance">
                 <div className="feature-balance-label">Total Sessions</div>
                 <div className="feature-balance-value">1,250</div>
               </div>
-              <div style={{ marginTop: "16px" }}>
-                <div style={{ fontSize: "0.8rem", color: "#9CA3AF", marginBottom: "8px" }}>Monthly Trend</div>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "50px" }}>
+              <div style={{ marginTop: "10px" }}>
+                <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginBottom: "6px" }}>Monthly Trend</div>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "40px" }}>
                   {[40, 65, 55, 80, 70, 90, 85].map((h, i) => (
                     <div key={i} style={{
                       flex: 1,
