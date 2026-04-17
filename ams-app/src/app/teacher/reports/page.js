@@ -208,8 +208,9 @@ export default function TeacherReports() {
     try {
       // Robust dynamic import — use named export from jspdf
       const { jsPDF } = await import('jspdf');
-      // jspdf-autotable is a side-effect import that attaches autoTable to jsPDF prototype
-      await import('jspdf-autotable');
+      // jspdf-autotable v5: import autoTable as a standalone function
+      const autoTableModule = await import('jspdf-autotable');
+      const autoTable = autoTableModule.default || autoTableModule.autoTable;
 
       const doc = new jsPDF();
       const selectedSection = sections.find((s) => s.id === filter.section);
@@ -269,7 +270,8 @@ export default function TeacherReports() {
         `${s.rate}%`,
       ]);
 
-      doc.autoTable({
+      // Use autoTable as standalone function (v5 API)
+      autoTable(doc, {
         startY: statsY + 30,
         head: [['#', 'Student Name', 'Present', 'Late', 'Absent', 'Total', 'Rate']],
         body: tableData,
