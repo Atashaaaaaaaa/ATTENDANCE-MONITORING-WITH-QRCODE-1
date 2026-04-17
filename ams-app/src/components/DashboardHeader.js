@@ -14,7 +14,9 @@ const pageTitles = {
   "/teacher/profile": { title: "Profile", breadcrumb: "Teacher" },
   "/teacher/mapping": { title: "Section Mapping", breadcrumb: "Teacher" },
   "/teacher/students": { title: "My Students", breadcrumb: "Teacher" },
+  "/teacher/excuse-letters": { title: "Excuse Letters", breadcrumb: "Teacher" },
   "/student/attendance": { title: "My Attendance", breadcrumb: "Student" },
+  "/student/excuse-letters": { title: "Excuse Letters", breadcrumb: "Student" },
   "/student/schedule": { title: "Schedule", breadcrumb: "Student" },
   "/student/profile": { title: "Profile", breadcrumb: "Student" },
 };
