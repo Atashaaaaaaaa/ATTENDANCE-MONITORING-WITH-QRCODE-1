@@ -18,10 +18,13 @@ export default function TeacherReports() {
   const [generated, setGenerated] = useState(false);
 
   // Summary stats
-  const [stats, setStats] = useState({ avgRate: 0, totalAbsent: 0, totalLate: 0 });
+  const [stats, setStats] = useState({ avgRate: 0, totalAbsent: 0, totalLate: 0, totalExcused: 0 });
 
   // PDF export loading state
   const [pdfLoading, setPdfLoading] = useState(false);
+
+  // Excuse letter records for the report
+  const [excuseRecords, setExcuseRecords] = useState([]);
 
   // Fetch teacher's assigned sections on mount
   useEffect(() => {
@@ -134,7 +137,35 @@ export default function TeacherReports() {
         if (record.status === "Present") studentStats[sid].present++;
         else if (record.status === "Late") studentStats[sid].late++;
         else if (record.status === "Absent") studentStats[sid].absent++;
+        else if (record.status === "Excused") studentStats[sid].excused = (studentStats[sid].excused || 0) + 1;
       }
+
+      // Fetch excuse letters for this section
+      const excuseQuery = query(
+        collection(db, "excuseLetters"),
+        where("sectionId", "==", filter.section)
+      );
+      const excuseSnap = await getDocs(excuseQuery);
+      const excuseList = [];
+      excuseSnap.forEach((d) => {
+        const data = d.data();
+        // Apply date filter
+        if (filter.dateFrom && data.date < filter.dateFrom) return;
+        if (filter.dateTo && data.date > filter.dateTo) return;
+        excuseList.push({
+          id: d.id,
+          studentName: data.studentName || "Unknown",
+          studentId: data.studentId || "",
+          date: data.date || "—",
+          subjectName: data.subjectName || "—",
+          reason: data.type === "text" ? (data.content || "—") : (data.fileName || "File Upload"),
+          status: data.status || "Pending",
+          submittedAt: data.submittedAt,
+        });
+      });
+      // Sort by date descending
+      excuseList.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      setExcuseRecords(excuseList);
 
       // Build display data
       const result = studentIds.map((sid) => {
@@ -147,6 +178,7 @@ export default function TeacherReports() {
           present: s.present,
           late: s.late,
           absent: s.absent,
+          excused: s.excused || 0,
           total,
           rate,
         };
@@ -163,7 +195,8 @@ export default function TeacherReports() {
         : 0;
       const totalAbsent = result.reduce((sum, s) => sum + s.absent, 0);
       const totalLate = result.reduce((sum, s) => sum + s.late, 0);
-      setStats({ avgRate, totalAbsent, totalLate });
+      const totalExcused = result.reduce((sum, s) => sum + s.excused, 0);
+      setStats({ avgRate, totalAbsent, totalLate, totalExcused });
 
       setGenerated(true);
     } catch (e) {
@@ -184,11 +217,21 @@ export default function TeacherReports() {
       `Attendance Report — ${selectedSection?.label || ""}`,
       `Date Range: ${filter.dateFrom || "All"} to ${filter.dateTo || "All"}`,
       "",
-      "Student Name,Present,Late,Absent,Total Sessions,Rate",
-      ...students.map((s) => `${s.name},${s.present},${s.late},${s.absent},${s.total},${s.rate}%`),
-    ].join("\n");
+      "Student Name,Present,Late,Absent,Excused,Total Sessions,Rate",
+      ...students.map((s) => `${s.name},${s.present},${s.late},${s.absent},${s.excused},${s.total},${s.rate}%`),
+    ];
 
-    const blob = new Blob([csv], { type: "text/csv" });
+    // Add excuse records section to CSV
+    if (excuseRecords.length > 0) {
+      csv.push("", "", "Excuse Records");
+      csv.push("Student Name,Date,Subject,Reason,Status");
+      excuseRecords.forEach((e) => {
+        const reason = (e.reason || "").replace(/[\n\r,]/g, " ").substring(0, 100);
+        csv.push(`${e.studentName},${e.date},${e.subjectName},"${reason}",${e.status}`);
+      });
+    }
+
+    const blob = new Blob([csv.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -208,8 +251,9 @@ export default function TeacherReports() {
     try {
       // Robust dynamic import — use named export from jspdf
       const { jsPDF } = await import('jspdf');
-      // jspdf-autotable is a side-effect import that attaches autoTable to jsPDF prototype
-      await import('jspdf-autotable');
+      // jspdf-autotable v5: import autoTable as a standalone function
+      const autoTableModule = await import('jspdf-autotable');
+      const autoTable = autoTableModule.default || autoTableModule.autoTable;
 
       const doc = new jsPDF();
       const selectedSection = sections.find((s) => s.id === filter.section);
@@ -265,13 +309,15 @@ export default function TeacherReports() {
         s.present,
         s.late,
         s.absent,
+        s.excused,
         s.total,
         `${s.rate}%`,
       ]);
 
-      doc.autoTable({
+      // Use autoTable as standalone function (v5 API)
+      autoTable(doc, {
         startY: statsY + 30,
-        head: [['#', 'Student Name', 'Present', 'Late', 'Absent', 'Total', 'Rate']],
+        head: [['#', 'Student Name', 'Present', 'Late', 'Absent', 'Excused', 'Total', 'Rate']],
         body: tableData,
         theme: 'grid',
         styles: {
@@ -295,11 +341,12 @@ export default function TeacherReports() {
           3: { halign: 'center' },
           4: { halign: 'center' },
           5: { halign: 'center' },
-          6: { halign: 'center', fontStyle: 'bold' },
+          6: { halign: 'center' },
+          7: { halign: 'center', fontStyle: 'bold' },
         },
         didParseCell: (data) => {
-          // Color-code the rate column
-          if (data.column.index === 6 && data.section === 'body') {
+          // Color-code the rate column (now index 7)
+          if (data.column.index === 7 && data.section === 'body') {
             const rate = parseInt(data.cell.raw);
             if (rate >= 90) data.cell.styles.textColor = [16, 185, 129];
             else if (rate >= 80) data.cell.styles.textColor = [74, 124, 89];
@@ -307,6 +354,72 @@ export default function TeacherReports() {
           }
         },
       });
+
+      // ── Excuse Records Section in PDF ──
+      if (excuseRecords.length > 0) {
+        const excuseStartY = doc.lastAutoTable.finalY + 16;
+
+        // Check if we need a new page
+        if (excuseStartY > doc.internal.pageSize.getHeight() - 60) {
+          doc.addPage();
+        }
+
+        const actualStartY = excuseStartY > doc.internal.pageSize.getHeight() - 60 ? 20 : excuseStartY;
+
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(40, 40, 40);
+        doc.text('Excuse Records', 14, actualStartY);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text(`${excuseRecords.length} excuse letter${excuseRecords.length !== 1 ? 's' : ''} found`, 14, actualStartY + 6);
+
+        const excuseTableData = excuseRecords.map((e, i) => [
+          i + 1,
+          e.studentName,
+          e.date,
+          e.subjectName,
+          (e.reason || '').substring(0, 60) + ((e.reason || '').length > 60 ? '...' : ''),
+          e.status,
+        ]);
+
+        autoTable(doc, {
+          startY: actualStartY + 10,
+          head: [['#', 'Student', 'Date', 'Subject', 'Reason', 'Status']],
+          body: excuseTableData,
+          theme: 'grid',
+          styles: {
+            fontSize: 8,
+            cellPadding: 3,
+            lineColor: [200, 200, 200],
+            lineWidth: 0.3,
+          },
+          headStyles: {
+            fillColor: [59, 130, 246],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 8,
+          },
+          alternateRowStyles: {
+            fillColor: [239, 246, 255],
+          },
+          columnStyles: {
+            0: { cellWidth: 10, halign: 'center' },
+            4: { cellWidth: 50 },
+            5: { halign: 'center', fontStyle: 'bold' },
+          },
+          didParseCell: (data) => {
+            // Color-code the status column
+            if (data.column.index === 5 && data.section === 'body') {
+              const status = data.cell.raw;
+              if (status === 'Approved') data.cell.styles.textColor = [16, 185, 129];
+              else if (status === 'Rejected') data.cell.styles.textColor = [239, 68, 68];
+              else data.cell.styles.textColor = [245, 158, 11];
+            }
+          },
+        });
+      }
 
       // Footer
       const pageCount = doc.internal.getNumberOfPages();
@@ -416,6 +529,11 @@ export default function TeacherReports() {
           <div className="stat-card-label">Total Late</div>
           <div className="stat-card-value" style={{ color: "var(--info)" }}>{generated ? stats.totalLate : "—"}</div>
         </div>
+        <div className="stat-card stat-purple">
+          <div className="stat-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>
+          <div className="stat-card-label">Total Excused</div>
+          <div className="stat-card-value" style={{ color: "var(--primary)" }}>{generated ? stats.totalExcused : "—"}</div>
+        </div>
       </div>
 
       <div className="card">
@@ -457,13 +575,14 @@ export default function TeacherReports() {
               <th>Present</th>
               <th>Late</th>
               <th>Absent</th>
+              <th>Excused</th>
               <th>Rate</th>
             </tr>
           </thead>
           <tbody>
             {students.length === 0 ? (
               <tr>
-                <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+                <td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
                   {generated
                     ? "No attendance data found for the selected filters."
                     : "No report data yet. Select a section and generate a report."}
@@ -476,6 +595,11 @@ export default function TeacherReports() {
                   <td data-label="Present">{student.present}</td>
                   <td data-label="Late">{student.late}</td>
                   <td data-label="Absent">{student.absent}</td>
+                  <td data-label="Excused">
+                    <span style={{ fontWeight: 600, color: student.excused > 0 ? 'var(--info)' : 'var(--text-muted)' }}>
+                      {student.excused}
+                    </span>
+                  </td>
                   <td data-label="Rate">
                     <span style={{
                       fontWeight: 700,
@@ -492,6 +616,49 @@ export default function TeacherReports() {
           </tbody>
         </table>
       </div>
+
+      {/* ── Excuse Records Table ── */}
+      {generated && excuseRecords.length > 0 && (
+        <div className="card">
+          <div className="card-header">
+            <div>
+              <div className="card-title">Excuse Records</div>
+              <div className="card-subtitle">
+                {excuseRecords.length} excuse letter{excuseRecords.length !== 1 ? "s" : ""} found for this section
+              </div>
+            </div>
+          </div>
+
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Date</th>
+                <th>Subject</th>
+                <th>Reason</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {excuseRecords.map((excuse) => (
+                <tr key={excuse.id}>
+                  <td data-label="Student" style={{ fontWeight: 600 }}>{excuse.studentName}</td>
+                  <td data-label="Date" style={{ fontSize: "0.85rem" }}>{excuse.date}</td>
+                  <td data-label="Subject">{excuse.subjectName}</td>
+                  <td data-label="Reason" style={{ fontSize: "0.82rem", color: "var(--text-secondary)", maxWidth: "250px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {excuse.reason}
+                  </td>
+                  <td data-label="Status">
+                    <span className={`excuse-status ${excuse.status?.toLowerCase()}`}>
+                      {excuse.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }

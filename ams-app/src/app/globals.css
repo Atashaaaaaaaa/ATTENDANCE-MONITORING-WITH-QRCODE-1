@@ -4016,12 +4016,14 @@ img {
 .spreadsheet-table-wrap {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 /* Spreadsheet table */
 .spreadsheet-table {
   width: 100%;
+  min-width: 540px;
   border-collapse: collapse;
   table-layout: fixed;
 }
