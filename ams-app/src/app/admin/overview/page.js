@@ -2,8 +2,11 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import useIsMobile from "@/lib/useIsMobile";
+import MobileDetailModal from "@/components/MobileDetailModal";
 
 export default function AdminOverview() {
+  const isMobile = useIsMobile();
   const [stats, setStats] = useState({
     teachers: 0,
     students: 0,
@@ -11,6 +14,9 @@ export default function AdminOverview() {
   });
   const [logs, setLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+
+  // Mobile detail modal state for login logs
+  const [mobileDetailLog, setMobileDetailLog] = useState(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -130,6 +136,8 @@ export default function AdminOverview() {
           </span>
         </div>
 
+        {/* Desktop Table */}
+        <div className="desktop-only">
         <table className="data-table">
           <thead>
             <tr>
@@ -190,7 +198,68 @@ export default function AdminOverview() {
             )}
           </tbody>
         </table>
+        </div>
+
+        {/* Mobile Card List — Recent Logins */}
+        {isMobile && (
+          <div className="mobile-card-list">
+            {loadingLogs ? (
+              <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px 16px" }}>
+                Loading recent logins...
+              </div>
+            ) : logs.length === 0 ? (
+              <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px 16px" }}>
+                No login activity yet. Logs will appear once users sign in.
+              </div>
+            ) : (
+              logs.map((log) => (
+                <div key={log.id} className="mobile-card">
+                  <div className="mobile-card-info">
+                    <div className="mobile-card-name">{log.name}</div>
+                    <div className="mobile-card-meta">
+                      <span className="mobile-card-sub">{log.timestamp}</span>
+                      <span className="mobile-card-badge" style={getRoleBadgeStyle(log.role)}>
+                        {log.role}
+                      </span>
+                    </div>
+                  </div>
+                  <button className="mobile-card-btn" onClick={() => setMobileDetailLog(log)}>View Details</button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Mobile Detail Modal — Login Log */}
+      {isMobile && mobileDetailLog && (
+        <MobileDetailModal
+          isOpen={!!mobileDetailLog}
+          onClose={() => setMobileDetailLog(null)}
+          title={mobileDetailLog.name}
+          subtitle="Login Activity Details"
+        >
+          <MobileDetailModal.Field label="Name" value={mobileDetailLog.name} />
+          <MobileDetailModal.Field label="Email" value={mobileDetailLog.email} />
+          <MobileDetailModal.Field
+            label="Role"
+            value={mobileDetailLog.role}
+            badge
+            badgeStyle={getRoleBadgeStyle(mobileDetailLog.role)}
+          />
+          <MobileDetailModal.Field label="Action" value={mobileDetailLog.action} />
+          <MobileDetailModal.Field label="Time" value={mobileDetailLog.timestamp} />
+          <MobileDetailModal.Field
+            label="Status"
+            value={mobileDetailLog.status}
+            badge
+            badgeStyle={{
+              background: mobileDetailLog.status === "Success" ? "var(--success-bg)" : "var(--warning-bg)",
+              color: mobileDetailLog.status === "Success" ? "var(--success)" : "var(--warning)",
+            }}
+          />
+        </MobileDetailModal>
+      )}
     </>
   );
 }

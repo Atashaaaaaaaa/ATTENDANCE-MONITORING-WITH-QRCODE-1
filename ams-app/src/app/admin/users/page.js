@@ -5,6 +5,8 @@ import { collection, getDocs, deleteDoc, doc, setDoc, updateDoc, onSnapshot, que
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { db, firebaseConfig } from "@/lib/firebase";
+import useIsMobile from "@/lib/useIsMobile";
+import MobileDetailModal from "@/components/MobileDetailModal";
 
 // Generate a random password (10 chars: uppercase, lowercase, digits, special)
 function generatePassword(length = 10) {
@@ -58,7 +60,13 @@ async function createAuthAccount(email, password) {
 }
 
 export default function AdminUsers() {
+  const isMobile = useIsMobile();
   const [users, setUsers] = useState([]);
+
+  // Mobile detail modal state — holds the user being previewed
+  const [mobileDetailUser, setMobileDetailUser] = useState(null);
+  // Which tab context the mobile modal was opened from ("existing", "archived", "pending")
+  const [mobileDetailContext, setMobileDetailContext] = useState("existing");
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -984,6 +992,8 @@ export default function AdminUsers() {
               </div>
             )}
 
+            {/* Desktop Table */}
+            <div className="desktop-only">
             <table className="data-table">
               <thead>
                 <tr>
@@ -1069,6 +1079,42 @@ export default function AdminUsers() {
                 )}
               </tbody>
             </table>
+            </div>
+
+            {/* Mobile Card List — Existing Profiles */}
+            {isMobile && (
+              <div className="mobile-card-list">
+                {filteredUsers.length === 0 ? (
+                  <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px 16px" }}>
+                    {users.length === 0
+                      ? "No users registered yet. Add users using the form above."
+                      : "No users match the current filters."}
+                  </div>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <div key={user.id} className="mobile-card">
+                      <div className="mobile-card-info">
+                        <div className="mobile-card-name">{user.name || user.fullName}</div>
+                        <div className="mobile-card-meta">
+                          <span className="mobile-card-badge" style={{
+                            background: user.role === "teacher" ? "var(--info-bg)" : "var(--accent-soft)",
+                            color: user.role === "teacher" ? "var(--info)" : "var(--primary)",
+                          }}>{displayRole(user.role)}</span>
+                          <span className="mobile-card-badge" style={{
+                            background: "var(--success-bg)",
+                            color: "var(--success)",
+                          }}>
+                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--success)", display: "inline-block" }}></span>
+                            Active
+                          </span>
+                        </div>
+                      </div>
+                      <button className="mobile-card-btn" onClick={() => { setMobileDetailUser(user); setMobileDetailContext("existing"); }}>View Details</button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
 
             {/* Results count */}
             <div
@@ -1105,6 +1151,8 @@ export default function AdminUsers() {
               />
             </div>
 
+            {/* Desktop Table */}
+            <div className="desktop-only">
             <table className="data-table">
               <thead>
                 <tr>
@@ -1202,6 +1250,36 @@ export default function AdminUsers() {
                 )}
               </tbody>
             </table>
+            </div>
+
+            {/* Mobile Card List — Archived Accounts */}
+            {isMobile && (
+              <div className="mobile-card-list">
+                {filteredArchivedUsers.length === 0 ? (
+                  <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px 16px" }}>
+                    {archivedUsers.length === 0
+                      ? "No archived accounts. Archived users will appear here."
+                      : "No archived users match the current search."}
+                  </div>
+                ) : (
+                  filteredArchivedUsers.map((user) => (
+                    <div key={user.id} className="mobile-card" style={{ opacity: 0.85 }}>
+                      <div className="mobile-card-info">
+                        <div className="mobile-card-name">{user.name || user.fullName}</div>
+                        <div className="mobile-card-meta">
+                          <span className="mobile-card-badge" style={{ background: "var(--bg-body)", color: "var(--text-muted)" }}>{displayRole(user.role)}</span>
+                          <span className="mobile-card-badge" style={{ background: "var(--danger-bg)", color: "var(--danger)" }}>
+                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--danger)", display: "inline-block" }}></span>
+                            Archived
+                          </span>
+                        </div>
+                      </div>
+                      <button className="mobile-card-btn" onClick={() => { setMobileDetailUser(user); setMobileDetailContext("archived"); }}>View Details</button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
 
             <div
               style={{
@@ -1225,6 +1303,8 @@ export default function AdminUsers() {
               </p>
             </div>
 
+            {/* Desktop Table */}
+            <div className="desktop-only">
             <table className="data-table">
               <thead>
                 <tr>
@@ -1292,6 +1372,36 @@ export default function AdminUsers() {
                 )}
               </tbody>
             </table>
+            </div>
+
+            {/* Mobile Card List — Pending Verification */}
+            {isMobile && (
+              <div className="mobile-card-list">
+                {pendingVerifications.length === 0 ? (
+                  <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px 16px" }}>
+                    No pending verification requests.
+                  </div>
+                ) : (
+                  pendingVerifications.map((v) => (
+                    <div key={v.id} className="mobile-card">
+                      <div className="mobile-card-info">
+                        <div className="mobile-card-name">{v.name || "—"}</div>
+                        <div className="mobile-card-meta">
+                          <span className="mobile-card-badge" style={{
+                            background: v.role === "teacher" ? "var(--info-bg)" : "var(--accent-soft)",
+                            color: v.role === "teacher" ? "var(--info)" : "var(--primary)",
+                          }}>{displayRole(v.role)}</span>
+                          <span className="mobile-card-badge" style={{ background: "#FFF7ED", color: "#C2410C" }}>
+                            Pending
+                          </span>
+                        </div>
+                      </div>
+                      <button className="mobile-card-btn" onClick={() => { setMobileDetailUser(v); setMobileDetailContext("pending"); }}>View Details</button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
 
             <div
               style={{
@@ -1306,6 +1416,74 @@ export default function AdminUsers() {
           </>
         )}
       </div>
+
+      {/* ── Mobile Detail Modal (Existing / Archived / Pending) ── */}
+      {isMobile && mobileDetailUser && (
+        <MobileDetailModal
+          isOpen={!!mobileDetailUser}
+          onClose={() => setMobileDetailUser(null)}
+          title={mobileDetailUser.name || mobileDetailUser.fullName || "User Details"}
+          subtitle={mobileDetailUser.email}
+          actions={
+            mobileDetailContext === "existing" ? (
+              <>
+                <button className="btn btn-green btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => { setMobileDetailUser(null); handleEdit(mobileDetailUser); }}>Edit</button>
+                <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center", background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid var(--warning)", fontWeight: 600 }} onClick={() => { setMobileDetailUser(null); handleArchive(mobileDetailUser.id); }}>Archive</button>
+              </>
+            ) : mobileDetailContext === "archived" ? (
+              <>
+                <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center", background: "var(--accent-soft)", color: "var(--primary-dark)", border: "1px solid var(--border-green)", fontWeight: 600 }} onClick={() => { setMobileDetailUser(null); handleRestore(mobileDetailUser.id); }}>Restore</button>
+                <button className="btn btn-red btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => { setMobileDetailUser(null); handleDeletePermanent(mobileDetailUser.id); }}>Delete</button>
+              </>
+            ) : mobileDetailContext === "pending" ? (
+              <>
+                <button className="btn btn-green btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => { setMobileDetailUser(null); handleApproveVerification(mobileDetailUser.id); }}>Approve</button>
+                <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center", background: "var(--danger-bg)", color: "var(--danger)", border: "1px solid var(--danger)", fontWeight: 600 }} onClick={() => { setMobileDetailUser(null); handleRejectVerification(mobileDetailUser.id); }}>Reject</button>
+              </>
+            ) : null
+          }
+        >
+          {/* Common fields */}
+          {mobileDetailUser.id && (
+            <MobileDetailModal.Field label="User ID" value={mobileDetailUser.id.length > 16 ? mobileDetailUser.id.slice(0, 16) + "…" : mobileDetailUser.id} />
+          )}
+          <MobileDetailModal.Field label="Name" value={mobileDetailUser.name || mobileDetailUser.fullName} />
+          <MobileDetailModal.Field label="Email" value={mobileDetailUser.email} />
+          <MobileDetailModal.Field
+            label="Role"
+            value={displayRole(mobileDetailUser.role)}
+            badge
+            badgeStyle={{
+              background: mobileDetailUser.role === "teacher" ? "var(--info-bg)" : "var(--accent-soft)",
+              color: mobileDetailUser.role === "teacher" ? "var(--info)" : "var(--primary)",
+            }}
+          />
+          <MobileDetailModal.Field label="Section" value={mobileDetailUser.section || "—"} />
+          <MobileDetailModal.Field label="Department" value={mobileDetailUser.department || "—"} />
+          {mobileDetailContext === "existing" && (
+            <MobileDetailModal.Field
+              label="Status"
+              value={(mobileDetailUser.status || "active").charAt(0).toUpperCase() + (mobileDetailUser.status || "active").slice(1)}
+              badge
+              badgeStyle={{ background: "var(--success-bg)", color: "var(--success)" }}
+            />
+          )}
+          {mobileDetailContext === "archived" && (
+            <MobileDetailModal.Field
+              label="Status"
+              value="Archived"
+              badge
+              badgeStyle={{ background: "var(--danger-bg)", color: "var(--danger)" }}
+            />
+          )}
+          {mobileDetailContext === "pending" && mobileDetailUser.requestedAt && (
+            <MobileDetailModal.Field
+              label="Requested At"
+              value={mobileDetailUser.requestedAt?.toDate ? mobileDetailUser.requestedAt.toDate().toLocaleString() : "—"}
+            />
+          )}
+        </MobileDetailModal>
+      )}
 
       {/* ── Edit User Modal ── */}
       {showEditModal && editingUser && (

@@ -2,12 +2,18 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import useIsMobile from "@/lib/useIsMobile";
+import MobileDetailModal from "@/components/MobileDetailModal";
 
 const ALL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
 export default function AdminMapping() {
+  const isMobile = useIsMobile();
   const [mappings, setMappings] = useState([]);
   const [teachers, setTeachers] = useState([]);
+
+  // Mobile detail modal state
+  const [mobileDetailMapping, setMobileDetailMapping] = useState(null);
 
   const [formData, setFormData] = useState({
     teacherId: "",
@@ -258,6 +264,8 @@ export default function AdminMapping() {
           <div className="card-title">Active Section Assignments</div>
         </div>
 
+        {/* Desktop Table */}
+        <div className="desktop-only">
         <table className="data-table">
           <thead>
             <tr>
@@ -296,7 +304,65 @@ export default function AdminMapping() {
             )}
           </tbody>
         </table>
+        </div>
+
+        {/* Mobile Card List — Section Assignments */}
+        {isMobile && (
+          <div className="mobile-card-list">
+            {mappings.length === 0 ? (
+              <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px 16px" }}>
+                No section assignments yet. Use the form above to link teachers to sections.
+              </div>
+            ) : (
+              mappings.map((map) => (
+                <div key={map.id} className="mobile-card">
+                  <div className="mobile-card-info">
+                    <div className="mobile-card-name">{map.section}</div>
+                    <div className="mobile-card-meta">
+                      <span className="mobile-card-sub">{map.subject}</span>
+                      <span className="mobile-card-badge" style={{ background: "var(--accent-soft)", color: "var(--primary)" }}>
+                        {(map.students || []).length} students
+                      </span>
+                    </div>
+                  </div>
+                  <button className="mobile-card-btn" onClick={() => setMobileDetailMapping(map)}>View Details</button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Mobile Detail Modal — Section Assignment */}
+      {isMobile && mobileDetailMapping && (
+        <MobileDetailModal
+          isOpen={!!mobileDetailMapping}
+          onClose={() => setMobileDetailMapping(null)}
+          title={mobileDetailMapping.section}
+          subtitle={mobileDetailMapping.subject}
+          actions={
+            <button
+              className="btn btn-red btn-sm"
+              style={{ flex: 1, justifyContent: "center" }}
+              onClick={() => { setMobileDetailMapping(null); handleUnassign(mobileDetailMapping.id); }}
+            >
+              Unassign
+            </button>
+          }
+        >
+          <MobileDetailModal.Field label="Teacher" value={mobileDetailMapping.teacher} />
+          <MobileDetailModal.Field label="Section" value={mobileDetailMapping.section} />
+          <MobileDetailModal.Field label="Subject" value={mobileDetailMapping.subject} />
+          <MobileDetailModal.Field label="Schedule" value={formatSchedule(mobileDetailMapping.schedule)} />
+          <MobileDetailModal.Field label="Room" value={mobileDetailMapping.room || "—"} />
+          <MobileDetailModal.Field
+            label="Students"
+            value={`${(mobileDetailMapping.students || []).length} enrolled`}
+            badge
+            badgeStyle={{ background: "var(--accent-soft)", color: "var(--primary)" }}
+          />
+        </MobileDetailModal>
+      )}
     </>
   );
 }

@@ -3,15 +3,21 @@ import { useState, useEffect } from "react";
 import { collection, getDocs, query, where, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
+import useIsMobile from "@/lib/useIsMobile";
+import MobileDetailModal from "@/components/MobileDetailModal";
 
 export default function TeacherStudents() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [sections, setSections] = useState([]);
   const [allStudents, setAllStudents] = useState([]);
   const [selectedSection, setSelectedSection] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Mobile detail modal state
+  const [mobileDetailStudent, setMobileDetailStudent] = useState(null);
 
   // Fetch teacher's sections and all students
   useEffect(() => {
@@ -174,6 +180,8 @@ export default function TeacherStudents() {
                 </button>
               </div>
 
+              {/* Desktop Table */}
+              <div className="desktop-only">
               <table className="data-table">
                 <thead>
                   <tr>
@@ -209,9 +217,67 @@ export default function TeacherStudents() {
                   )}
                 </tbody>
               </table>
+              </div>
+
+              {/* Mobile Card List — Enrolled Students */}
+              {isMobile && (
+                <div className="mobile-card-list">
+                  {enrolledStudents.length === 0 ? (
+                    <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px 16px" }}>
+                      No students in this class yet. Click &quot;Add Student&quot; to enroll students.
+                    </div>
+                  ) : (
+                    enrolledStudents.map((student) => (
+                      <div key={student.id} className="mobile-card">
+                        <div className="mobile-card-info">
+                          <div className="mobile-card-name">{student.name || student.fullName}</div>
+                          <div className="mobile-card-meta">
+                            <span className="mobile-card-sub">{student.section || "—"}</span>
+                          </div>
+                        </div>
+                        <button className="mobile-card-btn" onClick={() => setMobileDetailStudent(student)}>View Details</button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           )}
         </>
+      )}
+
+      {/* Mobile Detail Modal — Student */}
+      {isMobile && mobileDetailStudent && (
+        <MobileDetailModal
+          isOpen={!!mobileDetailStudent}
+          onClose={() => setMobileDetailStudent(null)}
+          title={mobileDetailStudent.name || mobileDetailStudent.fullName || "Student Details"}
+          subtitle={currentSection ? `${currentSection.section} — ${currentSection.subject}` : ""}
+          actions={
+            <button
+              className="btn btn-red btn-sm"
+              style={{ flex: 1, justifyContent: "center" }}
+              onClick={() => { setMobileDetailStudent(null); handleRemoveStudent(mobileDetailStudent.id); }}
+            >
+              Remove from Class
+            </button>
+          }
+        >
+          <MobileDetailModal.Field label="Name" value={mobileDetailStudent.name || mobileDetailStudent.fullName} />
+          <MobileDetailModal.Field label="Email" value={mobileDetailStudent.email} />
+          <MobileDetailModal.Field label="Section" value={mobileDetailStudent.section || "—"} />
+          {mobileDetailStudent.status && (
+            <MobileDetailModal.Field
+              label="Status"
+              value={mobileDetailStudent.status.charAt(0).toUpperCase() + mobileDetailStudent.status.slice(1)}
+              badge
+              badgeStyle={{
+                background: mobileDetailStudent.status === "active" ? "var(--success-bg)" : "var(--danger-bg)",
+                color: mobileDetailStudent.status === "active" ? "var(--success)" : "var(--danger)",
+              }}
+            />
+          )}
+        </MobileDetailModal>
       )}
 
       {/* Add Student Modal */}

@@ -20,6 +20,9 @@ export default function TeacherReports() {
   // Summary stats
   const [stats, setStats] = useState({ avgRate: 0, totalAbsent: 0, totalLate: 0 });
 
+  // PDF export loading state
+  const [pdfLoading, setPdfLoading] = useState(false);
+
   // Fetch teacher's assigned sections on mount
   useEffect(() => {
     if (!user?.uid) return;
@@ -200,122 +203,146 @@ export default function TeacherReports() {
       return;
     }
 
-    const jsPDFModule = await import('jspdf');
-    const jsPDF = jsPDFModule.default || jsPDFModule.jsPDF;
-    const autoTableModule = await import('jspdf-autotable');
-    // jspdf-autotable attaches itself to jsPDF prototype automatically
+    setPdfLoading(true);
 
-    const doc = new jsPDF();
-    const selectedSection = sections.find((s) => s.id === filter.section);
-    const pageWidth = doc.internal.pageSize.getWidth();
+    try {
+      // Robust dynamic import — use named export from jspdf
+      const { jsPDF } = await import('jspdf');
+      // jspdf-autotable is a side-effect import that attaches autoTable to jsPDF prototype
+      await import('jspdf-autotable');
 
-    // Header bar
-    doc.setFillColor(74, 124, 89); // green
-    doc.rect(0, 0, pageWidth, 32, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Attendance Report', 14, 18);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Generated: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 14, 26);
+      const doc = new jsPDF();
+      const selectedSection = sections.find((s) => s.id === filter.section);
+      const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Section info
-    doc.setTextColor(40, 40, 40);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text(selectedSection?.label || 'Section Report', 14, 44);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Date Range: ${filter.dateFrom || 'All dates'} to ${filter.dateTo || 'All dates'}`, 14, 52);
+      // Header bar
+      doc.setFillColor(74, 124, 89); // green
+      doc.rect(0, 0, pageWidth, 32, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Attendance Report', 14, 18);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 14, 26);
 
-    // Summary stats
-    const statsY = 60;
-    doc.setFillColor(240, 253, 244);
-    doc.roundedRect(14, statsY, 55, 22, 3, 3, 'F');
-    doc.roundedRect(74, statsY, 55, 22, 3, 3, 'F');
-    doc.roundedRect(134, statsY, 55, 22, 3, 3, 'F');
+      // Section info
+      doc.setTextColor(40, 40, 40);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(selectedSection?.label || 'Section Report', 14, 44);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Date Range: ${filter.dateFrom || 'All dates'} to ${filter.dateTo || 'All dates'}`, 14, 52);
 
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Avg Attendance', 18, statsY + 8);
-    doc.text('Total Absences', 78, statsY + 8);
-    doc.text('Total Late', 138, statsY + 8);
+      // Summary stats
+      const statsY = 60;
+      doc.setFillColor(240, 253, 244);
+      doc.roundedRect(14, statsY, 55, 22, 3, 3, 'F');
+      doc.roundedRect(74, statsY, 55, 22, 3, 3, 'F');
+      doc.roundedRect(134, statsY, 55, 22, 3, 3, 'F');
 
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(16, 185, 129);
-    doc.text(`${stats.avgRate}%`, 18, statsY + 18);
-    doc.setTextColor(239, 68, 68);
-    doc.text(`${stats.totalAbsent}`, 78, statsY + 18);
-    doc.setTextColor(59, 130, 246);
-    doc.text(`${stats.totalLate}`, 138, statsY + 18);
-
-    // Table
-    const tableData = students.map((s, i) => [
-      i + 1,
-      s.name,
-      s.present,
-      s.late,
-      s.absent,
-      s.total,
-      `${s.rate}%`,
-    ]);
-
-    doc.autoTable({
-      startY: statsY + 30,
-      head: [['#', 'Student Name', 'Present', 'Late', 'Absent', 'Total', 'Rate']],
-      body: tableData,
-      theme: 'grid',
-      styles: {
-        fontSize: 9,
-        cellPadding: 4,
-        lineColor: [200, 200, 200],
-        lineWidth: 0.3,
-      },
-      headStyles: {
-        fillColor: [74, 124, 89],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 9,
-      },
-      alternateRowStyles: {
-        fillColor: [245, 250, 247],
-      },
-      columnStyles: {
-        0: { cellWidth: 12, halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center' },
-        6: { halign: 'center', fontStyle: 'bold' },
-      },
-      didParseCell: (data) => {
-        // Color-code the rate column
-        if (data.column.index === 6 && data.section === 'body') {
-          const rate = parseInt(data.cell.raw);
-          if (rate >= 90) data.cell.styles.textColor = [16, 185, 129];
-          else if (rate >= 80) data.cell.styles.textColor = [74, 124, 89];
-          else data.cell.styles.textColor = [239, 68, 68];
-        }
-      },
-    });
-
-    // Footer
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
       doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
-      doc.text(
-        `AMS – Attendance Monitoring System | Page ${i} of ${pageCount}`,
-        pageWidth / 2, doc.internal.pageSize.getHeight() - 10,
-        { align: 'center' }
-      );
-    }
+      doc.setTextColor(100, 100, 100);
+      doc.text('Avg Attendance', 18, statsY + 8);
+      doc.text('Total Absences', 78, statsY + 8);
+      doc.text('Total Late', 138, statsY + 8);
 
-    doc.save(`attendance_report_${filter.section}_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(16, 185, 129);
+      doc.text(`${stats.avgRate}%`, 18, statsY + 18);
+      doc.setTextColor(239, 68, 68);
+      doc.text(`${stats.totalAbsent}`, 78, statsY + 18);
+      doc.setTextColor(59, 130, 246);
+      doc.text(`${stats.totalLate}`, 138, statsY + 18);
+
+      // Table
+      const tableData = students.map((s, i) => [
+        i + 1,
+        s.name,
+        s.present,
+        s.late,
+        s.absent,
+        s.total,
+        `${s.rate}%`,
+      ]);
+
+      doc.autoTable({
+        startY: statsY + 30,
+        head: [['#', 'Student Name', 'Present', 'Late', 'Absent', 'Total', 'Rate']],
+        body: tableData,
+        theme: 'grid',
+        styles: {
+          fontSize: 9,
+          cellPadding: 4,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.3,
+        },
+        headStyles: {
+          fillColor: [74, 124, 89],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9,
+        },
+        alternateRowStyles: {
+          fillColor: [245, 250, 247],
+        },
+        columnStyles: {
+          0: { cellWidth: 12, halign: 'center' },
+          2: { halign: 'center' },
+          3: { halign: 'center' },
+          4: { halign: 'center' },
+          5: { halign: 'center' },
+          6: { halign: 'center', fontStyle: 'bold' },
+        },
+        didParseCell: (data) => {
+          // Color-code the rate column
+          if (data.column.index === 6 && data.section === 'body') {
+            const rate = parseInt(data.cell.raw);
+            if (rate >= 90) data.cell.styles.textColor = [16, 185, 129];
+            else if (rate >= 80) data.cell.styles.textColor = [74, 124, 89];
+            else data.cell.styles.textColor = [239, 68, 68];
+          }
+        },
+      });
+
+      // Footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+          `AMS – Attendance Monitoring System | Page ${i} of ${pageCount}`,
+          pageWidth / 2, doc.internal.pageSize.getHeight() - 10,
+          { align: 'center' }
+        );
+      }
+
+      // Mobile-safe download: use Blob approach for broader compatibility
+      const fileName = `attendance_report_${filter.section}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const pdfBlob = doc.output('blob');
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup after a short delay to ensure download initiates
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      }, 250);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      alert('Failed to generate PDF. Please try again. Error: ' + (err.message || 'Unknown error'));
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   return (
@@ -398,8 +425,27 @@ export default function TeacherReports() {
             <button className="btn btn-outline btn-sm" onClick={handleExport}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '6px', display: 'inline-block', verticalAlign: 'middle'}}><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>CSV
             </button>
-            <button className="btn btn-green btn-sm" onClick={handleExportPDF}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '6px', display: 'inline-block', verticalAlign: 'middle'}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>PDF
+            <button className="btn btn-green btn-sm" onClick={handleExportPDF} disabled={pdfLoading}>
+              {pdfLoading ? (
+                <>
+                  <span style={{
+                    display: 'inline-block',
+                    width: '14px',
+                    height: '14px',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: 'white',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite',
+                    marginRight: '6px',
+                    verticalAlign: 'middle',
+                  }}></span>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '6px', display: 'inline-block', verticalAlign: 'middle'}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>PDF
+                </>
+              )}
             </button>
           </div>
         </div>
