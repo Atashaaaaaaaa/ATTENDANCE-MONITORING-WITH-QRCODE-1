@@ -1,0 +1,663 @@
+﻿diff --git a/ams-app/package-lock.json b/ams-app/package-lock.json
+index 2e58d6e..aebd1fb 100644
+--- a/ams-app/package-lock.json
++++ b/ams-app/package-lock.json
+@@ -108,7 +108,6 @@
+       "resolved": "https://registry.npmjs.org/@firebase/app/-/app-0.14.11.tgz",
+       "integrity": "sha512-yxADFW35LYkP8oSGobGsYIrI42I+GPCvKTNHx4meT9Yq3C950IVz1eANoBk822I9tbKv1wyv9P4Bv1G5TpucFw==",
+       "license": "Apache-2.0",
+-      "peer": true,
+       "dependencies": {
+         "@firebase/component": "0.7.2",
+         "@firebase/logger": "0.5.0",
+@@ -175,7 +174,6 @@
+       "resolved": "https://registry.npmjs.org/@firebase/app-compat/-/app-compat-0.5.11.tgz",
+       "integrity": "sha512-KaACDjXkK5VLpI01vEs592R7/8s5DjFdIXfKoR385ly1SmK3Tu+jMHCIB4MsiY5jsez6v7VlEX/3rJ90dVkHyA==",
+       "license": "Apache-2.0",
+-      "peer": true,
+       "dependencies": {
+         "@firebase/app": "0.14.11",
+         "@firebase/component": "0.7.2",
+@@ -192,7 +190,6 @@
+       "resolved": "https://registry.npmjs.org/@firebase/app-types/-/app-types-0.9.4.tgz",
+       "integrity": "sha512-crX9TA5SVYZwLPG7/R16IsH8FLlgkPXjJUVhsVpHVDSqJiq3D/NuFTM5ctxGTExXAOeIn//69tQw47CPerM8MQ==",
+       "license": "Apache-2.0",
+-      "peer": true,
+       "dependencies": {
+         "@firebase/logger": "0.5.0"
+       }
+@@ -646,7 +643,6 @@
+       "integrity": "sha512-AmWf3cHAOMbrCPG4xdPKQaj5iHnyYfyLKZxwz+Xf55bqKbpAmcYifB4jQinT2W9XhDRHISOoPyBOariJpCG6FA==",
+       "hasInstallScript": true,
+       "license": "Apache-2.0",
+-      "peer": true,
+       "dependencies": {
+         "tslib": "^2.1.0"
+       },
+@@ -3162,7 +3158,6 @@
+       "resolved": "https://registry.npmjs.org/react/-/react-19.2.4.tgz",
+       "integrity": "sha512-9nfp2hYpCwOjAN+8TZFGhtWEwgvWHXqESH8qT89AT/lWklpLON22Lc8pEtnpsZz7VmawabSU0gCjnj8aC0euHQ==",
+       "license": "MIT",
+-      "peer": true,
+       "engines": {
+         "node": ">=0.10.0"
+       }
+@@ -3172,7 +3167,6 @@
+       "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-19.2.4.tgz",
+       "integrity": "sha512-AXJdLo8kgMbimY95O2aKQqsz2iWi9jMgKJhRBAxECE4IFxfcazB2LmzloIoibJI3C12IlY20+KFaLv+71bUJeQ==",
+       "license": "MIT",
+-      "peer": true,
+       "dependencies": {
+         "scheduler": "^0.27.0"
+       },
+diff --git a/ams-app/src/app/student/attendance/page.js b/ams-app/src/app/student/attendance/page.js
+index 1b9c7fe..19b7e98 100644
+--- a/ams-app/src/app/student/attendance/page.js
++++ b/ams-app/src/app/student/attendance/page.js
+@@ -60,6 +60,8 @@ export default function StudentAttendance() {
+   const streamRef = useRef(null);
+   const canvasRef = useRef(null);
+   const chartRef = useRef(null);
++  // Track previous session IDs to detect session changes
++  const prevSessionIdsRef = useRef({});
+ 
+   // Face recognition state
+   const [modelsReady, setModelsReady] = useState(false);
+@@ -194,8 +196,11 @@ export default function StudentAttendance() {
+         };
+         allRecords.push(record);
+         if (data.subjectId) {
+-          // For scanResults, keep the latest record per subject (for current session detection)
+-          if (!results[data.subjectId] || (data.sessionId && !results[data.subjectId].sessionId)) {
++          // Only populate scanResults with records from the CURRENT active session
++          // This prevents old session data from showing as "present" in the new session
++          const sessionKey = data.subjectId + "_" + (data.sectionId || data.subjectId);
++          const activeSession = activeSessions[sessionKey];
++          if (activeSession?.docId && data.sessionId === activeSession.docId) {
+             results[data.subjectId] = record;
+           }
+         }
+@@ -207,7 +212,39 @@ export default function StudentAttendance() {
+     });
+ 
+     return () => unsubscribe();
+-  }, [user?.uid]);
++  }, [user?.uid, activeSessions]);
++
++  // Clear stale scanResults when active sessions change (new session started)
++  useEffect(() => {
++    const currentIds = {};
++    for (const key in activeSessions) {
++      currentIds[key] = activeSessions[key]?.docId || null;
++    }
++
++    const prevIds = prevSessionIdsRef.current;
++    let sessionChanged = false;
++
++    for (const key in currentIds) {
++      if (prevIds[key] && prevIds[key] !== currentIds[key]) {
++        sessionChanged = true;
++        break;
++      }
++    }
++    // Also check if a session was removed (ended)
++    for (const key in prevIds) {
++      if (prevIds[key] && !currentIds[key]) {
++        sessionChanged = true;
++        break;
++      }
++    }
++
++    if (sessionChanged) {
++      // Clear scanResults so old session data doesn't persist
++      setScanResults({});
++    }
++
++    prevSessionIdsRef.current = currentIds;
++  }, [activeSessions]);
+ 
+   // Load attendance history for summary chart
+   useEffect(() => {
+@@ -882,7 +919,8 @@ export default function StudentAttendance() {
+               <tbody>
+                 {subjects.map((subject) => {
+                   const sessionKey = subject.id + "_" + subject.sectionId;
+-                  const result = scanResults[subject.id];
++                  const currentResult = getCurrentSessionResult(subject);
++                  const result = currentResult || scanResults[subject.id];
+                   const isSessionActive = !!activeSessions[sessionKey];
+                   return (
+                     <tr key={subject.id}>
+diff --git a/ams-app/src/app/teacher/reports/page.js b/ams-app/src/app/teacher/reports/page.js
+index eb969ca..2550d88 100644
+--- a/ams-app/src/app/teacher/reports/page.js
++++ b/ams-app/src/app/teacher/reports/page.js
+@@ -1,30 +1,195 @@
+ "use client";
+-import { useState } from "react";
++import { useState, useEffect } from "react";
++import { useAuth } from "@/context/AuthContext";
++import { db } from "@/lib/firebase";
++import { collection, query, where, getDocs } from "firebase/firestore";
+ 
+ export default function TeacherReports() {
++  const { user } = useAuth();
+   const [filter, setFilter] = useState({
+     section: "",
+     dateFrom: "",
+     dateTo: "",
+   });
+ 
++  const [sections, setSections] = useState([]);
+   const [students, setStudents] = useState([]);
++  const [loading, setLoading] = useState(false);
++  const [generated, setGenerated] = useState(false);
++
++  // Summary stats
++  const [stats, setStats] = useState({ avgRate: 0, totalAbsent: 0, totalLate: 0 });
++
++  // Fetch teacher's assigned sections on mount
++  useEffect(() => {
++    if (!user?.uid) return;
++
++    const fetchSections = async () => {
++      try {
++        const sectionsSnap = await getDocs(collection(db, "sections"));
++        const teacherSections = [];
++        sectionsSnap.forEach((d) => {
++          const data = d.data();
++          if (data.teacherId === user.uid) {
++            teacherSections.push({
++              id: d.id,
++              label: `${data.subject || "Subject"} ΓÇö ${data.section || d.id}`,
++              section: data.section || d.id,
++              subject: data.subject || "",
++              students: data.students || [],
++            });
++          }
++        });
++        setSections(teacherSections);
++      } catch (e) {
++        // silent
++      }
++    };
++    fetchSections();
++  }, [user?.uid]);
++
++  // Generate report
++  const handleGenerate = async () => {
++    if (!filter.section) {
++      alert("Please select a section.");
++      return;
++    }
++
++    setLoading(true);
++    setGenerated(false);
++
++    try {
++      const selectedSection = sections.find((s) => s.id === filter.section);
++      if (!selectedSection) {
++        setLoading(false);
++        return;
++      }
++
++      // Build attendance query
++      let q;
++      if (filter.dateFrom && filter.dateTo) {
++        q = query(
++          collection(db, "attendance"),
++          where("sectionId", "==", filter.section)
++        );
++      } else {
++        q = query(
++          collection(db, "attendance"),
++          where("sectionId", "==", filter.section)
++        );
++      }
++
++      const snap = await getDocs(q);
++      const allRecords = [];
++      snap.forEach((d) => {
++        const data = d.data();
++        // Apply date filter client-side if set
++        if (filter.dateFrom && data.date < filter.dateFrom) return;
++        if (filter.dateTo && data.date > filter.dateTo) return;
++        allRecords.push(data);
++      });
++
++      // Fetch student names
++      const studentIds = selectedSection.students || [];
++      const studentNames = {};
++
++      if (studentIds.length > 0) {
++        // Try users collection
++        const usersSnap = await getDocs(collection(db, "users"));
++        usersSnap.forEach((d) => {
++          if (studentIds.includes(d.id)) {
++            const data = d.data();
++            studentNames[d.id] = data.fullName || data.name || data.email || d.id;
++          }
++        });
++        // Fallback: students collection
++        const studentsSnap = await getDocs(collection(db, "students"));
++        studentsSnap.forEach((d) => {
++          if (studentIds.includes(d.id) && !studentNames[d.id]) {
++            const data = d.data();
++            studentNames[d.id] = data.fullName || data.name || data.email || d.id;
++          }
++        });
++      }
++
++      // Group records by student, deduplicate by sessionId
++      const studentStats = {};
++      for (const sid of studentIds) {
++        studentStats[sid] = { present: 0, late: 0, absent: 0, sessions: new Set() };
++      }
++
++      for (const record of allRecords) {
++        const sid = record.studentId;
++        if (!studentStats[sid]) {
++          studentStats[sid] = { present: 0, late: 0, absent: 0, sessions: new Set() };
++        }
++        // Deduplicate: only count one record per session per student
++        const sessionKey = record.sessionId || record.date;
++        if (studentStats[sid].sessions.has(sessionKey)) continue;
++        studentStats[sid].sessions.add(sessionKey);
++
++        if (record.status === "Present") studentStats[sid].present++;
++        else if (record.status === "Late") studentStats[sid].late++;
++        else if (record.status === "Absent") studentStats[sid].absent++;
++      }
++
++      // Build display data
++      const result = studentIds.map((sid) => {
++        const s = studentStats[sid] || { present: 0, late: 0, absent: 0 };
++        const total = s.present + s.late + s.absent;
++        const rate = total > 0 ? Math.round(((s.present + s.late) / total) * 100) : 0;
++        return {
++          id: sid,
++          name: studentNames[sid] || sid,
++          present: s.present,
++          late: s.late,
++          absent: s.absent,
++          total,
++          rate,
++        };
++      });
++
++      // Sort by name
++      result.sort((a, b) => a.name.localeCompare(b.name));
++      setStudents(result);
++
++      // Compute summary stats
++      const totalStudents = result.length;
++      const avgRate = totalStudents > 0
++        ? Math.round(result.reduce((sum, s) => sum + s.rate, 0) / totalStudents)
++        : 0;
++      const totalAbsent = result.reduce((sum, s) => sum + s.absent, 0);
++      const totalLate = result.reduce((sum, s) => sum + s.late, 0);
++      setStats({ avgRate, totalAbsent, totalLate });
++
++      setGenerated(true);
++    } catch (e) {
++      console.error("Error generating report:", e);
++      alert("Failed to generate report. Please try again.");
++    } finally {
++      setLoading(false);
++    }
++  };
+ 
+   const handleExport = () => {
+     if (students.length === 0) {
+       alert("No data to export.");
+       return;
+     }
++    const selectedSection = sections.find((s) => s.id === filter.section);
+     const csv = [
+-      "Student Name,Present,Late,Absent,Rate",
+-      ...students.map((s) => `${s.name},${s.present},${s.late},${s.absent},${s.rate}%`),
++      `Attendance Report ΓÇö ${selectedSection?.label || ""}`,
++      `Date Range: ${filter.dateFrom || "All"} to ${filter.dateTo || "All"}`,
++      "",
++      "Student Name,Present,Late,Absent,Total Sessions,Rate",
++      ...students.map((s) => `${s.name},${s.present},${s.late},${s.absent},${s.total},${s.rate}%`),
+     ].join("\n");
+ 
+     const blob = new Blob([csv], { type: "text/csv" });
+     const url = URL.createObjectURL(blob);
+     const a = document.createElement("a");
+     a.href = url;
+-    a.download = "attendance_report.csv";
++    a.download = `attendance_report_${filter.section}_${new Date().toISOString().split("T")[0]}.csv`;
+     a.click();
+     URL.revokeObjectURL(url);
+   };
+@@ -50,6 +215,9 @@ export default function TeacherReports() {
+               onChange={(e) => setFilter({ ...filter, section: e.target.value })}
+             >
+               <option value="" disabled>Select Section...</option>
++              {sections.map((s) => (
++                <option key={s.id} value={s.id}>{s.label}</option>
++              ))}
+             </select>
+           </div>
+           <div className="form-group">
+@@ -70,7 +238,14 @@ export default function TeacherReports() {
+               onChange={(e) => setFilter({ ...filter, dateTo: e.target.value })}
+             />
+           </div>
+-          <button className="btn btn-green" style={{ marginBottom: 0 }}>Generate Report</button>
++          <button
++            className="btn btn-green"
++            style={{ marginBottom: 0 }}
++            onClick={handleGenerate}
++            disabled={loading}
++          >
++            {loading ? "Generating..." : "Generate Report"}
++          </button>
+         </div>
+       </div>
+ 
+@@ -78,17 +253,17 @@ export default function TeacherReports() {
+         <div className="stat-card stat-green">
+           <div className="stat-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></div>
+           <div className="stat-card-label">Average Attendance</div>
+-          <div className="stat-card-value" style={{ color: "var(--success)" }}>ΓÇö</div>
++          <div className="stat-card-value" style={{ color: "var(--success)" }}>{generated ? `${stats.avgRate}%` : "ΓÇö"}</div>
+         </div>
+         <div className="stat-card stat-red">
+           <div className="stat-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg></div>
+           <div className="stat-card-label">Total Absences</div>
+-          <div className="stat-card-value" style={{ color: "var(--danger)" }}>ΓÇö</div>
++          <div className="stat-card-value" style={{ color: "var(--danger)" }}>{generated ? stats.totalAbsent : "ΓÇö"}</div>
+         </div>
+         <div className="stat-card stat-blue">
+           <div className="stat-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
+           <div className="stat-card-label">Total Late</div>
+-          <div className="stat-card-value" style={{ color: "var(--info)" }}>ΓÇö</div>
++          <div className="stat-card-value" style={{ color: "var(--info)" }}>{generated ? stats.totalLate : "ΓÇö"}</div>
+         </div>
+       </div>
+ 
+@@ -114,12 +289,14 @@ export default function TeacherReports() {
+             {students.length === 0 ? (
+               <tr>
+                 <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+-                  No report data yet. Select a section and generate a report.
++                  {generated
++                    ? "No attendance data found for the selected filters."
++                    : "No report data yet. Select a section and generate a report."}
+                 </td>
+               </tr>
+             ) : (
+               students.map((student, idx) => (
+-                <tr key={idx}>
++                <tr key={student.id || idx}>
+                   <td style={{ fontWeight: 600 }}>{student.name}</td>
+                   <td>{student.present}</td>
+                   <td>{student.late}</td>
+diff --git a/ams-app/src/components/FaceRegistrationGate.js b/ams-app/src/components/FaceRegistrationGate.js
+new file mode 100644
+index 0000000..f3d733c
+--- /dev/null
++++ b/ams-app/src/components/FaceRegistrationGate.js
+@@ -0,0 +1,112 @@
++'use client'
++
++import React from 'react'
++import FaceRegistration from '@/components/FaceRegistration'
++
++/**
++ * Blocking gate modal that forces students to register their face
++ * before accessing any part of the system.
++ * Rendered by GlobalGuard when:
++ *   - User is a student
++ *   - forcePasswordChange is false (already changed password)
++ *   - faceDescriptor is missing or empty
++ */
++export default function FaceRegistrationGate() {
++  return (
++    <div style={{
++      position: 'fixed',
++      top: 0, left: 0, right: 0, bottom: 0,
++      background: 'rgba(0,0,0,0.55)',
++      backdropFilter: 'blur(8px)',
++      WebkitBackdropFilter: 'blur(8px)',
++      display: 'flex',
++      justifyContent: 'center',
++      alignItems: 'center',
++      zIndex: 9999,
++      animation: 'fadeIn 0.3s ease',
++    }}>
++      <div style={{
++        background: 'var(--bg-card)',
++        borderRadius: 'var(--radius-xl)',
++        maxWidth: '480px',
++        width: '92%',
++        maxHeight: '90vh',
++        overflowY: 'auto',
++        boxShadow: 'var(--shadow-xl)',
++        animation: 'fadeInUp 0.4s ease',
++        overflow: 'hidden',
++      }}>
++        {/* Top accent bar */}
++        <div style={{
++          height: '4px',
++          background: 'linear-gradient(90deg, var(--primary), var(--primary-light), var(--success))',
++        }} />
++
++        <div style={{ padding: '32px 28px 28px' }}>
++          {/* Icon */}
++          <div style={{
++            width: '60px',
++            height: '60px',
++            borderRadius: '50%',
++            background: 'linear-gradient(135deg, #FFF7ED, #FED7AA)',
++            border: '2px solid #FED7AA',
++            display: 'flex',
++            alignItems: 'center',
++            justifyContent: 'center',
++            margin: '0 auto 20px',
++          }}>
++            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#C2410C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
++              <polygon points="23 7 16 12 23 17 23 7"></polygon>
++              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
++            </svg>
++          </div>
++
++          {/* Title */}
++          <h2 style={{
++            textAlign: 'center',
++            fontSize: '1.25rem',
++            fontWeight: 700,
++            color: 'var(--text-primary)',
++            marginBottom: '8px',
++            letterSpacing: '-0.3px',
++          }}>Face Registration Required</h2>
++
++          <p style={{
++            textAlign: 'center',
++            fontSize: '0.88rem',
++            color: 'var(--text-secondary)',
++            marginBottom: '24px',
++            lineHeight: 1.6,
++          }}>
++            For attendance verification, you must register your face before accessing the system. This is a one-time setup.
++          </p>
++
++          {/* Warning banner */}
++          <div style={{
++            padding: '10px 14px',
++            background: '#FFF7ED',
++            borderRadius: '10px',
++            border: '1px solid #FED7AA',
++            fontSize: '0.8rem',
++            color: '#C2410C',
++            fontWeight: 500,
++            marginBottom: '20px',
++            display: 'flex',
++            alignItems: 'center',
++            gap: '8px',
++          }}>
++            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C2410C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
++              <circle cx="12" cy="12" r="10"></circle>
++              <line x1="12" y1="8" x2="12" y2="12"></line>
++              <line x1="12" y1="16" x2="12.01" y2="16"></line>
++            </svg>
++            You cannot access attendance features until face registration is complete.
++          </div>
++
++          {/* Embedded FaceRegistration component */}
++          <FaceRegistration />
++        </div>
++      </div>
++    </div>
++  )
++}
+diff --git a/ams-app/src/components/GlobalGuard.js b/ams-app/src/components/GlobalGuard.js
+index 596d615..9beda5b 100644
+--- a/ams-app/src/components/GlobalGuard.js
++++ b/ams-app/src/components/GlobalGuard.js
+@@ -1,7 +1,40 @@
+ 'use client'
+ 
++import { useAuth } from '@/context/AuthContext'
++import ForcePasswordChange from '@/components/ForcePasswordChange'
++import FaceRegistrationGate from '@/components/FaceRegistrationGate'
++
++/**
++ * GlobalGuard wraps ALL pages at the root layout level.
++ * It enforces two sequential gates:
++ *   1. Force password change (all roles) ΓÇö if forcePasswordChange === true
++ *   2. Face registration (students only) ΓÇö if faceDescriptor is missing/empty
++ */
+ export default function GlobalGuard({ children }) {
+-  // ForcePasswordChange is handled by ProtectedRoute.js
+-  // GlobalGuard now only passes children through
++  const { user, userRole, userData } = useAuth()
++
++  // Only enforce for authenticated users with loaded userData
++  if (!user || !userData) {
++    return <>{children}</>
++  }
++
++  // Skip enforcement for hardcoded admin
++  if (user.uid === 'hardcoded-admin-id') {
++    return <>{children}</>
++  }
++
++  // Gate 1: Force password change (all roles)
++  if (userData.forcePasswordChange === true) {
++    return <ForcePasswordChange />
++  }
++
++  // Gate 2: Face registration required (students only)
++  if (userRole === 'student') {
++    const hasFace = userData.faceDescriptor && userData.faceDescriptor.length > 0
++    if (!hasFace) {
++      return <FaceRegistrationGate />
++    }
++  }
++
+   return <>{children}</>
+ }
+diff --git a/ams-app/src/components/Sidebar.js b/ams-app/src/components/Sidebar.js
+index 47f1b96..fbd155d 100644
+--- a/ams-app/src/components/Sidebar.js
++++ b/ams-app/src/components/Sidebar.js
+@@ -3,6 +3,8 @@ import Link from "next/link";
+ import { usePathname, useRouter } from "next/navigation";
+ import { useState, useEffect } from "react";
+ import { useAuth } from "@/context/AuthContext";
++import { db } from "@/lib/firebase";
++import { collection, query, where, getDocs, updateDoc, doc, addDoc } from "firebase/firestore";
+ 
+ const navConfigs = {
+   admin: {
+@@ -83,7 +85,7 @@ export default function Sidebar({ role, isOpen, onClose }) {
+   const [collapsed, setCollapsed] = useState(false);
+   const [isMobile, setIsMobile] = useState(false);
+ 
+-  const { logout } = useAuth();
++  const { logout, user, userRole } = useAuth();
+ 
+   // Track screen size for mobile behavior
+   useEffect(() => {
+@@ -95,6 +97,77 @@ export default function Sidebar({ role, isOpen, onClose }) {
+ 
+   const handleLogout = async () => {
+     try {
++      // If teacher, end all active sessions before logout
++      if (userRole === 'teacher' && user?.uid) {
++        try {
++          const sessionsQuery = query(
++            collection(db, 'sessions'),
++            where('teacherId', '==', user.uid),
++            where('active', '==', true)
++          );
++          const sessionsSnap = await getDocs(sessionsQuery);
++          const now = new Date();
++          const today = now.toISOString().split('T')[0];
++
++          for (const sessionDoc of sessionsSnap.docs) {
++            const sessionData = sessionDoc.data();
++
++            // Mark session as inactive
++            await updateDoc(doc(db, 'sessions', sessionDoc.id), {
++              active: false,
++              endTime: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
++              endedAt: now.toISOString(),
++            });
++
++            // Mark absent students who didn't attend this session
++            const sectionId = sessionData.sectionId;
++            if (sectionId) {
++              // Get attendance records for this session
++              const attendanceQuery = query(
++                collection(db, 'attendance'),
++                where('sessionId', '==', sessionDoc.id),
++                where('date', '==', today)
++              );
++              const attendanceSnap = await getDocs(attendanceQuery);
++              const presentStudentIds = new Set();
++              attendanceSnap.forEach((d) => presentStudentIds.add(d.data().studentId));
++
++              // Get enrolled students for this section
++              const sectionDocSnap = await getDocs(query(
++                collection(db, 'sections'),
++                where('__name__', '==', sectionId)
++              ));
++              // Fallback: try direct doc get
++              let enrolledStudents = [];
++              if (!sectionDocSnap.empty) {
++                enrolledStudents = sectionDocSnap.docs[0].data().students || [];
++              }
++
++              for (const studentId of enrolledStudents) {
++                if (!presentStudentIds.has(studentId)) {
++                  await addDoc(collection(db, 'attendance'), {
++                    studentId: studentId,
++                    studentName: studentId,
++                    subjectId: sessionData.subjectId || '',
++                    subjectCode: sessionData.subjectCode || '',
++                    sectionId: sectionId,
++                    sessionId: sessionDoc.id,
++                    date: today,
++                    timestamp: now.toISOString(),
++                    timeMarked: 'ΓÇö',
++                    status: 'Absent',
++                    method: 'auto',
++                  });
++                }
++              }
++            }
++          }
++        } catch (sessionErr) {
++          console.error('Error ending sessions on logout:', sessionErr);
++          // Continue with logout even if session cleanup fails
++        }
++      }
++
+       await logout();
+     } catch (e) {
+       // Ignore errors
